@@ -121,6 +121,7 @@ def main():
     PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_old1CornerMarked/impedance_rec3_testingSCR_CAFA_CATR"
     PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_old1CornerMarked/impedance_rec3_testingSCR_CAFA_CATR"
     PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_rec2_noGP_PBS/"
+    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_4983/impedance_rec3_externalCurrent/"
  
     # PATH = './impedance/rec3'
     log2file = True

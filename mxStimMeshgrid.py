@@ -2,11 +2,13 @@ import pandas as pd
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import sys
+import maxlab
 
 def reset_MEA1K():
     print("Resetting MEA1K...", end='', flush=True)
     maxlab.util.initialize()
-    # maxlab.send(maxlab.chip.Core().enable_stimulation_power(True))
+    maxlab.send(maxlab.chip.Core().enable_stimulation_power(True))
     maxlab.send(maxlab.chip.Amplifier().set_gain(7))
     print("Done.")
 
@@ -17,7 +19,7 @@ def setup_array(electrodes, stim_electrodes=None, config_name="default_name"):
     array.reset()
     array.clear_selected_electrodes()
     array.select_electrodes(electrodes)
-    # array.connect_all_floating_amplifiers()
+    array.connect_all_floating_amplifiers()
     # array.connect_amplifier_to_ringnode(0)
 
     if stim_electrodes is not None:
@@ -33,15 +35,16 @@ def turn_on_stimulation_units(stim_units):
         stim = maxlab.chip.StimulationUnit(str(stim_unit))
         stim.power_up(True)
         stim.connect(True)
-        stim.set_current_mode()
-        stim.set_small_current_range()
+        # stim.set_current_mode()
+        # stim.set_voltage_mode()
+        # stim.set_small_current_range()
         # stim.set_large_current_range()
         stim.dac_source(0)
         maxlab.send(stim)
         time.sleep(.1)
     print("Done.")
 
-def create_stim_sine_sequence(dac=0, amplitude=25, f=10, ncycles=30, nreps=1):
+def create_stim_sine_sequence(dac=0, amplitude=25, f=1000, ncycles=300, nreps=1):
 	seq = maxlab.Sequence()
   	
 	# 50 us * 20kHz = 1000 samples, 1 khz exmaple
@@ -121,40 +124,46 @@ def base_setup_saving(s, PATH, ):
     # print(f"Successfully opened file and defined group. Starting recording {dir_name}/{fname}")
     # s.start_recording([el_i])
     
-def start_saving(s, PATH, el_i, chnl):
-    dir_name = f"{PATH}/{el_i//1000:04d}_configs/"
-    fname = f"el_{el_i:05d}_{chnl:04d}"
+def start_saving(s, PATH, fname):
+    # dir_name = f"{PATH}/{el_i//1000:04d}_configs/"
+    # fname = f"el_{el_i:05d}_{chnl:04d}"
     
     s.set_legacy_format(True)
-    s.open_directory(dir_name)
+    s.open_directory(PATH)
     s.start_file(fname)
     s.group_delete_all()
     # s.group_define(0, "one_channel", [chnl])
     s.group_define(0, "all_channels", list(range(1024)))
-    print(f"Successfully opened file and defined group. Starting recording {dir_name}/{fname}")
+    print(f"Successfully opened file and defined group. Starting recording {fname}")
     s.start_recording([0])
 
-
+def stop_saving(s):
+    print("Stopping recording...")
+    s.stop_recording()
+    s.stop_file()
+    s.group_delete_all()
 
 def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[]):
         array.connect_electrode_to_stimulation(el)
         stim_unit = array.query_stimulation_at_electrode(el)
+        success = False
         
         # unknown error case, could not find routing?
         if not stim_unit:
             print(f"Warning - Could not connect El{el} to a stim unit.")
-            sucsess = False
+            success = False
         
         # stim unit not used yet, 
         elif int(stim_unit) not in used_up_stim_units:
             used_up_stim_units.append(int(stim_unit))
-            sucsess = True
+            # print("connected", el, stim_unit)
+            success = True
             
             if len(used_up_stim_units) == 32:
                 print("Used up all 32 stim units.")
-                sucsess = False
+                success = False
 
-        return sucsess, used_up_stim_units
+        return success, used_up_stim_units
 
 
 
@@ -243,50 +252,76 @@ def stimulate(PATH):
                                          overlap = overlap, 
                                          xstep =xstep, 
                                          ystep =ystep)
-        el_config = np.array(list(el_tile_config.values())).reshape(30, -1)
+        
+        # el_config = np.array(list(el_tile_config.values())).reshape(30, -1)
         config_name = f"config_{config_i:03d}"
+        reset_MEA1K()
+        turn_on_stimulation_units(list(range(32)))
 
-        # array = setup_array(el_config.flatten(), el_config.flatten(), config_name)
-        # start_saving(s, dir_name=PATH, fname=config_name)
+        array = setup_array(np.array(list(el_tile_config.values())).flatten(), None, config_name)
+        connected_els = [m.electrode for m in array.get_config().mappings]
+        connected_chnls = np.array([m.channel for m in array.get_config().mappings])
+        # [print(m.electrode, m.channel) for m in array.get_config().mappings]
+        # print(el_config)
+        # print(el_tile_config)
+        
+        # update to connected electrodes
+        connected_el_tile_config = {}
+        for el_tile_name, el_tile in el_tile_config.items():
+            # print(el_tile_name, el_tile)
+            connected_el_tile = []
+            for el_i in el_tile.flatten():
+                if el_i in connected_els:
+                    connected_el_tile.append(el_i)
+            connected_el_tile_config[el_tile_name] = np.array(connected_el_tile)
+            # print(connected_el_tile_config[el_tile_name])
+            # print()
+        el_tile_config = connected_el_tile_config
+        # el_config = np.array(list(el_tile_config.values())).reshape(30, -1)
+        # print("====")
+        # print(el_config)
+        start_saving(s, PATH, fname=config_name)
         
         # create a multiindex for the electrode mapping, to identify later
         tuples_midx = [(config_i, el_tile_name, el_i) 
                        for el_tile_name, el_tile in el_tile_config.items() 
                        for el_i in el_tile.flatten()]
         midx = pd.MultiIndex.from_tuples(tuples_midx).set_names(['config', 'tile', 'el'])
-        channels = array.get_config().get_channels_for_electrodes(el_config.flatten())
-        el_config_mapping = pd.Series(channels, index=midx)
+        # channels = array.get_config().get_channels_for_electrodes(el_config.flatten())
+        el_config_mapping = pd.Series(connected_chnls, index=midx)
+        # print(el_tile_config)
         
         electrode_mapping = pd.concat([electrode_mapping, el_config_mapping])
-        print(electrode_mapping.size)
-        print(f"\n\n{config_name}... {electrode_mapping.size/(26400*4)*100:.3f}%", end=' ')
+        # print(electrode_mapping.size)
+        print(f"\n\n{config_name}... {electrode_mapping.size/(26400*4)*100:.3f}%")
         
 
-        n_tiles = 30
-        n_el_tile = 16
+        # n_tiles = 30
+        # n_el_tile = 16
         # iterate over set of 32-set stimulation electrodes
-        stim_indexer = {tile_i: np.arange(n_el_tile) for tile_i in range(n_tiles)}
+        stim_indexer = {tile_i: np.arange(els.size) for tile_i,els in el_tile_config.items()}
 
         stim_counter = 0
         stim_set_i = 0
         while True:
             stim_set_electrodes = []
             used_up_stim_units = []
-            for tile_i in range(n_tiles):
+            for tile_i in range(len(el_tile_config)):
                 # print()
                 el_left_in_tile = stim_indexer[tile_i].size
                 if el_left_in_tile == 0:
                     continue
                 stim_el_idx = np.random.choice(np.arange(el_left_in_tile), 1).item()
-                stim_el = el_config[tile_i, stim_indexer[tile_i][stim_el_idx]]
-
+                # print(stim_el_idx, el_tile_config[tile_i])
+                stim_el = el_tile_config[tile_i][stim_indexer[tile_i][stim_el_idx]]
+                # print(stim_el)
                 # # try to connect here
-                # success, used_up_stim_units = attampt_connect_el2stim_unit(stim_el, 
-                #                                                            array, 
-                #                                                            used_up_stim_units)
-                # array.select_stimulation_electrodes(stim_els.flatten()) ??
-                # if not success:
-                #     continue
+                success, used_up_stim_units = attampt_connect_el2stim_unit(stim_el, 
+                                                                           array, 
+                                                                           used_up_stim_units)
+                # array.select_stimulation_electrodes(stim_els.flatten())
+                if not success:
+                    continue
                 
                 stim_set_electrodes.append(stim_el)
                 stim_indexer[tile_i] = np.delete(stim_indexer[tile_i], stim_el_idx)
@@ -294,32 +329,36 @@ def stimulate(PATH):
                 
                 # print('tile_i:', tile_i, 'el_left_in_tile:', el_left_in_tile, 'sample:', stim_el)
                 # [print(si, len(si[1])) for si in stim_indexer.items()]
+            print(stim_set_electrodes)
                 
             midx = pd.MultiIndex.from_product([[config_name], [stim_set_i], stim_set_electrodes])
-            stim_mapping = pd.concat([stim_mapping, pd.Series(channels[stim_set_electrodes], index=midx)])
+            stim_mapping = pd.concat([stim_mapping, pd.Series(stim_set_electrodes, index=midx)])
             
-            # array.download() #required
-            time.sleep(.3)
+            array.download() #required
+            # time.sleep(3)
                 
-            print(f"Stimulating ~ ~ ~ ~ ~ ~ ~ ~ {stim_set_i:02d} ", end="")
+            print(f"Stimulating ~ ~ ~ ~ ~ ~ ~ ~ set {stim_set_i:02d}, () electrodes ", end="\r")
             seq.send()
-            time.sleep(.2)
-            print("Done.")
+            time.sleep(.3)
+            # print("Done.")
             
             print(f"Disconnecting {len(stim_set_electrodes)} stimulation electrodes...", end="")
             for stim_el in stim_set_electrodes:
-                print(stim_el, end="...")
+                # print(stim_el, end="...")
                 array.disconnect_electrode_from_stimulation(stim_el)
             print("Done.")
             
             # print(stim_counter)
             stim_set_i += 1
-            if stim_counter >= n_tiles*n_el_tile:
+            if stim_counter >= len(connected_els):
                 break
-        
+            
+        stop_saving(s)
         print("Config done.")
+        config_i += 1
         electrode_mapping.to_csv(f"{PATH}/recording_mapping.csv")
         stim_mapping.to_csv(f"{PATH}/stim_mapping.csv")
+        
         
                 
             
@@ -383,12 +422,12 @@ def stimulate(PATH):
     # return electrode_mapping, stim_mapping
     
 if __name__ == "__main__":
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_bonded_neighbours/"
-    # log2file = True
+    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_bonded_neighbours2/"
+    log2file = True
     post_connection_sleep_time = .6
-    # if log2file:
-    #     logfile = open(f"{PATH}/mxstimpy.log", "w")
-    #     sys.stdout = logfile
+    if log2file:
+        logfile = open(f"{PATH}/mxstimpy.log", "w")
+        sys.stdout = logfile
     
     # stim_seq = create_stim_sequence()
     stim_seq = None

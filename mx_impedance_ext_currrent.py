@@ -19,11 +19,19 @@ def reset_MEA1K():
     # maxlab.send(maxlab.chip.Core().enable_stimulation_power(True))
     maxlab.send(maxlab.chip.Amplifier().set_gain(112))
     print("Done.")
+    
 
-def setup_array(electrodes, stim_electrodes=None, config_name="default_name"):
-    print("Setting up array (reset,route&download)...", end='', flush=True)
+
+def setup_array(electrodes=None, stim_electrodes=None, PATH='~', 
+                config_name="default_name", with_file='to'):
+    # print("Setting up array (reset,route&download)...", end='', flush=True)
     # array = maxlab.chip.Array("offline")
+    
     array = maxlab.chip.Array()
+    if with_file == 'from':
+        array.load_config(f"{PATH}/{config_name}.cfg")
+        return array
+    
     array.reset()
     array.clear_selected_electrodes()
     array.select_electrodes(electrodes)
@@ -32,9 +40,14 @@ def setup_array(electrodes, stim_electrodes=None, config_name="default_name"):
 
     if stim_electrodes is not None:
         array.select_stimulation_electrodes(stim_electrodes)
+    # print("route...", end='', flush=True)
     array.route()
+    # print("download...", end='', flush=True)
     array.download()
-    print("Done.")
+    # print("Done.")
+    if with_file == 'to':
+        # print(f"Saving config as {config_name}.cfg")
+        array.save_config(f"{PATH}/{config_name}.cfg")
     return array
 
 def turn_on_stimulation_units(stim_units):
@@ -59,7 +72,6 @@ def create_stim_sequence(dac=0, amplitude=25, npulses=10, nreps=3, inter_pulse_i
         seq.append(maxlab.system.DelaySamples(4))
         seq.append(maxlab.chip.DAC(0, 512))
         return seq
-
     seq = maxlab.Sequence()
     for i in range(nreps):
         for j in range(npulses):
@@ -96,13 +108,13 @@ def connect_el2stim_units(array, stim_electrodes):
             array.disconnect_electrode_from_stimulation(el)
     return stim_els, stim_units, failed_stim_els
 
-def base_setup_saving(s, PATH, ):
-    s.set_legacy_format(True)
-    s.open_directory(PATH)
-    s.start_file("all_channels_recording")
-    s.group_delete_all()
-    for i in range(26400):
-        s.group_define(i, f"electrode_{i:05d}", [i])
+# def base_setup_saving(s, PATH, ):
+#     s.set_legacy_format(True)
+#     s.open_directory(PATH)
+#     s.start_file("all_channels_recording")
+#     s.group_delete_all()
+#     for i in range(26400):
+#         s.group_define(i, f"electrode_{i:05d}", [i])
 
 # def start_el_saving(s, el_i):
     # s.group_define(0, "one_channel", [chnl])
@@ -110,18 +122,25 @@ def base_setup_saving(s, PATH, ):
     # print(f"Successfully opened file and defined group. Starting recording {dir_name}/{fname}")
     # s.start_recording([el_i])
     
-# def start_saving(s, PATH, el_i, chnl):
-#     dir_name = f"{PATH}/{el_i//1000:04d}_configs/"
-#     fname = f"el_{el_i:05d}_{chnl:04d}"
+def start_saving(s, PATH, fname, channel=None):
+    # dir_name = f"{PATH}/{el_i//1000:04d}_configs/"
+    # dir_name = f"{PATH}/"
+    # fname = f"el_blabla"
+    # print(f"Starting recording {PATH}/{fname}")
+    s.open_directory(PATH)
+    if os.path.exists(f"{PATH}/{fname}.raw.h5"):
+        # print(f"File {PATH}/{fname}.h5 already exists. Exiting.")
+        os.remove(f"{PATH}/{fname}.raw.h5")
+    # print(os.path.exists(PATH))
+    s.start_file(fname)
+    # s.group_delete_all()
+    channel = list(range(1024)) if channel is None else [channel]
+    s.group_define(0, "one_channel", channel)
+    print("Before start recording...", end='', flush=True)
+    time.sleep(3)
     
-#     s.set_legacy_format(True)
-#     s.open_directory(dir_name)
-#     s.start_file(fname)
-#     s.group_delete_all()
-#     # s.group_define(0, "one_channel", [chnl])
-#     s.group_define(0, "all_channels", list(range(1024)))
-#     print(f"Successfully opened file and defined group. Starting recording {dir_name}/{fname}")
-#     s.start_recording([0])
+    s.start_recording([0])
+    print(f"Successfully opened file and defined group. Starting recording {fname}")
 
 def stop_saving(s):
     print("Stopping recording...")
@@ -139,9 +158,10 @@ def main():
     PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_old1CornerMarked/impedance_rec3_testingSCR_CAFA_CATR"
     PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_old1CornerMarked/impedance_rec3_testingSCR_CAFA_CATR"
     PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_rec2_noGP_PBS/"
- 
-    # PATH = './impedance/rec3'
-    log2file = True
+    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_4983/impedance_rec3_externalCurrent2/"
+    PATH = "/home/vrmaster/impedance_local/testrec"
+
+    log2file = False
     post_connection_sleep_time = .6
     
     if log2file:
@@ -149,49 +169,61 @@ def main():
         sys.stdout = logfile
 
     s = maxlab.Saving()
+    s.set_legacy_format(True)
+    
 
     all_els = np.arange(26400)
-    # nsets = len(all_els)//1024 +1
     reset_MEA1K()
-    base_setup_saving(s, PATH)
+    # start_saving(s, PATH, fname=f"all_recording")
+    
     
     chnls_map = []
     while True:
-        
-    
-    # stim_seq = create_stim_sequence()
-    # for el_set_i in range(nsets):
-        # sample 1024 electrodes, remove sampled ones for unique samples
-        # size = 1024 if el_set_i != nsets-1 else len(all_els)%1024
-        
-        
         el_smple_idx = np.random.choice(np.arange(len(all_els)), 
                         size=[1], replace=False)
         el_smple = all_els[el_smple_idx]
-        print(f"Measuring voltage at electrode: {el_smple:05d}", end='\r')
+        print(f"Measuring voltage at electrode: {el_smple[0]:05d}, {(1-(all_els.size/26400))*100:.3f}%", end='\r\n')
         all_els = np.delete(all_els, el_smple_idx)
         
-        # turn_on_stimulation_units(list(range(32)))
-
-        # stim_set_name = f"stim_set_{el_set_i:02}"
-        # stim_set_path = PATH + f'/{stim_set_name}'
-        # os.mkdir(stim_set_path)
-        array = setup_array([el_smple])#, config_name=stim_set_name)
-        # array.save_config(f"{stim_set_path}/mxConfig.cfg")
-
-        chnl = array.get_config().get_channels_for_electrodes([el_smple])
-        chnls_map.append([el_smple, chnl])
-
-        s.start_recording([el_smple])
-        time.sleep(.2)
-        s.stop_recording([el_smple]) # ?
+        config_set_i = (26400-all_els.size) //1000
+        stim_set_name = f"config_set_{config_set_i:02}"
+        stim_set_path = os.path.join(PATH, stim_set_name)
+        if not os.path.exists(stim_set_path):
+            os.mkdir(stim_set_path)
         
-        array.close()
+        config_name = f"config_el_{el_smple[0]:05d}"
+        array = setup_array(el_smple, PATH=stim_set_path, config_name=config_name, 
+                            with_file='to')
         
-        if all_els.size == 0 or all_els.size < 26000:
+        if all_els.size < 26400-100:
             break
+        
+
+        channel = array.get_config().get_channels_for_electrodes(el_smple)[0]
+        chnls_map.append([el_smple[0], channel])
+        start_saving(s, stim_set_path, fname=f"el_{el_smple[0]:05d}", channel=channel)
+        # maxlab.Sequence().append(maxlab.chip.DAC(0, 512)).send()
+        print("Recording...", end='', flush=True)
+        time.sleep(1)
+        print("Waited 1s, stopping recording....", end='', flush=True)
+        stop_saving(s)
+        
+        # time.sleep(.6)
+    # stop_saving(s)
     
-    stop_saving(s)
+    #     # chnl = array.get_config().get_channels_for_electrodes(el_smple)
+    #     # chnls_map.append([el_smple, chnl])
+
+    #     # s.start_recording([0])
+    #     time.sleep(.2)
+    #     # s.stop_recording() # ?
+        
+    #     array.close()
+        
+    #     if all_els.size == 0 or all_els.size < 26000:
+    #         break
+    
+    # stop_saving(s)
         
   
   
