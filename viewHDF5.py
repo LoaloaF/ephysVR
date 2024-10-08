@@ -73,16 +73,20 @@ def check_stim(path, fname):
     
     
 basepath = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/"
-device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_neighbours2'
+basepath = "/mnt/SpatialSequenceLearning/Simon/impedance/"
+device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_neighbours3'
 PATH = basepath + device_name
 print(PATH)
 fname = "config_000.raw.h5"
 
-check_stim(PATH, fname)
+# check_stim(PATH, fname)
 
 with h5py.File(os.path.join(PATH, fname), 'r') as file:
-    print(np.array(file['mapping']))
-    # dac = np.array(file['sig'][1024, :])
+    # print(np.array(file['mapping']))
+    dac = np.array(file['sig'][1024, :])
+    plt.plot(dac)
+    plt.show()
+    # data = np.array(file['sig']).astype(int)
     # data = np.array(file['sig'][:1025, 0:6000]).astype(int)
     # data = np.array(file['sig'][:1025, 6000:10000]).astype(int)
 

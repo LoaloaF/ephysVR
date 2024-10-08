@@ -44,7 +44,7 @@ def turn_on_stimulation_units(stim_units):
         time.sleep(.1)
     print("Done.")
 
-def create_stim_sine_sequence(dac=0, amplitude=25, f=1000, ncycles=300, nreps=1):
+def create_stim_sine_sequence(dac=0, amplitude=25, f=1000, ncycles=100, nreps=1):
 	seq = maxlab.Sequence()
   	
 	# 50 us * 20kHz = 1000 samples, 1 khz exmaple
@@ -55,10 +55,11 @@ def create_stim_sine_sequence(dac=0, amplitude=25, f=1000, ncycles=300, nreps=1)
 	sine_wave = (amplitude * np.sin(t*2*np.pi)).astype(int) +512
 	# debug = []
 	for i in range(nreps):
-		seq.append(maxlab.system.DelaySamples(40))
 		for j in range(ncycles):
 			for ampl in sine_wave:
 				seq.append(maxlab.chip.DAC(dac, ampl))
+				seq.append(maxlab.system.DelaySamples(1))
+                
 				# debug.append(ampl)
 	# np.save("sine_wave.npy", debug)
 	# plt.show()
@@ -216,10 +217,10 @@ def new_tile_config(n_xtiles, n_ytiles, tile_size, overlap, xstep, ystep):
             tile_i += 1
     
     # # Print the number of electrodes and display the configuration matrix
-    print(len(electrodes))
-    plt.imshow(el_matrix_config)
-    plt.colorbar()
-    plt.show()
+    # print(len(electrodes))
+    # plt.imshow(el_matrix_config)
+    # plt.colorbar()
+    # plt.show()
     return electrodes
 
 def stimulate(PATH):
@@ -233,7 +234,7 @@ def stimulate(PATH):
     n_ytiles = 3
     
     # electrode_mapping = pd.Series([])
-    stim_mapping = pd.Series([])
+    stim_mapping = None
     config_i = 0
     
     while True:
@@ -252,7 +253,7 @@ def stimulate(PATH):
                                          overlap = overlap, 
                                          xstep = xstep, 
                                          ystep = ystep)
-        
+
         # el_config = np.array(list(el_tile_config.values())).reshape(30, -1)
         config_name = f"config_{config_i:03d}"
         reset_MEA1K()
@@ -293,9 +294,8 @@ def stimulate(PATH):
         
         # electrode_mapping = pd.concat([electrode_mapping, el_config_mapping])
         # print(electrode_mapping.size)
-        print(f"\n\n{config_name}... {len(connected_els.size)/(26400*4)*100:.3f}%")
+        print(f"\n{config_name}... {len(connected_els)/(26400*4)*100:.3f}%\n=======")
         
-
         # n_tiles = 30
         # n_el_tile = 16
         # iterate over set of 32-set stimulation electrodes
@@ -304,6 +304,7 @@ def stimulate(PATH):
         stim_counter = 0
         stim_set_i = 0
         while True:
+            
             stim_set_electrodes = []
             stim_set_midx = []
             used_up_stim_units = []
@@ -329,19 +330,26 @@ def stimulate(PATH):
                 stim_set_midx.append((config_i, stim_set_i, tile_i, stim_el))
                 stim_counter += 1
                 
-            print(stim_set_electrodes)
+            if len(stim_set_electrodes) == 0:
+                if len([v for v in stim_indexer.values()if v.size > 0]) == 0:
+                    print("WARNING: Some electrodes could not be connected!")
+                break
+                            
+            # print(stim_set_electrodes)
             midx = pd.MultiIndex.from_tuples(stim_set_midx).set_names(['config', 'stim_set', 'tile', 'el'])
-            stim_mapping = pd.concat([stim_mapping, pd.Series(stim_set_electrodes, index=midx)])
+            stim_mapping = pd.concat([stim_mapping if stim_mapping is not None else None, 
+                                      pd.Series(stim_set_electrodes, index=midx)])
             
             array.download() #required
-            # time.sleep(3)
+            time.sleep(.15)
                 
-            print(f"Stimulating ~ ~ ~ ~ ~ ~ ~ ~ set {stim_set_i:02d}, () electrodes ", end="\r")
+            print(f"Stimulating ~ ~ ~ ~ ~ ~ ~ ~ set {stim_set_i:02d}, "
+                  f"{len(stim_set_electrodes)} electrodes ")
             seq.send()
-            time.sleep(.3)
-            # print("Done.")
+            time.sleep(.15)
             
-            print(f"Disconnecting {len(stim_set_electrodes)} stimulation electrodes...", end="")
+            
+            print(f"Disconnecting {len(stim_set_electrodes)} stimulation electrodes...", end='')
             for stim_el in stim_set_electrodes:
                 # print(stim_el, end="...")
                 array.disconnect_electrode_from_stimulation(stim_el)
@@ -351,19 +359,16 @@ def stimulate(PATH):
             stim_set_i += 1
             if stim_counter >= len(connected_els):
                 break
-            
-        stop_saving(s)
-        print("Config done.")
-        config_i += 1
-        # electrode_mapping.to_csv(f"{PATH}/recording_mapping.csv")
-        stim_mapping.to_csv(f"{PATH}/stim_mapping.csv")
         
+        time.sleep(.15)
+        stop_saving(s)
+        print("Config done.\n\n")
+        config_i += 1
+        stim_mapping.to_csv(f"{PATH}/stim_mapping.csv")
+        stim_mapping.to_pickle(f"{PATH}/stim_mapping.pkl")
         
                 
             
-            
-        
-        
     #     for stim_row_i in range(6):
     #         for stim_col_i in range(6):
     #             stim_set_name = f"stim_set_{stim_row_i*6+stim_col_i:02d}"
@@ -421,20 +426,12 @@ def stimulate(PATH):
     # return electrode_mapping, stim_mapping
     
 if __name__ == "__main__":
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_bonded_neighbours2/"
+    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_bonded_neighbours4/"
+    
     log2file = True
     post_connection_sleep_time = .6
     if log2file:
         logfile = open(f"{PATH}/mxstimpy.log", "w")
         sys.stdout = logfile
     
-    # stim_seq = create_stim_sequence()
-    stim_seq = None
-    
-    sqaure_size = 30
-    overlap = 3
-    
-    electrode_mapping, stim_mapping =  stimulate(PATH, )
-    # save the mappings
-    # electrode_mapping.to_csv(f"{PATH}/recording_mapping.csv")
-    # stim_mapping.to_csv(f"{PATH}/stim_mapping.csv")
+    stimulate(PATH, )

@@ -14,7 +14,7 @@ BITRATE = 2**10
 GAIN = 7
 SR = 20_000
 CYCLE_LENGTH = 20
-NCYCLES = 300
+NCYCLES = 100
 
 # def high_pass_filter(data, cutoff, fs, order=5):
 #     nyquist = 0.5 * fs
@@ -23,7 +23,7 @@ NCYCLES = 300
 #     filtered_data = signal.filtfilt(b, a, data)
 #     return filtered_data
 
-def estimate_frequency_power(signal, sampling_rate, min_band, max_band):
+def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=False):
     # Compute the FFT of the signal
     fft_result = np.fft.fft(signal)
     # Compute the power spectrum
@@ -33,6 +33,14 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band):
     # Only keep the positive frequencies
     positive_freqs = freqs[freqs >= 1]
     positive_power_spectrum = power_spectrum[freqs >= 1]
+    if debug:
+        plt.plot(positive_freqs, positive_power_spectrum)
+        # plt.yscale('log')
+        plt.title('Power Spectrum')
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Power')
+        plt.grid(True)
+        plt.show()
     return positive_power_spectrum[(positive_freqs>min_band) & 
                                    (positive_freqs<max_band)].mean()
     
@@ -48,56 +56,56 @@ def get_h5_mapping(path, config_i):
         el_xy = mapping[:, 2:4]
     return channels, el_xy
 
-def get_config_mapping(path, compare_config_file_mapping=None):
-    levels = ['config', 'tile', 'el']
-    # Read the CSV file
-    df = pd.read_csv(os.path.join(path, "recording_mapping.csv"))
-    # Split the tuple column into separate columns
-    df[levels] = df['Unnamed: 0'].str.extract(r'\((\d+), (\d+), (\d+)\)')
-    # Convert the new columns to integers
-    df[levels] = df[levels].astype(int)
-    # Set the new columns as the multi-index
-    df.set_index(levels, inplace=True)
-    # Drop the original tuple column
-    channels = df.drop(columns=['Unnamed: 0']).iloc[:,0]
+# def get_config_mapping(path, compare_config_file_mapping=None):
+#     levels = ['config', 'tile', 'el']
+#     # Read the CSV file
+#     df = pd.read_csv(os.path.join(path, "recording_mapping.csv"))
+#     # Split the tuple column into separate columns
+#     df[levels] = df['Unnamed: 0'].str.extract(r'\((\d+), (\d+), (\d+)\)')
+#     # Convert the new columns to integers
+#     df[levels] = df[levels].astype(int)
+#     # Set the new columns as the multi-index
+#     df.set_index(levels, inplace=True)
+#     # Drop the original tuple column
+#     channels = df.drop(columns=['Unnamed: 0']).iloc[:,0]
     
-    if compare_config_file_mapping is not None:
-        channels_h5, _ = get_h5_mapping(path, compare_config_file_mapping)
-        print(channels_h5)
-        print(channels)
-        channels.loc[channels_h5.index] = channels_h5.values
-        print(channels)
+#     if compare_config_file_mapping is not None:
+#         channels_h5, _ = get_h5_mapping(path, compare_config_file_mapping)
+#         print(channels_h5)
+#         print(channels)
+#         channels.loc[channels_h5.index] = channels_h5.values
+#         print(channels)
         
-        exit()
-        mapping_csv = channels.loc[compare_config_file_mapping].droplevel('tile')
+#         exit()
+#         mapping_csv = channels.loc[compare_config_file_mapping].droplevel('tile')
             
         
-        if not (channels_h5.index == mapping_csv.index).all() or \
-            not (channels_h5.values == mapping_csv.values).all():
-            print("Mismatch between csv and h5 mapping file")
-            print(channels_h5)
-            print(mapping_csv)
+#         if not (channels_h5.index == mapping_csv.index).all() or \
+#             not (channels_h5.values == mapping_csv.values).all():
+#             print("Mismatch between csv and h5 mapping file")
+#             print(channels_h5)
+#             print(mapping_csv)
             
             
             
-            exit()
-            # mapping_csv_chnls = mapping_csv.loc[:, (channels_h5[:,1])]
-            # print(remap)
-            # print(remap.index['el'])
-            # print(remap.index['el'])
-            exit()
-            # if remap.values == mapping_csv
-            # channels_h5 = channels_h5[channels_h5[:,0].argsort()]
-            # print(channels_h5.shape)
+#             exit()
+#             # mapping_csv_chnls = mapping_csv.loc[:, (channels_h5[:,1])]
+#             # print(remap)
+#             # print(remap.index['el'])
+#             # print(remap.index['el'])
+#             exit()
+#             # if remap.values == mapping_csv
+#             # channels_h5 = channels_h5[channels_h5[:,0].argsort()]
+#             # print(channels_h5.shape)
             
-            # print(config_channels)
-            # # print(el_chnl)
-            # print(config_channels.loc[:, el_chnl[:,1][config_channels.values]])
+#             # print(config_channels)
+#             # # print(el_chnl)
+#             # print(config_channels.loc[:, el_chnl[:,1][config_channels.values]])
             
-            # if config_channels.loc[:, el_chnl[:,1][config_channels.values]] != el_xy[:,0]:
-            #     print("Mismatch between mapping and config file")
-            # print(el_chnl)
-            exit()
+#             # if config_channels.loc[:, el_chnl[:,1][config_channels.values]] != el_xy[:,0]:
+#             #     print("Mismatch between mapping and config file")
+#             # print(el_chnl)
+#             exit()
             
     
     
@@ -105,18 +113,7 @@ def get_config_mapping(path, compare_config_file_mapping=None):
 
 
 def get_stim_mapping(path):
-    levels = ['config', 'stim_set', 'el']
-    # Read the CSV file
-    df = pd.read_csv(os.path.join(path, "stim_mapping.csv"))
-    # Extract the values from the tuple column
-    df[levels] = df['Unnamed: 0'].str.extract(r"\('config_(\d+)', (\d+), (\d+)\)")
-    # Convert the new columns to integers
-    df[levels] = df[levels].astype(int)
-    # Set the new columns as the multi-index
-    df.set_index(levels, inplace=True)
-    # Drop the original tuple column
-    channels = df.drop(columns=['Unnamed: 0']).iloc[:, 0]
-    return channels
+    return pd.read_pickle(f"{path}/stim_mapping.pkl")
 
 def read_data(path, config_i, row_slice=slice(None), col_slice=slice(None)):
     fname = f"config_{config_i:03d}.raw.h5"
@@ -182,7 +179,7 @@ def extract_stim_traces(path, config_i, precomputed=None, debug=False):
             plt.legend()
             plt.show()
         
-        powers = [estimate_frequency_power(t, SR, 5800, 6200) for t in traces]
+        powers = [estimate_frequency_power(t, SR, 960, 1040, debug=False) for t in traces]
         idx = pd.MultiIndex.from_arrays([[config_i] * len(all_els), 
                                          [stim_set_i] * len(all_els), 
                                          [el in el_in_stim_set_i for el in all_els], 
@@ -208,42 +205,43 @@ def convert_to_vol(data):
 
 def main():
     basepath = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/"
-    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_neighbours2'
+    basepath = "/mnt/SpatialSequenceLearning/Simon/impedance/"
+    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_neighbours3'
     PATH = basepath + device_name
     if not os.path.exists(PATH):
         print("Path does not exist: ", PATH)
         return
     
-    all_powers = pd.read_pickle(f"{PATH}/stim_powers.pkl").loc[1:1,]
-    connectivity = all_powers[all_powers.index.get_level_values('stimulated')==False].groupby("el").sum()
-    print(connectivity)
+    # all_powers = pd.read_pickle(f"{PATH}/stim_powers.pkl").loc[1:1,]
+    # connectivity = all_powers[all_powers.index.get_level_values('stimulated')==False].groupby("el").sum()
+    # print(connectivity)
     
-    mea1k = np.zeros(26400, dtype=float)
-    print(np.min(mea1k))
-    print((mea1k==0).sum())
-    mea1k[connectivity.index] = connectivity.values
-    print((mea1k==0).sum())
-    print(len(np.unique(connectivity.index)))
-    print(np.min(mea1k))
+    # mea1k = np.zeros(26400, dtype=float)
+    # print(np.min(mea1k))
+    # print((mea1k==0).sum())
+    # mea1k[connectivity.index] = connectivity.values
+    # print((mea1k==0).sum())
+    # print(len(np.unique(connectivity.index)))
+    # print(np.min(mea1k))
     
-    # exit()
-    mea1k = mea1k.reshape(120,220)
+    # # exit()
+    # mea1k = mea1k.reshape(120,220)
     
-    cmap = plt.cm.get_cmap('viridis')
-    # set 0 to black
-    cmap.set_bad('black')
-    mea1k[mea1k==0] = np.nan
-    plt.imshow(mea1k, cmap=cmap)
-    plt.show()
+    # cmap = plt.cm.get_cmap('viridis')
+    # # set 0 to black
+    # cmap.set_bad('black')
+    # mea1k[mea1k==0] = np.nan
+    # plt.imshow(mea1k, cmap=cmap)
+    # plt.show()
     
     
     
-    # powers = []
-    # for config_i in range(get_n_configs(PATH)):
-    #     power = extract_stim_traces(PATH, config_i, debug=False)
-    #     powers.append(power)
-    #     pd.concat(powers).to_pickle(f"{PATH}/stim_powers.pkl")
-    # all_powers = pd.concat(powers)
+    powers = []
+    for config_i in range(get_n_configs(PATH)):
+        power = extract_stim_traces(PATH, config_i, debug=True)
+        powers.append(power)
+        pd.concat(powers).to_pickle(f"{PATH}/stim_powers.pkl")
+    all_powers = pd.concat(powers)
     
     # # save
     
