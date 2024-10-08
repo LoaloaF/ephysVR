@@ -232,7 +232,7 @@ def stimulate(PATH):
     n_xtiles = 9
     n_ytiles = 3
     
-    electrode_mapping = pd.Series([])
+    # electrode_mapping = pd.Series([])
     stim_mapping = pd.Series([])
     config_i = 0
     
@@ -250,8 +250,8 @@ def stimulate(PATH):
                                          n_ytiles = n_ytiles, 
                                          tile_size = tile_size, 
                                          overlap = overlap, 
-                                         xstep =xstep, 
-                                         ystep =ystep)
+                                         xstep = xstep, 
+                                         ystep = ystep)
         
         # el_config = np.array(list(el_tile_config.values())).reshape(30, -1)
         config_name = f"config_{config_i:03d}"
@@ -260,7 +260,7 @@ def stimulate(PATH):
 
         array = setup_array(np.array(list(el_tile_config.values())).flatten(), None, config_name)
         connected_els = [m.electrode for m in array.get_config().mappings]
-        connected_chnls = np.array([m.channel for m in array.get_config().mappings])
+        # connected_chnls = np.array([m.channel for m in array.get_config().mappings])
         # [print(m.electrode, m.channel) for m in array.get_config().mappings]
         # print(el_config)
         # print(el_tile_config)
@@ -283,17 +283,17 @@ def stimulate(PATH):
         start_saving(s, PATH, fname=config_name)
         
         # create a multiindex for the electrode mapping, to identify later
-        tuples_midx = [(config_i, el_tile_name, el_i) 
-                       for el_tile_name, el_tile in el_tile_config.items() 
-                       for el_i in el_tile.flatten()]
-        midx = pd.MultiIndex.from_tuples(tuples_midx).set_names(['config', 'tile', 'el'])
+        # tuples_midx = [(config_i, el_tile_name, el_i) 
+        #                for el_tile_name, el_tile in el_tile_config.items() 
+        #                for el_i in el_tile.flatten()]
+        # midx = pd.MultiIndex.from_tuples(tuples_midx).set_names(['config', 'tile', 'el'])
         # channels = array.get_config().get_channels_for_electrodes(el_config.flatten())
-        el_config_mapping = pd.Series(connected_chnls, index=midx)
+        # el_config_mapping = pd.Series(connected_chnls, index=midx)
         # print(el_tile_config)
         
-        electrode_mapping = pd.concat([electrode_mapping, el_config_mapping])
+        # electrode_mapping = pd.concat([electrode_mapping, el_config_mapping])
         # print(electrode_mapping.size)
-        print(f"\n\n{config_name}... {electrode_mapping.size/(26400*4)*100:.3f}%")
+        print(f"\n\n{config_name}... {len(connected_els.size)/(26400*4)*100:.3f}%")
         
 
         # n_tiles = 30
@@ -305,9 +305,9 @@ def stimulate(PATH):
         stim_set_i = 0
         while True:
             stim_set_electrodes = []
+            stim_set_midx = []
             used_up_stim_units = []
             for tile_i in range(len(el_tile_config)):
-                # print()
                 el_left_in_tile = stim_indexer[tile_i].size
                 if el_left_in_tile == 0:
                     continue
@@ -323,15 +323,14 @@ def stimulate(PATH):
                 if not success:
                     continue
                 
-                stim_set_electrodes.append(stim_el)
                 stim_indexer[tile_i] = np.delete(stim_indexer[tile_i], stim_el_idx)
+                
+                stim_set_electrodes.append(stim_el)
+                stim_set_midx.append((config_i, stim_set_i, tile_i, stim_el))
                 stim_counter += 1
                 
-                # print('tile_i:', tile_i, 'el_left_in_tile:', el_left_in_tile, 'sample:', stim_el)
-                # [print(si, len(si[1])) for si in stim_indexer.items()]
             print(stim_set_electrodes)
-                
-            midx = pd.MultiIndex.from_product([[config_name], [stim_set_i], stim_set_electrodes])
+            midx = pd.MultiIndex.from_tuples(stim_set_midx).set_names(['config', 'stim_set', 'tile', 'el'])
             stim_mapping = pd.concat([stim_mapping, pd.Series(stim_set_electrodes, index=midx)])
             
             array.download() #required
@@ -356,7 +355,7 @@ def stimulate(PATH):
         stop_saving(s)
         print("Config done.")
         config_i += 1
-        electrode_mapping.to_csv(f"{PATH}/recording_mapping.csv")
+        # electrode_mapping.to_csv(f"{PATH}/recording_mapping.csv")
         stim_mapping.to_csv(f"{PATH}/stim_mapping.csv")
         
         
