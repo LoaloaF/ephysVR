@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import time
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import sys
 import maxlab
 
@@ -427,8 +427,10 @@ def stimulate(PATH):
     
 if __name__ == "__main__":
     PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_bonded_neighbours4/"
-    
-    log2file = True
+    PATH = "/run/user/1000/gvfs/smb-share:server=yaniklab-data.local,share=large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/"
+    # PATH += "/device_headmount_new3EpoxyWalls/impedance_bonded_try2_rec1/"
+    PATH += "device_headmount_new2EpoxyWalls/impedance_bonded_meshstim_rec1"
+    log2file = False
     post_connection_sleep_time = .6
     if log2file:
         logfile = open(f"{PATH}/mxstimpy.log", "w")
