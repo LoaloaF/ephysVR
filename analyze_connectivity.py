@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as mcolors
 import matplotlib.colorbar as mcolorbar
+import cv2
 
 def viz_stim_pattern(data):
     mea1k = np.zeros(26400, dtype=float)
@@ -50,6 +51,8 @@ def viz_stim_pattern(data):
 def mean_power_connectivity(data, path):
     if 'stimulated' in data.index.names:
         connectivity = data[data.index.get_level_values('stimulated')==False].groupby("el").mean()
+        lbl = '1KhZ Power'
+        which = 'power'
     else:
         # connectivity = data.droplevel('config')
         which = 'ampl'
@@ -64,22 +67,42 @@ def mean_power_connectivity(data, path):
     mea1k = mea1k.reshape(120,220)
     mea1k[mea1k==0] = np.nan
     
+    # plt.hist(mea1k.flatten(), bins=100)
+    # plt.show()
+    
+    # cmap = plt.get_cmap('gray_r')
     cmap = plt.get_cmap('viridis')
-    vmin, vmax = connectivity.values.min(), connectivity.values.max()/2
-    vmax = 10
+    vmin, vmax = connectivity.values.min(), connectivity.values.max()/4
+    # vmax = 25
     norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    
+    
 
+    # mask = cv2.imread(f"{path}/connectivity_ampl_aligned.png")
+    # print(mask)
+    # plt.imshow(mask)
+    # plt.show()
+    
     (fig, ax), el_pads = draw_mea1k()
+    # (fig, ax), el_pads = draw_mea1k(bg='white', el_color='#dddddd')
     fig_cb, _ = draw_mea1K_colorbar(cmap, norm, lbl)
 
     # x, y = np.meshgrid(np.arange(39,39+15), np.arange(9,9+15))
     # subset = np.arange(26400).reshape(120,220)[x,y].flatten()
     
+    # subset = connectivity.index[:2023]
+    
+    
+    
     # set the color of the pads to the mean power
     for i, rec in enumerate(el_pads):
         if i in connectivity.index: #and i in subset:
             rec.set_facecolor(cmap(norm(mea1k.flatten()[i])))
-    
+            
+            # if i in subset:
+            #     rec.set_edgecolor('red')
+    print("Saving the figure")
+    print(f"{path}/connectivity_{which}.png")
     fig.savefig(f"{path}/connectivity_{which}.png", dpi=300, transparent=True, 
                 bbox_inches='tight', pad_inches=0)
     fig_cb.savefig(f"{path}/colorbar_{which}.png", dpi=300, transparent=True,
@@ -130,11 +153,15 @@ def draw_mea1k(bg='black', el_color='#222222'):
     
     i = 0
     recs = []
-    for y in np.arange(0, 2100, 17.5):
-        for x in np.arange(0, 3850, 17.5):
-            recs.append(plt.Rectangle((x+4.5, y+4.5), 9, 9, facecolor=colors[i], 
-                                      edgecolor='none'))
+    # mea1k_yx = []
+    for y in np.arange(0+17.5/4, 2100, 17.5):
+        for x in np.arange(0+17.5/4, 3850, 17.5):
+            recs.append(plt.Rectangle((x, y), 9, 9, facecolor=colors[i], 
+                                      edgecolor='none', alpha=.7))
+            # mea1k_yx.append((x+4.5,y+4.5))
             i += 1
+    # plt.scatter(*zip(*mea1k_yx), c='red', s=10)
+            
 
     [ax.add_patch(rec) for rec in recs]
     ax.set_ylim(2100, 0)
@@ -142,6 +169,7 @@ def draw_mea1k(bg='black', el_color='#222222'):
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_aspect('equal', adjustable='box')
+    [ax.spines[spine].set_visible(False) for spine in ax.spines]
     
     # plt.show()
     # plt.savefig(f"./el_pads_v3.png", dpi=300, transparent=True if bg=='transparent' else False, 
@@ -153,7 +181,12 @@ def main():
     basepath = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/"
     device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_neighbours3'
     device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent1024_rec2'
-    # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleAll'
+    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_ext1KHz_rec3'
+    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_dry_ext1KHz_rec4'
+    
+    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_meshstim_rec1'
+
+    # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleElAll'
     PATH = basepath + device_name
     # PATH = "/Users/loaloa/local_data/impedance_bonded_extCurrent_singleAll"
     

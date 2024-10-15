@@ -16,7 +16,7 @@ import pandas as pd
     
 MAX_AMPL_mV = 2900.
 BITRATE = 2**10
-GAIN = 7
+GAIN = 1
 SR = 20_000
 CYCLE_LENGTH = 20
 NCYCLES = 100
@@ -112,6 +112,7 @@ def get_config_names(path):
     configs = [int(c[c.rfind('config_set')+11:c.rfind('config_set')+16]) for c in configs]
     configs = sorted(configs)
     print(f"Found {len(configs)} configurations\n")
+    # print(configs)
     return configs
 
 def get_resolution():
@@ -133,6 +134,9 @@ def get_h5_mapping(path, config_i):
             fname = f'config_set_{config_i:05}.raw.h5'
         
     with h5py.File(os.path.join(path, fname), 'r') as file:
+        # print(file.keys())
+        # print(file["settings"]['gain'].keys())
+        # exit()
         mapping = np.array([list(m) for m in file['mapping']])
         channels = mapping[:, :2].astype(int)
         channels = pd.Series(channels[:,0], index=channels[:,1]).sort_values()
@@ -140,7 +144,11 @@ def get_h5_mapping(path, config_i):
     return channels, el_xy
 
 def get_stim_mapping(path):
-    return pd.read_pickle(f"{path}/stim_mapping.pkl")
+    df = pd.read_csv(f"{path}/stim_mapping.csv", index_col=[0,1,2,3]).iloc[:,0]
+    print(df)
+    return df
+    exit()
+    # return pd.read_pickle(f"{path}/stim_mapping.pkl")
 
 def read_data(path, config_i, convert2vol=False, row_slice=slice(None), col_slice=slice(None)):
     fname = f"config_{config_i:03d}.raw.h5"
@@ -284,15 +292,31 @@ def convert_to_vol(data):
 def extract_traces(path, config_i, debug=False):
     print(f"Extracting traces for config {config_i:03d}", flush=True)
     mapping, _ = get_h5_mapping(path, config_i)
-    print(mapping.shape)
+    chnl_i = np.where(mapping.index == config_i)[0][0]
+    # chnl_i = 0
+    
     mapping = mapping.sort_values()
     traces = read_data(path, config_i, convert2vol=True, row_slice=mapping.values,)
+    # print(traces.shape)
+    # traces = pd.DataFrame(traces, index=mapping.values, )
+    
+    # for i,t in enumerate(traces):
+    #     s = bandpass_filter(t-t[0], SR, 960, 1040)
+    #     # print(sorted(s)[-10:])
+    #     # print(s.max(), end='...')
+    #     if s.max() > 3:
+    #         print(f"Channel {mapping.index[i]}, {i}")
+    #     plt.plot(s, alpha=.5)
+    # plt.show()
+    
     powers_ampl = [estimate_frequency_power(t, SR, 970, 1030,
-                                            debug=debug if i<5 else False) 
+                                            debug=debug if i == chnl_i else False) 
                    for i,t in enumerate(traces)]
     powers, amplitudes = zip(*powers_ampl)
-    data = pd.DataFrame({"power": powers, 'ampl': amplitudes}, index=mapping.index,)
-    return data
+    
+    data = pd.DataFrame({"power": powers, 'ampl': amplitudes}, index=mapping.index)
+    return data.loc[config_i].to_frame().T
+    # return data
  
 def extract_traces_parallel(PATH, config_i, debug=False):
     try:
@@ -318,12 +342,17 @@ def parallel_extract_traces(PATH, debug=False):
 def main():
     basepath = "/mnt/SpatialSequenceLearning/Simon/impedance/"
     basepath = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/"
-    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_neighbours3'
     device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent1024_rec2'
     # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleAll'
+    device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleElAll'
+    device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleElAll'
+    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_ext1KHz_Current_singelEl_rec1'
+    # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_dry_ext1KHz_rec4'
+    # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_meshstim_rec1'
     PATH = basepath + device_name
     # PATH = "/Users/loaloa/local_data/impedance_bonded_extCurrent_singleAll"
     print(PATH)
+    
     
     if not os.path.exists(PATH):
         print("Path does not exist: ", PATH)
@@ -331,16 +360,18 @@ def main():
     
     powers = []
     # for config_i in range(get_n_configs(PATH)):
-        # power = extract_stim_traces(PATH, config_i, debug=False)
-        # powers.append(power)
-        # pd.concat(powers).to_pickle(f"{PATH}/extracted_signal.pkl")
+    #     if config_i >= 90:
+    #         power = extract_stim_traces(PATH, config_i, debug=False)
+    #         powers.append(power)
+    #         pd.concat(powers).to_pickle(f"{PATH}/extracted_signal2.pkl")
     
     # mea1k = np.arange(26400).reshape(120,220)
     # x, y = np.meshgrid(np.arange(39,39+15), np.arange(9,9+15))
-    # config_names = get_config_names(PATH)
+    config_names = get_config_names(PATH)
     # config_names = [cn for cn in config_names if cn in mea1k[x, y]]
     
-    for config_i in range(get_n_configs(PATH)):
+    for config_i in config_names:
+        # if config_i == 106:
         power = extract_traces(PATH, config_i, debug=False)
         powers.append(power)
         pd.concat(powers).sort_values('ampl').to_pickle(f"{PATH}/extracted_signal.pkl")

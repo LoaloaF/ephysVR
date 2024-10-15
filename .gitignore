@@ -1,5 +1,5 @@
-*.png
 .DS_Store
-*.xcf
-
 __pycache__/
+old
+voltage_stim
+impedance_results
