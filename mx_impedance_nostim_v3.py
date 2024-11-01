@@ -115,23 +115,10 @@ def stop_saving(s):
 def main():
     random.seed(2)
     np.random.seed(2)
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_old1/impedance_rec2"
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_4983/impedance_rec2"
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new3EpoxyWalls/impedance_rec2_noGP"
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_old1CornerMarked/impedance_rec3_testingLCR"
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_old1CornerMarked/impedance_rec3_testingSCR_CAFA"
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_old1CornerMarked/impedance_rec3_testingSCR_CAFA_CATR"
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_old1CornerMarked/impedance_rec3_testingSCR_CAFA_CATR"
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_rec2_noGP_PBS/"
-    PATH = "/mnt/SpatialSequenceLearning/Simon/impedance/device_4983/impedance_rec3_externalCurrent/"
-    PRVPATH = "/run/user/1000/gvfs/smb-share:server=yaniklab-data.local,share=large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent1024_rec2"
-    PATH = "/run/user/1000/gvfs/smb-share:server=yaniklab-data.local,share=large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_bonded_dry_ext1KHz_rec4"
-    PATH = "/run/user/1000/gvfs/smb-share:server=yaniklab-data.local,share=large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/device_headmount_new2EpoxyWalls/impedance_bonded_dry_ext1KHz_Current_1024_rec2"
- 
 
-    # PATH = './impedance/rec3'
+
+    PATH = '/mnt/SpatialSequenceLearning/Simon/impedance/device_headmount_new3EpoxyWalls/connectivity_bonded4_D8_brain_1024_rec2/'
     log2file = False
-    post_connection_sleep_time = .6
     
     if log2file:
         logfile = open(f"{PATH}/mxstimpy.log", "w")
@@ -139,28 +126,39 @@ def main():
 
     s = maxlab.Saving()
 
-    all_els = np.arange(26400)
-    nsets = len(all_els)//1024 +1
+    config_fnames = os.listdir(f"./assets/mea1k_configs")
+    # print(config_fnames)
     
-    for el_set_i in range(nsets):
-        size = 1024 if el_set_i != nsets-1 else len(all_els)%1024
-        el_smple_idx = np.random.choice(np.arange(len(all_els)), 
-                        size=size, replace=False)
-        el_smple = all_els[el_smple_idx]
-        all_els = np.delete(all_els, el_smple_idx)
-        reset_MEA1K()
-
-        config_set_name = f"config_set_{el_set_i:05}"
-        array = setup_array(el_smple, stim_electrodes=None, config_name=config_set_name)
-        array.save_config(f"{PATH}/{config_set_name}.cfg")
+    # exit()
         
-
-        start_saving(s, dir_name=PATH, fname=config_set_name)
-
-        time.sleep(1)
+    for i, config_fname in enumerate(config_fnames):
+        # reset_MEA1K()
         
+        mea1k_config_name = config_fname.replace(".csv", ".cfg")
+        
+        config_set_name = f"./assets/mea1k_configs/el_config_{i:03}.csv"
+        # electrodes = pd.read_csv(config_set_name).values.flatten().astype(int)
+        # print(config_set_name, len(electrodes))
+        # array = setup_array(electrodes, stim_electrodes=None)
+        array = maxlab.chip.Array("offline")
+        array.load_config(config_set_name.replace(".csv", ".cfg"))
+        # array.reset()
+        # array.clear_selected_electrodes()
+        # array.route()
+        array.download()
+        
+        # config_set_name = f"./assets/mea1k_configs/el_config_{i:03}.csv"
+        # electrodes = pd.read_csv(config_set_name).values.flatten().astype(int)
+        # print(config_set_name, len(electrodes))
+        # array = setup_array(electrodes, stim_electrodes=None)
+        # # array.load_config(config_set_name)
+
+        start_saving(s, PATH, mea1k_config_name.replace(".cfg", ""))
+        array.save_config(f"./assets/mea1k_configs/{mea1k_config_name}")
+        time.sleep(2)
         array.close()
         stop_saving(s)
+        
 
     if log2file:
         logfile.close()
