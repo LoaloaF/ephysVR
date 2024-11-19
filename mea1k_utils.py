@@ -22,6 +22,7 @@ def setup_array(electrodes, stim_electrodes=None):
         array.select_stimulation_electrodes(stim_electrodes)
     array.route()
     array.download()
+    array.offset()
     print("Done.")
     return array
 

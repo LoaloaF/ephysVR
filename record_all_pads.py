@@ -5,14 +5,14 @@ import time
 import maxlab
 
 import ephys_constants as C
-from mea1k_utils import start_saving, stop_saving
+from mea1k_utils import start_saving, stop_saving, reset_MEA1K
 def main():
 
     # ======== PARAMETERS ========
     subdir = "implant_devices/241101_headstage09_50pad1shank/"
-    rec_dir = "ext25mVSine_1KHz_1024_rec1/"
-    rec_dir = "meshconfigs_rec1/"
-    post_download_wait_time = .6
+    rec_dir = "meshConfigs_passive_brain_rec3/"
+    # rec_dir = "meshconfigs_rec1/"
+    post_download_wait_time = 2
     rec_time = 2
     # which_configs = "all_parallel"
     which_configs = "9x3x16_meshgrid"
@@ -23,7 +23,7 @@ def main():
     configs_path = C.CODE_DIR + f"/assets/mea1k_configs/{which_configs}"
     
     s = maxlab.Saving()
-
+    reset_MEA1K(gain=512)
     for i, config_fullfname in enumerate(glob(configs_path + "/*.cfg")):
         print(f"\nConfig {i+1}/{len(glob(configs_path + '/*.cfg'))}")
         

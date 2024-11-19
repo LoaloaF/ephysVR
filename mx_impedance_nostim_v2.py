@@ -223,7 +223,7 @@ def main():
         #         print("_|_|_|_|_|_|_|_")
 
         #         time.sleep(.1)
-        #         print(f"Disconnecting {len(stim_els)} stimulation electrodes...", end="")
+        #         print(f"Disconnecting {len(stim_els)} stimulation eectrodes...", end="")
         #         for stim_el in stim_els:
         #             print(stim_el, end="...")
         #             array.disconnect_electrode_from_stimulation(stim_el)

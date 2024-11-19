@@ -33,6 +33,7 @@ def setup_array(electrodes, stim_electrodes=None, config_name="default_name"):
         array.select_stimulation_electrodes(stim_electrodes)
     array.route()
     array.download()
+    
     print("Done.")
     return array
 
