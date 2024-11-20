@@ -84,12 +84,32 @@ def get_recording_sampling_rate(path, fname):
 def get_recording_resolution(gain):
     return (MAX_AMPL_mV/ADC_RESOLUTION) /gain
 
-def convert_to_vol(data, path, fname):
+# def convert_to_vol(data, path, fname):
+#     # scale data to mv
+#     gain = get_recording_gain(path, fname)
+#     print(data)
+#     data = data.astype(np.float32)
+#     print(data)
+#     data = (data-ADC_RESOLUTION/2) *get_recording_resolution(gain)
+#     print(data)
+#     # floating/ offset
+#     data += MAX_AMPL_mV/2
+#     print(data) 
+#     return data
+
+def convert_to_vol(data, path, fname, shift_to_real_potential=True):
     # scale data to mv
     gain = get_recording_gain(path, fname)
-    data = (data.astype(float)-ADC_RESOLUTION/2) *get_recording_resolution(gain)
-    # floating/ offset
-    data += MAX_AMPL_mV/2 
+    resolution = get_recording_resolution(gain)
+    # Convert data to float16 to save space
+    if data.dtype != np.float16:
+        data = data.astype(np.float16, copy=False)
+    
+    # Perform in-place operations to save memory
+    np.subtract(data, ADC_RESOLUTION / 2, out=data)
+    np.multiply(data, resolution, out=data)
+    if shift_to_real_potential:
+        np.add(data, MAX_AMPL_mV / 2, out=data)
     return data
 
 def get_recording_version(path, fname):
@@ -127,12 +147,16 @@ def read_raw_data(path, fname, convert2vol=False, to_df=True, subtract_dc_offset
     print(f"Reading data {fname} in {path} with format "
           f"`{rec_file_fmt}`", flush=True, end='... ')
     with h5py.File(os.path.join(path, fname), 'r') as file:
-        raw_data = np.array(file[data_key][row_slice, col_slice]).astype(np.int16)
+        raw_data = np.array(file[data_key][row_slice, col_slice]).astype(np.float16)
         print(f"Done: {raw_data.shape}", flush=True)
     if convert2vol:
-        raw_data = convert_to_vol(raw_data, path, fname)
+        raw_data = convert_to_vol(raw_data, path, fname, shift_to_real_potential=False)
         if convert2uVInt:
-            raw_data = (raw_data*1000).round().astype(np.int32) # max ampl 3.3V -> 3.3 million uV -> int32
+            # raw_data = (raw_data*1000).round() #.astype(np.int32) # max ampl 3.3V -> 3.3 million uV -> int32
+            np.multiply(raw_data, 1000, out=raw_data)
+            # round inplace
+            np.rint(raw_data, out=raw_data)
+            print(raw_data)
     if subtract_dc_offset:
         raw_data -= raw_data[:,0][:, np.newaxis]
         if convert2uVInt and convert2vol:
