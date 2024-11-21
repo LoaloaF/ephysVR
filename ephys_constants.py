@@ -59,12 +59,19 @@ MEA1K_EL_TABLE_PIXEL_YX_IDX = MEA1K_EL_CENTER_TABLE_PIXEL.reset_index().set_inde
 
 
 
-
-SHANK_BASE_COLORs = {1.0: (1.0, 0.61, 0.101),
-                     3.0: (0.988, 1.0, 0.101),
-                     2.0: (0.305, 1.0, 0.101),
-                     4.0: (0.529, 0.102, 1),}
+#045180
+#006033
+#6f0074
+#9e3203
+SHANK_BASE_COLORS = {1.0: np.array((4, 81, 128))/255,
+                     3.0: np.array((0, 96, 51))/255,
+                     2.0: np.array((111, 0, 116))/255,
+                     4.0: np.array((158, 50, 3))/255,
+}
 METALLIZATION_COLOR_OFFSET = .5
+
+
+
 
 
 
