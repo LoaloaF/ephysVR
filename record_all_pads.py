@@ -9,23 +9,28 @@ from mea1k_utils import start_saving, stop_saving
 def main():
 
     # ======== PARAMETERS ========
-    subdir = "implant_devices/241101_headstage09_50pad1shank/"
-    rec_dir = "ext25mVSine_1KHz_1024_rec1/"
-    rec_dir = "meshconfigs_rec1/"
+    # subdir = "implant_devices/241101_headstage09_50pad1shank/"
+    # subdir = "mea1k_well_devices//4983/"
+    subdir = "implant_devices/241016_headstage03_46pad4shank/recordings"
+    rec_dir = "complete_padlayout_rec1"
+    # rec_dir = "meshconfigs_rec1/"
     post_download_wait_time = .6
     rec_time = 2
     # which_configs = "all_parallel"
-    which_configs = "9x3x16_meshgrid"
+    # configs_path = os.path.join(C.NAS_DIR, "mea1k_configs", '')
+    configs_basepath = os.path.join(C.NAS_DIR, "implant_devices", '241016_headstage03_46pad4shank')
+    which_configs = "full_padlayout_configs_real"
+    # which_configs = "9x3x16_meshgrid"
     # ======== PARAMETERS ========
     
-    path = C.NAS_DIR + subdir + rec_dir
+    path = os.path.join(C.NAS_DIR, subdir, rec_dir)
     print(f"Recording path exists: {os.path.exists(path)} - ", path)
-    configs_path = C.CODE_DIR + f"/assets/mea1k_configs/{which_configs}"
     
     s = maxlab.Saving()
 
-    for i, config_fullfname in enumerate(glob(configs_path + "/*.cfg")):
-        print(f"\nConfig {i+1}/{len(glob(configs_path + '/*.cfg'))}")
+    fnames = glob(os.path.join(configs_basepath, which_configs, "*.cfg"))
+    for i, config_fullfname in enumerate(fnames):
+        print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}")
         
         array = maxlab.chip.Array()
         array.load_config(config_fullfname)
