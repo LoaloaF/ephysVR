@@ -8,6 +8,7 @@ SAMPLING_RATE = 20_000
 MAX_AMPL_mV = 3300.
 ADC_RESOLUTION = 2**10
 DEVICE_NAME = '241016_headstage03_46pad4shank'
+DEVICE_NAME_RAT006 = '241016_headstage03_46pad4shank'
 SEED = 43
 
 def _delfault_paths():

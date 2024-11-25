@@ -23,7 +23,11 @@ def check_data(subdir, fname, n_plots=10, n_samples=10_000):
         
 def convert2neuroscope(subdir, fname):
     data = read_raw_data(subdir, fname, convert2vol=True,  convert2uVInt=True,
+<<<<<<< Updated upstream
                          col_slice=slice(0, 10_000*60*2), subtract_dc_offset=True)
+=======
+                         col_slice=slice(0, None), subtract_dc_offset=True)
+>>>>>>> Stashed changes
     implant_mapping = mea1k.get_implant_mapping(EC.NAS_DIR, EC.DEVICE_NAME)
     # mask to the electrodes in the data (routed in rec config)
     implant_mapping = implant_mapping[np.isin(implant_mapping.mea1k_el, data.index)]
@@ -130,12 +134,45 @@ def convert2neuroscope_iter(subdir, fname):
 
 
 def main():
+<<<<<<< Updated upstream
     subdir = os.path.join(EC.NAS_DIR,"RUN_rYL006/rYL006_P1000/2024-11-07_16-13_rYL006_P1000_MotorLearningStop_20min/")
     # /Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/
     fname = 'ephys_output.raw.h5'
     # check_data(subdir, fname, n_plots=10, n_samples=10_000)
 
     convert2neuroscope_iter(subdir, fname)
+=======
+    subdirs = [
+        # "RUN_rYL006/rYL006_P1000/2024-10-25_15-41_rYL006_P1000_MotorLearningStop_14min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-04_16-13_rYL006_P1000_MotorLearningStop_22min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-05_16-11_rYL006_P1000_MotorLearningStop_22min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-06_15-36_rYL006_P1000_MotorLearningStop_30min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-06_16-20_rYL006_P1000_MotorLearningStop_27min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-07_16-13_rYL006_P1000_MotorLearningStop_20min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-08_15-01_rYL006_P1000_MotorLearningStop_16min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-08_15-56_rYL006_P1000_MotorLearningStop_18min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-11_16-11_rYL006_P1000_MotorLearningStop_25min",
+        "RUN_rYL006/rYL006_P1000/2024-11-12_17-18_rYL006_P1000_MotorLearningStop_20min",
+    ]
+    for subdir in subdirs:
+        subdir = os.path.join(EC.NAS_DIR, subdir)
+        fname = 'ephys_output.raw.h5'
+        if not os.path.exists(os.path.join(subdir, fname)):
+            print(f"Error: {os.path.join(subdir, fname)} does not exist.")
+            continue
+        convert2neuroscope(subdir, fname)
+    
+    # subdir = os.path.join(EC.NAS_DIR,"RUN_rYL006/2024-11-01_15-47-09_active")
+    # subdir = os.path.join(EC.NAS_DIR,"RUN_rYL006/rYL006_P1000/2024-11-04_16-13_rYL006_P1000_MotorLearningStop_22min")
+    # # /Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/
+    # fname = 'ephys_output.raw.h5'
+    # # check_data(subdir, fname, n_plots=10, n_samples=10_000)
+
+    # if not os.path.exists(os.path.join(subdir, fname)):
+    #     print(f"Error: {os.path.join(subdir, fname)} does not exist.")
+        
+    # convert2neuroscope(subdir, fname)
+>>>>>>> Stashed changes
     
 if __name__ == "__main__":
     main()

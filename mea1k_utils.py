@@ -1,6 +1,8 @@
 import maxlab
+import pandas as pd
 import ephys_constants as C
 import numpy as np
+
 def reset_MEA1K(gain, enable_stimulation_power=False):
     print(f"Resetting MEA1K with gain of {gain}...", end='', flush=True)
     maxlab.util.initialize()
@@ -9,21 +11,44 @@ def reset_MEA1K(gain, enable_stimulation_power=False):
     maxlab.send(maxlab.chip.Amplifier().set_gain(gain))
     print("Done.")
 
-def setup_array(electrodes, stim_electrodes=None):
-    print(f"Setting up array with {len(electrodes)} (reset,route&download)...", end='', flush=True)
+def setup_array(electrodes, stim_electrodes=None, randomize_routing=False):
+    print(f"Setting up array with {len(electrodes)} els (reset,route&download)...", 
+          end='', flush=True)
     array = maxlab.chip.Array()
     array.reset()
     array.clear_selected_electrodes()
-    array.select_electrodes(electrodes)
-    # array.connect_all_floating_amplifiers()
-    # array.connect_amplifier_to_ringnode(0)
+    
+    if not randomize_routing:
+        array.select_electrodes(electrodes)
+        # array.connect_all_floating_amplifiers()
+        # array.connect_amplifier_to_ringnode(0)
+
+    else:
+        print("Randomizing routing...", end="", flush=True)
+        # split the electrodes into 10 groups
+        np.random.shuffle(electrodes)
+        el_groups = np.array_split(electrodes, 10)
+        for i, el_group in enumerate(el_groups):
+            array.select_electrodes(el_group, weight=i+1)
 
     if stim_electrodes is not None:
         array.select_stimulation_electrodes(stim_electrodes)
+    
     array.route()
     array.download()
     print("Done.")
     return array
+
+def try_routing(els, return_array=False, randomize_routing=False):
+    array = setup_array(els, randomize_routing=randomize_routing)
+    succ_routed = [m.electrode for m in array.get_config().mappings]
+    failed_routing = [el for el in els if el not in succ_routed]
+    if failed_routing:
+        print(f"Failed routing {len(failed_routing)}: {failed_routing}")
+    if return_array:
+        return succ_routed, failed_routing, array
+    array.close()
+    return succ_routed, failed_routing
 
 def turn_on_stimulation_units(stim_units, dac_id=0, mode='voltage'):
     print(f"Setting up stim units {len(stim_units)}...", end="", flush=True)
@@ -52,7 +77,7 @@ def turn_on_stimulation_units(stim_units, dac_id=0, mode='voltage'):
 #         seq.append(maxlab.chip.DAC(0, 512))
 #         return seq
 
-#     seq = maxlab.Sequence()
+#     seq = maxlab.Sequence()config_fullfname
 #     for i in range(nreps):
 #         for j in range(npulses):
 #             append_stimulation_pulse(seq, amplitude) # 25 *2.83mV - current mode?
@@ -115,3 +140,8 @@ def stop_saving(s):
     s.stop_recording()
     s.stop_file()
     s.group_delete_all()
+    
+def array_config2df(array):
+    rows = [(m.channel, m.electrode, m.x, m.y) for m in array.get_config().mappings]
+    config_df = pd.DataFrame(rows, columns=["channel", "electrode", "x", "y"])
+    return config_df

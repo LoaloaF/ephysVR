@@ -93,6 +93,7 @@ def extract_stim_events(path, precomputed=None, debug=True):
             plt.plot(diffdata)
             for k, v in ttls.items():
                 if k[0] == stim_set_i:
+                    
                     plt.text(v, stim_ttl[v], f"{k}", fontsize=8)
             plt.scatter(t, [65511]*len(t), color='r', s=10)
             for i in range(0, len(t), 2):
