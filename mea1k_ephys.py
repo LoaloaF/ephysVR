@@ -11,6 +11,7 @@ from xml.dom import minidom
 
 from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION
 
+
 def filter_trace(signal, sampling_rate, lowcut=None, highcut=None, order=4, btype='band'):
     nyquist = 0.5 * sampling_rate  # Nyquist frequency 
     if highcut is not None:
@@ -105,9 +106,9 @@ def process_data_chunk(data_chunk, resolution, shift_to_real_potential):
         np.add(data_chunk, MAX_AMPL_mV / 2, out=data_chunk)
     np.multiply(data_chunk, 1000, out=data_chunk)
     np.rint(data_chunk, out=data_chunk)
-    data_chunk -= data_chunk[:,0][:, np.newaxis]
-    assert np.max(data_chunk) < 2**15 and np.min(data_chunk) > -2**15, "Data is not in int16 range"
-    data_chunk = data_chunk.astype(np.int16)
+    # data_chunk -= data_chunk[:,0][:, np.newaxis]
+    # assert np.max(data_chunk) < 2**15 and np.min(data_chunk) > -2**15, "Data is not in int16 range"
+    # data_chunk = data_chunk.astype(np.int16)
     
     return data_chunk
 
@@ -195,10 +196,17 @@ def read_raw_data(path, fname, convert2vol=False, to_df=True, subtract_dc_offset
         
     print(f"Reading data {fname} in {path} with format "
           f"`{rec_file_fmt}`", flush=True, end='... ')
+    
+    start_time = time.time()
     with h5py.File(os.path.join(path, fname), 'r') as file:
-        raw_data = np.array(file[data_key][row_slice, col_slice]).astype(np.float16)
-        
+        # raw_data = np.array(file[data_key][row_slice, col_slice]).astype(np.float16)
+        raw_data = np.array(file[data_key][row_slice, col_slice])
+        raw_data = raw_data.astype(np.float16)
         print(f"Done: {raw_data.shape}", flush=True)
+          
+    end_time = time.time()
+    print(f"Decompressing time: {end_time - start_time} seconds")
+    
     start_time = time.time()
     if convert2vol:
         raw_data = convert_to_vol(raw_data, path, fname, shift_to_real_potential=False)
@@ -214,7 +222,7 @@ def read_raw_data(path, fname, convert2vol=False, to_df=True, subtract_dc_offset
     #         assert np.max(raw_data) < 2**15 and np.min(raw_data) > -2**15, "Data is not in int16 range"
     #         raw_data = raw_data.astype(np.int16)
     end_time = time.time()
-    print(f"Running time: {end_time - start_time} seconds")
+    print(f"Processing time: {end_time - start_time} seconds")
     if to_df:
         raw_data_mapping, _ = get_recording_mapping(path, fname)
         raw_data = pd.DataFrame(raw_data).reindex(raw_data_mapping.values)

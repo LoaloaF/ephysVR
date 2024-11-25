@@ -99,33 +99,59 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, nreps
 				seq.append(maxlab.system.DelaySamples(1))
 	return seq
 
-def connect_el2stim_units(array, stim_electrodes):
-    # stim_els collects electrodes that are sucessfully connected    
-    stim_els, stim_units = [], []
-    # failed_stim_els collects electrodes where no stimulation units could be connected to
-    failed_stim_els = []
-    for el in stim_electrodes:
+# def connect_el2stim_units(array, stim_electrodes):
+#     # stim_els collects electrodes that are sucessfully connected    
+#     stim_els, stim_units = [], []
+#     # failed_stim_els collects electrodes where no stimulation units could be connected to
+#     failed_stim_els = []
+#     for el in stim_electrodes:
+#         array.connect_electrode_to_stimulation(el)
+#         stim_unit = array.query_stimulation_at_electrode(el)
+        
+#         # unknown error case, could not find routing?
+#         if not stim_unit:
+#             print(f"Warning - Could not connect El{el} to a stim unit.")
+#             failed_stim_els.append(el)
+        
+#         # stim unit not used yet, 
+#         elif int(stim_unit) not in stim_units:
+#             stim_units.append(int(stim_unit))
+#             stim_els.append(el)
+            
+#             if len(stim_units) == 32:
+#                 print("Used up all 32 stim units.")
+#                 break
+        
+#         # stim unit already assigned case        
+#         else:
+#             array.disconnect_electrode_from_stimulation(el)
+#     return stim_els, stim_units, failed_stim_els
+
+def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[]):
         array.connect_electrode_to_stimulation(el)
         stim_unit = array.query_stimulation_at_electrode(el)
+        success = False
         
         # unknown error case, could not find routing?
         if not stim_unit:
             print(f"Warning - Could not connect El{el} to a stim unit.")
-            failed_stim_els.append(el)
+            success = False
         
         # stim unit not used yet, 
-        elif int(stim_unit) not in stim_units:
-            stim_units.append(int(stim_unit))
-            stim_els.append(el)
+        elif int(stim_unit) not in used_up_stim_units:
+            used_up_stim_units.append(int(stim_unit))
+            # print("connected", el, stim_unit)
+            success = True
             
-            if len(stim_units) == 32:
+            if len(used_up_stim_units) == 32:
                 print("Used up all 32 stim units.")
-                break
-        
-        # stim unit already assigned case        
-        else:
-            array.disconnect_electrode_from_stimulation(el)
-    return stim_els, stim_units, failed_stim_els
+                success = False
+
+        return success, used_up_stim_units
+
+
+
+
 
 def start_saving(s, dir_name, fname):
     s.set_legacy_format(True)
