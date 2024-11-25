@@ -36,6 +36,7 @@ def setup_array(electrodes, stim_electrodes=None, randomize_routing=False):
     
     array.route()
     array.download()
+    array.offset()
     print("Done.")
     return array
 

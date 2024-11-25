@@ -5,7 +5,7 @@ import time
 import maxlab
 
 import ephys_constants as C
-from mea1k_utils import start_saving, stop_saving
+from mea1k_utils import start_saving, stop_saving, reset_MEA1K
 def main():
 
     # ======== PARAMETERS ========
