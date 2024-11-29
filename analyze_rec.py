@@ -7,9 +7,9 @@ import seaborn
 
 import mea1k_ephys as mea1k
 import utils
-
+import time
 import ephys_constants as EC
-from mea1k_ephys import read_raw_data
+from mea1k_ephys import read_raw_data, get_recording_version
 
 from mea1k_viz import validate_shank_map, vis_depth_corr_stabiiity, draw_mea1k, compare_2_configs
 
@@ -189,6 +189,72 @@ def analyze_fullpadlayout_rec(subdir, cache='from'):
         fig.tight_layout()
         plt.show()
     
+def convert2neuroscope_iter(subdir, fname):
+    
+    rec_file_fmt = get_recording_version(subdir, fname)
+    if rec_file_fmt == 'legacy':
+        data_key = 'sig'
+    elif rec_file_fmt == 'routed':
+        data_key = 'data_store/data0000/groups/routed/raw'
+    elif rec_file_fmt == 'all_channels':
+        data_key = 'data_store/data0000/groups/all_channels/raw'
+
+    with h5py.File(os.path.join(subdir, fname), 'r') as file:
+        data_shape = file[data_key].shape    
+    
+    chunk_size = 10_000*60*2 # 1 minute of data
+    implant_isMapped = False
+    
+    for i in range(0, data_shape[1], chunk_size):
+        print("process minute: ", i//chunk_size)
+        data_chunk = read_raw_data(subdir, fname, convert2vol=True,  convert2uVInt=True,
+                                   col_slice=slice(i, i+chunk_size), subtract_dc_offset=True)
+        
+        if not implant_isMapped:
+            implant_mapping = mea1k.get_implant_mapping(EC.NAS_DIR, EC.DEVICE_NAME)
+            # mask to the electrodes in the data (routed in rec config)
+            implant_mapping = implant_mapping[np.isin(implant_mapping.mea1k_el, data_chunk.index)]
+            if implant_mapping.pad_id.isna().any():
+                print(f"Warning: {implant_mapping.pad_id.isna().sum()} recorded electrodes were not below a pad")
+            
+            # include only the electrodes that are routed to a shank
+            implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
+            # sort the electrodes by shank and depth
+            implant_mapping = implant_mapping.sort_values(['shank_id', 'depth']).reset_index(drop=True)
+            print(implant_mapping)
+            implant_isMapped = True
+        
+        # reindex the data according to shank and depth
+        data_chunk = data_chunk.loc[implant_mapping.mea1k_el]
+        
+        start_time = time.time()
+        fullfname = os.path.join(subdir, f"ephys_{len(data_chunk)}.dat")
+        with open(fullfname, 'ab') as f:
+            data_chunk.values.flatten(order='F').tofile(f)
+        
+        end_time = time.time()
+        print(f"Running time: {end_time - start_time} seconds")
+        print("Down")
+    
+    # convert electrode id to channel id (iloc basically)
+    channel_groups = implant_mapping.groupby('shank_id').apply(lambda x: x.index)
+    channel_groups = [group.values for group in channel_groups] # unpack
+
+    # color the channels, left side electrodes are slightly different
+    channel_colors_dict = {}
+    for channel_i, el_row in implant_mapping.iterrows():
+        col = EC.SHANK_BASE_COLORS[el_row.shank_id]
+        if el_row.shank_side == 'left':
+            col = utils.adjust_saturation(col, EC.METALLIZATION_COLOR_OFFSET)
+        # convert to html color
+        col = '#%02x%02x%02x' % tuple(int(255 * c) for c in col)
+        channel_colors_dict[channel_i] = {'color': col, 'anatomyColor': col, 'spikeColor': col}
+
+    # Create XML file using template
+    mea1k.create_neuroscope_xml_from_template("assets/neuroscope_template.xml", 
+                                              fullfname.replace('.dat', '.xml'),
+                                              channel_groups, channel_colors_dict)
+
 
 
 def main():
@@ -207,8 +273,25 @@ def main():
         os.path.join(EC.NAS_DIR,"RUN_rYL006/rYL006_P1100/2024-11-15_15-48_rYL006_P1100_LinearTrackStop_35min"),
         os.path.join(EC.NAS_DIR,"RUN_rYL006/rYL006_P1100/2024-11-20_17-46_rYL006_P1100_LinearTrackStop_22min"),
         os.path.join(EC.NAS_DIR,"implant_devices/241016_headstage03_46pad4shank/recordings/20241122_complete_padlayout_rec2"),
+        # "RUN_rYL006/rYL006_P1000/2024-10-25_15-41_rYL006_P1000_MotorLearningStop_14min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-04_16-13_rYL006_P1000_MotorLearningStop_22min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-05_16-11_rYL006_P1000_MotorLearningStop_22min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-06_15-36_rYL006_P1000_MotorLearningStop_30min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-06_16-20_rYL006_P1000_MotorLearningStop_27min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-07_16-13_rYL006_P1000_MotorLearningStop_20min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-08_15-01_rYL006_P1000_MotorLearningStop_16min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-08_15-56_rYL006_P1000_MotorLearningStop_18min",
+        # "RUN_rYL006/rYL006_P1000/2024-11-11_16-11_rYL006_P1000_MotorLearningStop_25min",
+        "RUN_rYL006/rYL006_P1000/2024-11-12_17-18_rYL006_P1000_MotorLearningStop_20min",
+    ]
+    for subdir in subdirs:
+        subdir = os.path.join(EC.NAS_DIR, subdir)
+        fname = 'ephys_output.raw.h5'
+        if not os.path.exists(os.path.join(subdir, fname)):
+            print(f"Error: {os.path.join(subdir, fname)} does not exist.")
+            continue
+        convert2neuroscope(subdir, fname)
     
-        ]
     fname = 'ephys_output.raw.h5'
     
     # compare_2_configs(subdirs[-2], subdirs[-1], fname)

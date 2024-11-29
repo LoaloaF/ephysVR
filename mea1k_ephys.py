@@ -2,15 +2,16 @@ import h5py
 import numpy as np
 import os
 import pandas as pd
-
 from scipy.signal import butter, filtfilt
 from scipy.signal import hilbert
-
+from multiprocessing import Pool, cpu_count
+import time
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION
 import ephys_constants as C
+
 
 def filter_trace(signal, sampling_rate, lowcut=None, highcut=None, order=4, btype='band'):
     nyquist = 0.5 * sampling_rate  # Nyquist frequency 
@@ -85,13 +86,82 @@ def get_recording_sampling_rate(path, fname):
 def get_recording_resolution(gain):
     return (MAX_AMPL_mV/ADC_RESOLUTION) /gain
 
-def convert_to_vol(data, path, fname):
+# def convert_to_vol(data, path, fname):
+#     # scale data to mv
+#     gain = get_recording_gain(path, fname)
+#     print(data)
+#     data = data.astype(np.float32)
+#     print(data)
+#     data = (data-ADC_RESOLUTION/2) *get_recording_resolution(gain)
+#     print(data)
+#     # floating/ offset
+#     data += MAX_AMPL_mV/2
+#     print(data) 
+#     return data
+
+def process_data_chunk(data_chunk, resolution, shift_to_real_potential):
+    # Perform in-place operations to save memory
+    np.subtract(data_chunk, ADC_RESOLUTION / 2, out=data_chunk)
+    np.multiply(data_chunk, resolution, out=data_chunk)
+    if shift_to_real_potential:
+        np.add(data_chunk, MAX_AMPL_mV / 2, out=data_chunk)
+    np.multiply(data_chunk, 1000, out=data_chunk)
+    np.rint(data_chunk, out=data_chunk)
+    # data_chunk -= data_chunk[:,0][:, np.newaxis]
+    # assert np.max(data_chunk) < 2**15 and np.min(data_chunk) > -2**15, "Data is not in int16 range"
+    # data_chunk = data_chunk.astype(np.int16)
+    
+    return data_chunk
+
+
+def convert_to_vol_chunk(data_chunk, resolution, shift_to_real_potential):
+    # Perform in-place operations to save memory
+    np.subtract(data_chunk, ADC_RESOLUTION / 2, out=data_chunk)
+    np.multiply(data_chunk, resolution, out=data_chunk)
+    if shift_to_real_potential:
+        np.add(data_chunk, MAX_AMPL_mV / 2, out=data_chunk)
+    return data_chunk
+
+def convert_to_vol(data, path, fname, shift_to_real_potential=True):
     # scale data to mv
     gain = get_recording_gain(path, fname)
-    data = (data.astype(float)-ADC_RESOLUTION/2) *get_recording_resolution(gain)
-    # floating/ offset
-    data += MAX_AMPL_mV/2 
+    resolution = get_recording_resolution(gain)
+    
+    # Convert data to float16 to save space
+    if data.dtype != np.float16:
+        data = data.astype(np.float16, copy=False)
+    
+    # Determine the number of chunks and the chunk size
+    num_chunks = cpu_count()
+    chunk_size = len(data) // num_chunks
+    
+    # Create a list of data chunks
+    data_chunks = [data[i*chunk_size:(i+1)*chunk_size] for i in range(num_chunks)]
+    
+    # Create a pool of workers
+    with Pool(processes=num_chunks) as pool:
+        # Process each chunk in parallel
+        results = pool.starmap(process_data_chunk, [(chunk, resolution, shift_to_real_potential) for chunk in data_chunks])
+    
+    # Combine the results back into a single array
+    data = np.concatenate(results)
+    
     return data
+
+# def convert_to_vol(data, path, fname, shift_to_real_potential=True):
+#     # scale data to mv
+#     gain = get_recording_gain(path, fname)
+#     resolution = get_recording_resolution(gain)
+#     # Convert data to float16 to save space
+#     if data.dtype != np.float16:
+#         data = data.astype(np.float16, copy=False)
+    
+#     # Perform in-place operations to save memory
+#     np.subtract(data, ADC_RESOLUTION / 2, out=data)
+#     np.multiply(data, resolution, out=data)
+#     if shift_to_real_potential:
+#         np.add(data, MAX_AMPL_mV / 2, out=data)
+#     return data
 
 def get_recording_version(path, fname):
     with h5py.File(os.path.join(path, fname), 'r') as file:
@@ -127,18 +197,33 @@ def read_raw_data(path, fname, convert2vol=False, to_df=True, subtract_dc_offset
         
     print(f"Reading data {fname} in {path} with format "
           f"`{rec_file_fmt}`", flush=True, end='... ')
+    
+    start_time = time.time()
     with h5py.File(os.path.join(path, fname), 'r') as file:
-        raw_data = np.array(file[data_key][row_slice, col_slice]).astype(np.int16)
+        # raw_data = np.array(file[data_key][row_slice, col_slice]).astype(np.float16)
+        raw_data = np.array(file[data_key][row_slice, col_slice])
+        raw_data = raw_data.astype(np.float16)
         print(f"Done: {raw_data.shape}", flush=True)
+          
+    end_time = time.time()
+    print(f"Decompressing time: {end_time - start_time} seconds")
+    
+    start_time = time.time()
     if convert2vol:
-        raw_data = convert_to_vol(raw_data, path, fname)
-        if convert2uVInt:
-            raw_data = (raw_data*1000).round().astype(np.int32) # max ampl 3.3V -> 3.3 million uV -> int32
-    if subtract_dc_offset:
-        raw_data -= raw_data[:,0][:, np.newaxis]
-        if convert2uVInt and convert2vol:
-            assert np.max(raw_data) < 2**15 and np.min(raw_data) > -2**15, "Data is not in int16 range"
-            raw_data = raw_data.astype(np.int16)
+        raw_data = convert_to_vol(raw_data, path, fname, shift_to_real_potential=False)
+    #     if convert2uVInt:
+    #         # raw_data = (raw_data*1000).round() #.astype(np.int32) # max ampl 3.3V -> 3.3 million uV -> int32
+    #         np.multiply(raw_data, 1000, out=raw_data)
+    #         # round inplace
+    #         np.rint(raw_data, out=raw_data)
+    #         print(raw_data)
+    # if subtract_dc_offset:
+    #     raw_data -= raw_data[:,0][:, np.newaxis]
+    #     if convert2uVInt and convert2vol:
+    #         assert np.max(raw_data) < 2**15 and np.min(raw_data) > -2**15, "Data is not in int16 range"
+    #         raw_data = raw_data.astype(np.int16)
+    end_time = time.time()
+    print(f"Processing time: {end_time - start_time} seconds")
     if to_df:
         raw_data_mapping, _ = get_recording_mapping(path, fname)
         raw_data = pd.DataFrame(raw_data).reindex(raw_data_mapping.values)
@@ -295,20 +380,20 @@ def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
         f.write(f"pad = [{pad_size} {pad_size}];\n\n")
     
 def second_recording():
-    # PATH = '/Users/loaloa/local_data/2024-10-21_16-08_rYL006_P0500_MotorLearning_3min'
-    PATH = '/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Other/mea1k_first'
-    fname = 'ephys_output.raw.h5'
-    data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
-    mapping, _ = get_recording_mapping(PATH, fname)
+    # # PATH = '/Users/loaloa/local_data/2024-10-21_16-08_rYL006_P0500_MotorLearning_3min'
+    # PATH = '/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Other/mea1k_first'
+    # fname = 'ephys_output.raw.h5'
+    # data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
+    # mapping, _ = get_recording_mapping(PATH, fname)
     
-    # # routed
-    PATH = '/Users/loaloa/local_data'
-    fname = 'Trace_20241025_15_35_38.raw.h5'
-    data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
-    mapping, _ = get_recording_mapping(PATH, fname)
+    # # # routed
+    # PATH = '/Users/loaloa/local_data'
+    # fname = 'Trace_20241025_15_35_38.raw.h5'
+    # data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
+    # mapping, _ = get_recording_mapping(PATH, fname)
     
     # # all chaannels
-    PATH = '/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/RUN_rYL006/rYL006_P1000/2024-10-25_15-41_rYL006_P1000_MotorLearningStop_14min/'
+    PATH = '/mnt/SpatialSequenceLearning/RUN_rYL006/rYL006_P1100/2024-11-15_15-48_rYL006_P1100_LinearTrackStop_35min/'
     fname = 'ephys_output.raw.h5'
     data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
     mapping, _ = get_recording_mapping(PATH, fname)
