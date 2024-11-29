@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 import os
+import scipy.cluster.hierarchy
+import seaborn
+
 
 import mea1k_ephys as mea1k
 import utils
@@ -8,16 +11,16 @@ import utils
 import ephys_constants as EC
 from mea1k_ephys import read_raw_data
 
-from mea1k_viz import validate_shank_map, vis_depth_corr_stabiiity
+from mea1k_viz import validate_shank_map, vis_depth_corr_stabiiity, draw_mea1k, compare_2_configs
+
+import matplotlib.pyplot as plt
 
 def check_data(subdir, fname, n_plots=10, n_samples=10_000, shank_id=1, 
                channel_subset=None,
                min_depth=2000, max_depth=6000, scaler=100,  shank_side=None):
     
     implant_mapping = mea1k.get_implant_mapping(EC.NAS_DIR, EC.DEVICE_NAME)
-    print(implant_mapping)
-    print(implant_mapping[implant_mapping.routed].mea1k_connectivity.sort_values())
-    exit()
+
     for i in range(n_plots):
         data = mea1k.read_raw_data(subdir, fname, convert2vol=True, to_df=True,
                                    subtract_dc_offset=True, convert2uVInt=True, 
@@ -95,11 +98,96 @@ def analyze_depth_corr(subdirs, fname, timeslice=20_000*1*1):
         
     all_corrs = pd.concat(all_corrs)
     vis_depth_corr_stabiiity(all_corrs)
-    
-    
-    
-    
 
+def analyze_fullpadlayout_rec(subdir, cache='from'):
+    implant_mapping = mea1k.get_implant_mapping(EC.NAS_DIR, EC.DEVICE_NAME)
+    if cache == 'from':
+        all_data = pd.read_pickle(os.path.join(EC.LOCAL_DATA_DIR, "", "fullpadlayout_rec.pkl"))
+    else:
+        fnames = os.listdir(subdir)
+        all_data = []
+        for i,fname in enumerate(fnames):
+            print(f"{i}/{len(fnames)}")
+            data = read_raw_data(subdir, fname, convert2vol=True,
+                                subtract_dc_offset=True)
+            data, _ = mea1k.assign_mapping_to_data(data, implant_mapping)
+            all_data.append(data)
+            # print(data)
+        all_data = pd.concat(all_data)
+        if cache == 'to':
+            all_data.to_pickle(os.path.join(EC.LOCAL_DATA_DIR, "", "fullpadlayout_rec.pkl"))
+    print(all_data.sort_index())
+    implant_mapping = implant_mapping.set_index('mea1k_el')
+    
+    # (fig, ax), el_rec = draw_mea1k()
+    # for el_i, el_rec in enumerate(els):
+    #     if el_i not in all_data.index.get_level_values('mea1k_el'):
+    #         continue
+    #     el_col = implant_mapping.loc[el_i, ['r', 'g', 'b']].values.flatten()/255
+    #     el_rec.set_facecolor(el_col)
+    # plt.show()
+    
+    fig, axes = plt.subplots(nrows=10, ncols=2, figsize=(19,10), width_ratios=(.9,.05))
+    scaler = 30
+    for shank_id in all_data.index.get_level_values('shank_id').unique():
+        if shank_id not in (1,2): 
+            continue
+        
+        data = all_data.loc[shank_id].sort_index(ascending=False).droplevel('shank_side')
+        print(data)
+        for polyimide_el_i, el_depth in enumerate(data.index.get_level_values('depth').unique()):
+            polyimide_el_all_mea1k_els = data.loc[el_depth]            
+            el_info = implant_mapping.reindex(polyimide_el_all_mea1k_els.index).sort_values('connectivity_order')
+            el_info = el_info[el_info.mea1k_connectivity.notnull()]
+            print(el_info)
+            polyimide_el_all_mea1k_els = polyimide_el_all_mea1k_els.reindex(el_info.index)
+            
+            # [el_rec[el_i].set_facecolor('red') for el_i in polyimide_el_all_mea1k_els.index]
+            # order = el_info.connnectivity_order.values
+            
+            connectivity = el_info.mea1k_connectivity.values
+            connectivity = np.clip(connectivity, 0, 25)
+            # ylocs = polyimide_el_i*200 + connectivity
+            traces = (polyimide_el_all_mea1k_els.values[:, :20_000]*scaler)
+            print(traces)
+            # print(traces.shape)
+            # col = el_info[['r', 'g', 'b']].values[0]/255
+            # np.random.shuffle(col)
+            # print(col)
+            
+            # get a rnadom color
+            col = np.random.rand(3)
+            
+            alpha = np.ones(traces.shape[0])
+            alpha[connectivity < 20] = 0.3
+            # alpha = np.clip(alpha, 0.4, 1)
+            for i in range(traces.shape[0]):
+                axes[polyimide_el_i,0].plot(traces[i], color=col, alpha=alpha[i])
+            # ax.plot(traces, color=col)
+            # axes.axhline(ylocs[0], color='black', linestyle='--')
+            # turn of axis labels
+            axes[polyimide_el_i,0].set_yticks([])
+            axes[polyimide_el_i,0].set_xticks([])
+            
+            corr = np.corrcoef(traces)
+            
+            # cluster
+            linkage = scipy.cluster.hierarchy.linkage(corr, method='ward')
+            dend = scipy.cluster.hierarchy.dendrogram(linkage, ax=axes[polyimide_el_i,1], no_labels=True)
+            
+            seaborn.clustermap(corr, row_linkage=linkage, col_linkage=linkage)
+            
+            
+            # axes[polyimide_el_i,1].imshow(corr, aspect='equal')
+            # axes[polyimide_el_i,1].set_yticks([])
+            # axes[polyimide_el_i,1].set_xticks([])
+            
+            
+            
+            if polyimide_el_i >= 1:
+                break
+        fig.tight_layout()
+        plt.show()
     
 
 
@@ -116,20 +204,32 @@ def main():
         os.path.join(EC.NAS_DIR,"RUN_rYL006/rYL006_P1000/2024-11-11_16-11_rYL006_P1000_MotorLearningStop_25min"),
         os.path.join(EC.NAS_DIR,"RUN_rYL006/rYL006_P1000/2024-11-12_17-18_rYL006_P1000_MotorLearningStop_20min"),
         os.path.join(EC.NAS_DIR,"RUN_rYL006/rYL006_P1000/2024-11-13_16-31_rYL006_P1000_MotorLearningStop_15min"),
+        os.path.join(EC.NAS_DIR,"RUN_rYL006/rYL006_P1100/2024-11-15_15-48_rYL006_P1100_LinearTrackStop_35min"),
+        os.path.join(EC.NAS_DIR,"RUN_rYL006/rYL006_P1100/2024-11-20_17-46_rYL006_P1100_LinearTrackStop_22min"),
+        os.path.join(EC.NAS_DIR,"implant_devices/241016_headstage03_46pad4shank/recordings/20241122_complete_padlayout_rec2"),
+    
         ]
     fname = 'ephys_output.raw.h5'
     
-    # check_data(subdirs[-1], fname, n_plots=10, n_samples=10_000, shank_id=1, 
-    #            min_depth=0, max_depth=6500, scaler=150, shank_side='right')
-    check_data(subdirs[-1], fname, n_plots=10, n_samples=10_000, shank_id=2, 
-               min_depth=0, max_depth=11000, scaler=150, channel_subset=[
-                   [9, 9, 10, 13, 19, 45, 48, 69, 89, 95, 96, 105, 105, 107, 107, 108, 113, 119,
-                    122, 122, 126, 141, 143, 176, 277, 277, 297, 308, 339, 339, 336, 342, 346]
-               ])
+    # compare_2_configs(subdirs[-2], subdirs[-1], fname)
+    # plot_pad_alignment()
+    
+    # check_data(subdirs[-1], fname, n_plots=3, n_samples=10_000, shank_id=1, 
+    #            min_depth=0, max_depth=6500, scaler=.4, shank_side='right')
+    # check_data(subdirs[-1], fname, n_plots=3, n_samples=10_000, shank_id=2, 
+    #            min_depth=4000, max_depth=8000, scaler=.4,)# shank_side='right')
+    # check_data(subdirs[-1], fname, n_plots=10, n_samples=10_000, shank_id=2, 
+    #            min_depth=0, max_depth=11000, scaler=150, channel_subset=[
+    #                [9, 9, 10, 13, 19, 45, 48, 69, 89, 95, 96, 105, 105, 107, 107, 108, 113, 119,
+    #                 122, 122, 126, 141, 143, 176, 277, 277, 297, 308, 339, 339, 336, 342, 346]
+    #            ])
     # convert2neuroscope(subdir, fname, timeslice=20_000*1*1) # samples * seconds
     # analyze_depth_corr(subdirs, fname)
     
     # mea1k.write_probe_file(subdir, fname)
+    
+    analyze_fullpadlayout_rec(subdirs[-1])
+    
         
 if __name__ == "__main__":
     main()
