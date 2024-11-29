@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION
+import ephys_constants as C
 
 def filter_trace(signal, sampling_rate, lowcut=None, highcut=None, order=4, btype='band'):
     nyquist = 0.5 * sampling_rate  # Nyquist frequency 
@@ -142,7 +143,7 @@ def read_raw_data(path, fname, convert2vol=False, to_df=True, subtract_dc_offset
         raw_data_mapping, _ = get_recording_mapping(path, fname)
         raw_data = pd.DataFrame(raw_data).reindex(raw_data_mapping.values)
         raw_data.index = raw_data_mapping.index
-        raw_data.sort_index(inplace=True)
+        # raw_data.sort_index(inplace=True)
         raw_data.index.name = 'el'
 
         if rec_file_fmt != 'legacy':
@@ -181,6 +182,24 @@ def get_implant_mapping(nas_dir, device_name):
                              f'bonding_electrode_map_46pad4shank.csv')
     bonding_electrode_map = pd.read_csv(fullfname, index_col=0)
     return bonding_electrode_map
+
+def assign_mapping_to_data(data, implant_mapping, 
+                           shank_depth_side_multiindex=True):
+    # mask to the electrodes in the data (routed in rec config)
+    implant_mapping = implant_mapping[np.isin(implant_mapping.mea1k_el, data.index)]
+    if implant_mapping.pad_id.isna().any():
+        print(f"Warning: {implant_mapping.pad_id.isna().sum()} recorded electrodes were not below a pad")
+    
+    # include only the electrodes that are routed to a shank
+    implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
+    # sort the electrodes by shank and depth
+    cols = ['shank_id', 'depth', 'shank_side', 'mea1k_el']
+    implant_mapping = implant_mapping.sort_values(cols).reset_index(drop=True)
+    # reindex the data according to shank and depth
+    data = data.loc[implant_mapping.mea1k_el]
+    if shank_depth_side_multiindex:
+        data.index = pd.MultiIndex.from_frame(implant_mapping[cols])
+    return data, implant_mapping
 
 def create_neuroscope_xml_from_template(template_filename, output_filename, 
                                         channel_groups, channel_colors_dict):
@@ -235,23 +254,45 @@ def create_neuroscope_xml_from_template(template_filename, output_filename,
     with open(output_filename, "w") as f:
         f.write(pretty_xml)
 
+def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
+    data = read_raw_data(subdir, fname, convert2vol=True,  convert2uVInt=True,
+                         col_slice=slice(0, 1000), subtract_dc_offset=True)
+    implant_mapping = get_implant_mapping(C.NAS_DIR, C.DEVICE_NAME)
+    data, implant_mapping = assign_mapping_to_data(data, implant_mapping)
     
+    # subset shanks
+    implant_mapping = implant_mapping[implant_mapping.shank_id.isin(shanks)]
+    print(implant_mapping)
     
+    channels = implant_mapping.index +1
+    shanks = implant_mapping.shank_id.astype(int)
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    # Use `x` and `depth` to populate geometry based on actual positions
+    geometry = np.zeros((implant_mapping.shape[0], 2))
+    geometry[:, 0] = shanks*1000  # x coo constant for each shank
+    geometry[:, 1] = implant_mapping.depth # y coo
+
+    # Write to MATLAB-readable probe file format
+    fullfname = os.path.join(subdir, f"ephys_{data.shape[0]}_ss.prb")
+    print(fullfname)
+    with open(fullfname, "w") as f:
+        f.write("% Order of the probe sites in the recording file\n")
+        f.write(f"channels = {list(channels)};\n\n")
+        
+        f.write("% Site location in micrometers (x and y)\n")
+        f.write("geometry = [\n")
+        for row in geometry:
+            f.write(f"    {row[0]}, {row[1]};\n")
+        f.write("];\n\n")
+        
+        f.write("% Shank information\n")
+        f.write(f"shank = {list(shanks)};\n\n")
+        
+        # f.write("% Reference sites to exclude\n")
+        # f.write(f"ref_sites = {ref_sites};\n\n")
+        
+        f.write("% Recording contact pad size (height x width in micrometers)\n")
+        f.write(f"pad = [{pad_size} {pad_size}];\n\n")
     
 def second_recording():
     # PATH = '/Users/loaloa/local_data/2024-10-21_16-08_rYL006_P0500_MotorLearning_3min'
