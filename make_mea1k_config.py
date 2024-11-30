@@ -120,6 +120,24 @@ def make_full_padlayout_configs(device_name, ):
             print(f"Done. Routing all pads in {config_i} configs.")
             break      
 
+
+def sample_3x3_tiles(center_el):
+    mea1k = np.arange(26400).reshape(120, 220)
+    # excl_mask = np.isin(mea1k, exclude_els)
+    # tile_size = 3
+    
+    center_y, center_x = np.where(mea1k==center_el)
+    center_y, center_x = center_y[0], center_x[0]
+    tile_indices = np.meshgrid(range(center_y-1, center_y+2), 
+                               range(center_x-1, center_x+2)) 
+    # limit to valid indices
+    tile_indices = np.array(tile_indices).reshape(2, 9)
+    tile_indices = tile_indices[:, (tile_indices[0] >= 0) & (tile_indices[0] < 120) & 
+                                  (tile_indices[1] >= 0) & (tile_indices[1] < 220)]
+    tile_els = mea1k[tile_indices[0], tile_indices[1]].T.flatten()
+    return tile_els
+
+
 def get_all_9x3x16_meshgrid_electrodes():
     def new_tile_config(n_xtiles, n_ytiles, tile_size, overlap, xstep, ystep, 
                         debug_canvas=None):
@@ -265,6 +283,74 @@ def make_9x3x16_meshgrid_config(config_dirname):
             print(f"Done. Routing all pads in {config_i} configs.")
             break 
     
+def make_3x3_stim_config(config_dirname):
+    fulldirname = os.path.join(C.NAS_DIR, "mea1k_configs", config_dirname)
+    canvas = np.zeros((120, 220))
+    mea1k_stim_els_left = np.arange(26400)
+    
+    config_routed_els, config_stim_els, config_tile_indices = [], [], []
+    config_i, tile_i, fail_counter = 0, 0, 0
+    while True:
+        # attampt to route another 3x3 tile, with stim electrode in the center
+        stim_el = np.random.choice(np.setdiff1d(mea1k_stim_els_left, config_routed_els))
+        # print(len(mea1k_stim_els_left), end=' ')
+        tile_els = sample_3x3_tiles(stim_el)
+        
+        # _, failed_routing, array = try_routing([*config_routed_els, *tile_els], 
+        #                                        stim_electrodes=[*config_stim_els, stim_el],
+        #                                        return_array=True)
+        failed_routing = [stim_el] if np.random.rand() > 0.99 else []
+        
+        # could the new tile be routed without chaning the previous config?
+        if len(failed_routing) != 0:
+            fail_counter += 1
+            if fail_counter > 10:
+                print(f"Failed to route {len(failed_routing)} electrodes. "
+                      f"Retrying {10-fail_counter} more times.")
+                continue
+            
+            # finalize the current config, save it and start a new one
+            else:
+                print("Failed to route 10 times in a row. Stopping.")
+                # new config, save current config
+                fname = f"el_config_{config_i:03}_{tile_i:03}tiles.cfg"
+                config_fullfname = os.path.join(fulldirname, fname)
+                print(f"Saving config number {config_i:03} with {tile_i:03} "
+                      f"tiles as {config_fullfname}")
+                
+                # # csv of config
+                # config_mapping = array_config2df(array)
+                # config_mapping["tile"] = config_tile_indices
+                # config_mapping['stim'] = config_mapping.electrode.isin(config_stim_els)
+                # config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
+                # # save config in mea1k specific format
+                # array.save_config(config_fullfname)
+                # array.close()
+                
+                # update for next config
+                config_routed_els, config_stim_els, config_tile_indices = [], [], []
+                tile_i, fail_counter = 0, 0
+                config_i += 1
+
+        else:
+            canvas[stim_el//220, stim_el%220] += 5
+            canvas[tile_els//220, tile_els%220] += 1
+            
+            config_routed_els.extend(tile_els)
+            config_tile_indices.extend([tile_i]*len(tile_els))
+            config_stim_els.append(stim_el)
+            
+            tile_i += 1
+            # drop sampled electrode from the pool
+            mea1k_stim_els_left = np.setdiff1d(mea1k_stim_els_left, [stim_el])
+            if len(mea1k_stim_els_left) == 0:
+                print("Done.")
+                break
+        
+        
+    plt.imshow(canvas)
+    plt.show()
+    
     
 def main():
     # seed = 46
@@ -286,9 +372,15 @@ def main():
     # np.random.seed(seed)
     # make_full_padlayout_configs(device_name=C.DEVICE_NAME_RAT006)
     
+    # seed = 42
+    # np.random.seed(seed)
+    # make_9x3x16_meshgrid_config(config_dirname=f"9x3x16_meshgrid_seed{seed}")
+    
     seed = 42
     np.random.seed(seed)
-    make_9x3x16_meshgrid_config(config_dirname=f"9x3x16_meshgrid_seed{seed}")
+    make_3x3_stim_config(config_dirname=f"3x3_stim_seed{seed}")
+    
+
     
 if __name__ == "__main__":
     main()

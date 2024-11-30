@@ -40,10 +40,17 @@ def setup_array(electrodes, stim_electrodes=None, randomize_routing=False):
     print("Done.")
     return array
 
-def try_routing(els, return_array=False, randomize_routing=False):
-    array = setup_array(els, randomize_routing=randomize_routing)
+def try_routing(els, return_array=False, stim_electrodes=None, randomize_routing=False):
+    array = setup_array(els, stim_electrodes=stim_electrodes, randomize_routing=randomize_routing)
+    failed_routing = []
+    if stim_electrodes:
+        # print(f"Stimulation electrodes: {stim_electrodes}")
+        res = [attampt_connect_el2stim_unit(el, array, with_download=True)[0]
+               for el in stim_electrodes]
+        failed_routing = [el for i, el in enumerate(stim_electrodes) if not res[i]]
+        
     succ_routed = [m.electrode for m in array.get_config().mappings]
-    failed_routing = [el for el in els if el not in succ_routed]
+    failed_routing.extend([el for el in els if el not in succ_routed])
     if failed_routing:
         print(f"Failed routing {len(failed_routing)}: {failed_routing}")
     if return_array:
@@ -127,7 +134,7 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, nreps
 #             array.disconnect_electrode_from_stimulation(el)
 #     return stim_els, stim_units, failed_stim_els
 
-def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[]):
+def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[], with_download=False):
         array.connect_electrode_to_stimulation(el)
         stim_unit = array.query_stimulation_at_electrode(el)
         success = False
@@ -140,13 +147,17 @@ def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[]):
         # stim unit not used yet, 
         elif int(stim_unit) not in used_up_stim_units:
             used_up_stim_units.append(int(stim_unit))
-            # print("connected", el, stim_unit)
             success = True
+            # print("connected", el, stim_unit)
+            if with_download:
+                config_before = array_config2df(array)
+                array.download()
+                if config_before.equals(array_config2df(array)):
+                    success = False
             
             if len(used_up_stim_units) == 32:
                 print("Used up all 32 stim units.")
                 success = False
-
         return success, used_up_stim_units
 
 
