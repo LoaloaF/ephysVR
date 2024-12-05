@@ -14,9 +14,9 @@ from functools import partial
 
 import pandas as pd
     
-MAX_AMPL_mV = 2900.
+MAX_AMPL_mV = 3300.
 BITRATE = 2**10
-GAIN = 1
+GAIN = 120
 SR = 20_000
 CYCLE_LENGTH = 20
 NCYCLES = 100
@@ -28,6 +28,18 @@ def bandpass_filter(signal, sampling_rate, lowcut, highcut, order=4):
     
     # Create a Butterworth band-pass filter
     b, a = butter(order, [low, high], btype='band')
+    
+    # Apply the filter to the signal using filtfilt for zero-phase filtering
+    filtered_signal = filtfilt(b, a, signal)
+    
+    return filtered_signal
+
+def lowpass_filter(signal, sampling_rate, highcut, order=4):
+    nyquist = 0.5 * sampling_rate  # Nyquist frequency
+    high = highcut / nyquist
+    
+    # Create a Butterworth low-pass filter
+    b, a = butter(order, high, btype='low')
     
     # Apply the filter to the signal using filtfilt for zero-phase filtering
     filtered_signal = filtfilt(b, a, signal)
@@ -56,11 +68,19 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
     # Only keep the positive frequencies
     positive_freqs = freqs[freqs >= 1]
     positive_power_spectrum = power_spectrum[freqs >= 1]
+    # print(positive_power_spectrum)
+    # power_1KHz = positive_power_spectrum[(positive_freqs > min_band) & 
+    #                                      (positive_freqs < max_band)].max()
+    # power_300_3000KHz, mean not max
     power_1KHz = positive_power_spectrum[(positive_freqs > min_band) & 
-                                         (positive_freqs < max_band)].max()
+                                         (positive_freqs < max_band)]
+    power_1KHz = np.median(power_1KHz)
     
+    if min_band == 0:
+        signal_1khz = lowpass_filter(signal, sampling_rate, max_band)
+    else:
+        signal_1khz = bandpass_filter(signal, sampling_rate, min_band, max_band)
     
-    signal_1khz = bandpass_filter(signal, sampling_rate, min_band, max_band)
     mean_ampl, _ = extract_average_amplitude(signal_1khz)
     
     if debug:
@@ -71,7 +91,7 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
         t = np.arange(len(signal))/sampling_rate *1000
         ax[0].plot(t, signal, color='blue', alpha=.8, label='Signal')
         ax[0].set_xlabel('Time [ms]')
-        ax[0].set_yticks((-10,0,10))
+        ax[0].set_yticks(np.array((-10,0,10))/50)
         ax[0].set_ylabel(f'Δ Potential\nfrom {m:.0f} mV')
         ax[0].grid(True)
         [ax[0].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
@@ -83,33 +103,50 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
                       label=f'1KHz Power: {power_1KHz:.1e}', s=100)
         ax[1].set_xlabel('Frequency (Hz)')
         ax[1].set_ylabel('Power')
+        ax[1].set_xlim(0, 1500)
+        ax[1].set_ylim(0, 1e5//2)
         ax[1].grid(True)
         [ax[1].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
         ax[1].legend()
         
+        
         ax[2].plot(t, signal_1khz, color='blue', alpha=.5,
                    label='1KHz Bandpass Filtered Signal')
         ax[2].plot([t[0]-20,t[-1]+20], [mean_ampl,mean_ampl], color='k', 
-                   linestyle='dashed', label=f'Average Amplitude: {mean_ampl:.1f} mV')
+                   linestyle='dashed', label=f'Average Amplitude: {mean_ampl:.3f} mV')
         ax[2].set_xlabel('Time [ms]')
         ax[2].set_ylabel('Amplitude')
-        ax[2].set_ylabel(f'Δ Potential\nfrom {m:.0f} mV')
-        ax[2].set_yticks((-10,0,10))
+        ax[2].set_ylabel(f'Δ Potential\nfrom {m:.3f} mV')
+        ax[2].set_yticks(np.array((-10,0,10))/50)
         ax[2].grid(True)
         ax[2].sharex(ax[0])
         [ax[2].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
         ax[2].legend()
         plt.show()
+        
+    # print((np.abs(signal[:20] +1.37237234)))
+    # print((np.abs(signal[:20] +1.37237234) < .001).all())
+    # print()
+    # print((np.abs(signal[-20:])))
+    # print((np.abs(signal[-20:] -0.66959086)))
+    # print((np.abs(signal[-20:] -0.66959086) < .001).all())
+    
+    if (np.abs(signal[:20] +1.37237234) < .001).all() or (np.abs(signal[-20:] -0.66959086) < .001).all():
+        print("Signal is clipped")
+        return np.nan, np.nan
+        
     return power_1KHz, mean_ampl
 
 def get_n_configs(path):
     n = len(glob(os.path.join(path, "config_*.raw.h5")))
+    # n = len(glob(os.path.join(path, "el_config_*.raw.h5")))
+    
     print(f"Found {n} configurations\n")
     return n
 
 def get_config_names(path):
-    configs = glob(os.path.join(path, "config_*.raw.h5"))
-    configs = [int(c[c.rfind('config_set')+11:c.rfind('config_set')+16]) for c in configs]
+    configs = glob(os.path.join(path, "el_config_*.raw.h5"))
+    configs = [int(c[c.rfind('el_config_')+11:c.rfind('el_config')+16]) for c in configs]
     configs = sorted(configs)
     print(f"Found {len(configs)} configurations\n")
     # print(configs)
@@ -132,6 +169,8 @@ def get_h5_mapping(path, config_i):
         fname = f'config_set_{config_i:02}_0.raw.h5'
         if fname not in os.listdir(path):
             fname = f'config_set_{config_i:05}.raw.h5'
+            if fname not in os.listdir(path):
+                fname = f'el_config_{config_i:03}.raw.h5'
         
     with h5py.File(os.path.join(path, fname), 'r') as file:
         # print(file.keys())
@@ -156,6 +195,8 @@ def read_data(path, config_i, convert2vol=False, row_slice=slice(None), col_slic
         fname = f'config_set_{config_i:02d}_0.raw.h5'
         if fname not in os.listdir(path):
             fname = f'config_set_{config_i:05}.raw.h5'
+            if fname not in os.listdir(path):
+                fname = f'el_config_{config_i:03}.raw.h5'
         
     with h5py.File(os.path.join(path, fname), 'r') as file:
         print("Reading data...", flush=True)
@@ -244,6 +285,7 @@ def get_resolution():
     return (MAX_AMPL_mV/BITRATE) /GAIN
 
 def convert_to_vol(data):
+    print(data)
     # scale data to mv
     res = get_resolution()
     data = (data-BITRATE/2) *res
@@ -292,31 +334,39 @@ def convert_to_vol(data):
 def extract_traces(path, config_i, debug=False):
     print(f"Extracting traces for config {config_i:03d}", flush=True)
     mapping, _ = get_h5_mapping(path, config_i)
-    chnl_i = np.where(mapping.index == config_i)[0][0]
-    # chnl_i = 0
+    # chnl_i = np.where(mapping.index == config_i)[0][0]
+    print(mapping)
+    chnl_i = 2200
+    # if 22746 in mapping.index:
+    #     el_22746 = mapping.loc[22746]
+    #     print(el_22746)
+    #     chnl_i = el_22746
     
     mapping = mapping.sort_values()
-    traces = read_data(path, config_i, convert2vol=True, row_slice=mapping.values,)
-    # print(traces.shape)
+    traces = read_data(path, config_i, convert2vol=True, row_slice=mapping.values,
+                       col_slice=slice(20_000, 100_000))
+    print(traces.shape)
     # traces = pd.DataFrame(traces, index=mapping.values, )
     
     # for i,t in enumerate(traces):
-    #     s = bandpass_filter(t-t[0], SR, 960, 1040)
+    #     # s = bandpass_filter(t-t[0], SR, 960, 1040)
+    #     s = t-t[0]
     #     # print(sorted(s)[-10:])
     #     # print(s.max(), end='...')
-    #     if s.max() > 3:
-    #         print(f"Channel {mapping.index[i]}, {i}")
+    #     # if s.max() > 3:
+    #     #     print(f"Channel {mapping.index[i]}, {i}")
     #     plt.plot(s, alpha=.5)
     # plt.show()
-    
-    powers_ampl = [estimate_frequency_power(t, SR, 970, 1030,
-                                            debug=debug if i == chnl_i else False) 
+    # print(traces.dtype)
+    # print(traces)
+    powers_ampl = [estimate_frequency_power(t, SR, 0, 300, 
+                                            debug=debug if True else False) 
                    for i,t in enumerate(traces)]
     powers, amplitudes = zip(*powers_ampl)
     
     data = pd.DataFrame({"power": powers, 'ampl': amplitudes}, index=mapping.index)
-    return data.loc[config_i].to_frame().T
-    # return data
+    # return data.loc[config_i].to_frame().T
+    return data
  
 def extract_traces_parallel(PATH, config_i, debug=False):
     try:
@@ -345,10 +395,17 @@ def main():
     device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent1024_rec2'
     # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleAll'
     device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleElAll'
-    device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleElAll'
-    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_ext1KHz_Current_singelEl_rec1'
+    device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded2_D1_1KHz_extCurrent_singleEl_rec1'
+    # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_ext1KHz_Current_singelEl_rec1'
     # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_dry_ext1KHz_rec4'
     # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_meshstim_rec1'
+    # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_dryDay2_ext1KHz_rec6'
+    device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded4_D0_1KHz_1024_rec1'
+    # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded2_D1_singlePadStim_1uA_onelong'
+    # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded4_D0_1KHz_1024_rec1'
+    # device_name = 'device_headmount_new3EpoxyWalls/connectivity_bonded4_D8_brain_1024_rec2'
+    
+    
     PATH = basepath + device_name
     # PATH = "/Users/loaloa/local_data/impedance_bonded_extCurrent_singleAll"
     print(PATH)
@@ -359,22 +416,32 @@ def main():
         return
     
     powers = []
-    # for config_i in range(get_n_configs(PATH)):
-    #     if config_i >= 90:
-    #         power = extract_stim_traces(PATH, config_i, debug=False)
-    #         powers.append(power)
-    #         pd.concat(powers).to_pickle(f"{PATH}/extracted_signal2.pkl")
+    
+    # power = extract_traces(PATH, 0, debug=True)
+    # print(glob(f"{PATH}/*.pkl"))
+    # df = pd.read_pickle(f"{PATH}/extracted_signal_upto3k.pkl")
+    # df = pd.read_csv(f"{PATH}/extracted_signal.csv", index_col=[0])
+    # print(df)
+    # exit()
+    
+    for config_i in range(get_n_configs(PATH)):
+        # if config_i >= 90:
+        # power = extract_stim_traces(PATH, config_i, debug=False)
+        power = extract_traces(PATH, config_i, debug=True)
+        
+        powers.append(power)
+        pd.concat(powers).to_pickle(f"{PATH}/extracted_signal.pkl")
     
     # mea1k = np.arange(26400).reshape(120,220)
     # x, y = np.meshgrid(np.arange(39,39+15), np.arange(9,9+15))
-    config_names = get_config_names(PATH)
+    # config_names = get_config_names(PATH)
     # config_names = [cn for cn in config_names if cn in mea1k[x, y]]
     
-    for config_i in config_names:
-        # if config_i == 106:
-        power = extract_traces(PATH, config_i, debug=False)
-        powers.append(power)
-        pd.concat(powers).sort_values('ampl').to_pickle(f"{PATH}/extracted_signal.pkl")
+    # for config_i in config_names:
+    #     # if config_i == 106:
+    #     power = extract_traces(PATH, config_i, debug=False)
+    #     powers.append(power)
+    #     pd.concat(powers).sort_values('ampl').to_pickle(f"{PATH}/extracted_signal.pkl")
     
     
     # print(f"Done\n{PATH}/extracted_signal2.pkl")

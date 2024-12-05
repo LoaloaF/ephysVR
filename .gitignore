@@ -3,3 +3,9 @@ __pycache__/
 old
 voltage_stim
 impedance_results
+*png
+*svg
+*dat
+*csv
+*xml
+*xlsx
