@@ -5,23 +5,32 @@ import pandas as pd
 import ephys_constants as C
 
 def main():
-    implant_device_sub_dir = "Simon/impedance/device_headmount_new3EpoxyWalls/impedance_bonded4_D0_1KHz_1024_rec1"
-    # implant_device_sub_dir = "Simon/impedance/device_headmount_new3EpoxyWalls/impedance_bonded4_D0_1KHz_1024_rec1"
-    path = os.path.join(C.NAS_DIR, implant_device_sub_dir)
-
-    pads = pd.read_pickle(f"{path}/final_pads.pkl")
-    electrodes = pads.index.values
+    ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
+    HEADSTAGE_DEVICE_NAME = 'MEA1K06'
+    date = '241211'
+    batch = 5
+    IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
+    
+    fullfname = os.path.join(C.NAS_DIR, "implant_devices", IMPLANT_DEVICE_NAME, "bonding",
+                             f'bonding_mapping_{IMPLANT_DEVICE_NAME}.csv')
+    
+    bonding_mapping = pd.read_csv(fullfname, index_col=False)
+    print(bonding_mapping)
+    mea1k_els = bonding_mapping[bonding_mapping.routed==True].mea1k_el.values
+    print(mea1k_els)
+    print(len(mea1k_els))
     
     array = maxlab.chip.Array()
     array.reset()
     array.clear_selected_electrodes()
-    array.select_electrodes(electrodes)
-    print(f"Routing {len(electrodes)} electrodes...")   
+    array.select_electrodes(mea1k_els)
+    print(f"Routing {len(mea1k_els)} electrodes...")   
     array.route()
     array.download()
     
-    array.save_config(f"{path}/bonded_new.cfg")
-    print(f"Saved config to {path}/bonded_new.cfg")
+    config_fname = fullfname.replace(".csv", ".cfg")
+    array.save_config(config_fname)
+    print(f"Saved config to {config_fname}")
     
 if __name__ == "__main__":
     main()

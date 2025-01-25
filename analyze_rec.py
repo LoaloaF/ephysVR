@@ -12,6 +12,7 @@ import ephys_constants as EC
 from mea1k_ephys import read_raw_data, get_recording_version
 
 from mea1k_viz import validate_shank_map, vis_depth_corr_stabiiity, draw_mea1k, compare_2_configs
+from mea1k_viz import raster_spikes, view_spikes
 
 import matplotlib.pyplot as plt
 
@@ -38,6 +39,42 @@ def check_data(subdir, fname, n_plots=10, n_samples=10_000, shank_id=1,
 
         validate_shank_map(data, implant_mapping, scaler=scaler)
         
+def check_spikes(subdir, fname, spikes_fname, n_plots=10, n_samples=10_000, 
+                 shank_id=1, channel_subset=None, min_depth=2000, max_depth=6000, 
+                 scaler=100,  shank_side=None):
+    implant_mapping = mea1k.get_implant_mapping(EC.NAS_DIR, EC.DEVICE_NAME)
+    # for ordering
+    data = mea1k.read_raw_data(subdir, fname, to_df=True, col_slice=slice(0,1))
+    _, implant_mapping = mea1k.assign_mapping_to_data(data, implant_mapping)
+    all_spikes = pd.read_csv(os.path.join(subdir,spikes_fname), index_col=0)
+    print(all_spikes)
+
+    # first vis    
+    raster_spikes(all_spikes, implant_mapping, shank_id)
+    all_spikes.reset_index(inplace=True)
+
+    for i in range(n_plots):
+        from_smple, to_smple = i*n_samples, (i+1)*n_samples
+        data = mea1k.read_raw_data(subdir, fname, convert2vol=True, to_df=True,
+                                   subtract_dc_offset=True, convert2uVInt=True, 
+                                   col_slice=slice(from_smple, to_smple))
+        data, _ = mea1k.assign_mapping_to_data(data, implant_mapping)
+        
+        if channel_subset is not None:
+            data = data.iloc[channel_subset]
+        
+        # slice data to passed parameters (shank_id, min_depth, max_depth, shank_side)        
+        side_slice = slice(None) if shank_side is None else slice(shank_side)
+        depths = data.index.get_level_values('depth')
+        depth_mask = (depths >= min_depth) & (depths <= max_depth)
+        data = data.loc[shank_id, depth_mask, side_slice]
+
+        # validate_shank_map(data, implant_mapping, scaler=scaler)
+        spikes = all_spikes[(all_spikes['Timestamp'] >= from_smple) &
+                            (all_spikes['Timestamp'] < to_smple) &
+                            (all_spikes['Channel'].isin(data.index.unique("channel")))]
+        view_spikes(data, implant_mapping, spikes, scaler=scaler)
+        
 def convert2neuroscope(subdir, fname, timeslice=20_000*1*1):
     data = read_raw_data(subdir, fname, convert2vol=True,  convert2uVInt=True,
                          col_slice=slice(0, timeslice), subtract_dc_offset=True)
@@ -54,7 +91,7 @@ def convert2neuroscope(subdir, fname, timeslice=20_000*1*1):
     # color the channels, left side electrodes are slightly different
     channel_colors_dict = {}
     for channel_i, el_row in implant_mapping.iterrows():
-        col = EC.SHANK_BASE_COLORs[el_row.shank_id]
+        col = EC.SHANK_BASE_COLORS[el_row.shank_id]
         if el_row.shank_side == 'left':
             col = utils.adjust_saturation(col, EC.METALLIZATION_COLOR_OFFSET)
         # convert to html color
@@ -313,6 +350,9 @@ def main():
     
     analyze_fullpadlayout_rec(subdirs[-1])
     
+    spikes_fname = 'spike_data.csv'
+    check_spikes(subdirs[-1], fname, spikes_fname, n_plots=10, n_samples=10_000, shank_id=2, 
+                 min_depth=0, max_depth=10000, scaler=.4, shank_side=None)
         
 if __name__ == "__main__":
     main()

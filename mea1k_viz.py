@@ -9,7 +9,10 @@ import matplotlib.colorbar as mcolorbar
 
 from scipy.cluster.hierarchy import linkage
 
-from ephys_constants import DEVICE_NAME
+import ephys_constants as C
+import mea1k_ephys as mea1k
+from mea1k_ephys import read_raw_data
+
 
 def plot_trace(signal, positive_freqs, positive_power_spectrum, agg_power, 
                flt_signal, avg_ampl, implant_mapping=None, label=None, 
@@ -182,67 +185,309 @@ def plot_connectivity_neighbour_corr(path):
                  color='k', lw=weight,
                  alpha=weight)
     plt.show()
+
+
+def compare_2_configs(old_config_subdir, new_config_subdir, fname, timeslice=200*1*1):
+    implant_mapping = mea1k.get_implant_mapping(C.NAS_DIR, C.DEVICE_NAME)
+    old_config_data = read_raw_data(old_config_subdir, fname,
+                         col_slice=slice(0, timeslice), subtract_dc_offset=True)
+    old_config_data, _ = mea1k.assign_mapping_to_data(old_config_data, implant_mapping)
+    old_config_data = old_config_data.loc[[1,2],:]
+    
+    new_config_data = read_raw_data(new_config_subdir, fname, 
+                            col_slice=slice(0, timeslice), subtract_dc_offset=True)
+    new_config_data, _ = mea1k.assign_mapping_to_data(new_config_data, implant_mapping)
+    new_config_data = new_config_data.loc[[1,2],:]
+    
+    old_config_els = old_config_data.index.get_level_values('mea1k_el')
+    new_config_els = new_config_data.index.get_level_values('mea1k_el')
+    
+    (fig, ax), els = draw_mea1k()
+    
+    pad_circles = []
+    for el_i, el_rec in enumerate(els):
+        if el_i not in implant_mapping.mea1k_el.values:
+            continue # not measured during connectivity analysis
+        el_entry = implant_mapping[implant_mapping['mea1k_el'] == el_i].iloc[0]
+        el_rec.set_alpha(min(1, el_entry.mea1k_connectivity / 25))
+
+        if pd.isna(el_entry.pad_id):
+            continue
+        col = implant_mapping[implant_mapping['mea1k_el'] == el_i][['r', 'g', 'b']].values[0] / 255
+        # el_rec.set_facecolor(col)
+        el_rec.set_facecolor(np.array([1., 1., 1.]) * min(1, el_entry.mea1k_connectivity / 25))
+        el_rec.set_zorder(10)
+        
+        
+        if el_i%100 == 0: print(el_i, end='...', flush=True)        
+        if (el_i in old_config_els or el_i in new_config_els) and not (el_i in old_config_els and el_i in new_config_els):
+            # el_rec.set_linewidth(2)
+            # el_rec.set_edgecolor(col)
+            
+            pad_circles.append(plt.Circle((el_entry.x_aligned, el_entry.y_aligned), 
+                                          26, color=col, fill=False, linewidth=.8))
+            
+            # get the rectangle coordinates
+            lowleftx, lowlefty = el_rec.get_xy()
+            width = el_rec.get_width()
+            height = el_rec.get_height()
+            baseline = lowlefty+height/2
+            
+            if el_i in old_config_els:
+                old_trace = old_config_data.loc[pd.IndexSlice[:,:,:,el_i]].values
+                old_trace = (old_trace.flatten() /1000) +baseline
+                ax.scatter([lowleftx+width/2], [baseline], color='blue', s=20, alpha=.5,  zorder=20)
+            if el_i in new_config_els:
+                new_trace = new_config_data.loc[pd.IndexSlice[:,:,:,el_i]].values
+                new_trace = (new_trace.flatten() /1000) +baseline
+                ax.scatter([lowleftx+width/2], [baseline], color='green', s=20, alpha=.5, zorder=20)
+            # xindex = np.linspace(lowleftx, lowleftx+width, len(old_trace))
+            # ax.plot(xindex, old_trace, color='blue', alpha=.5, linewidth=1, zorder=20)
+            # ax.plot(xindex, new_trace, color='red', alpha=.5, linewidth=1, zorder=20)
+    
+    [ax.add_patch(pc) for pc in pad_circles]
+    plt.show()
+
+
+# def validate_shank_map(data, implant_mapping, shank_id=2, min_depth=0, 
+#                        max_depth=8200, scaler=80, single_side=None):
+#     print('------------------------------------')
+#     print(data)
+#     print(implant_mapping)
+    
+#     # first subset the mapping to the electrodes that are in the data
+#     shank_mapping = implant_mapping[implant_mapping.mea1k_el.isin(data.index)].set_index('mea1k_el')
+#     shank_mapping = shank_mapping[shank_mapping['shank_id'] == shank_id]
+#     # this subset has all pads, but also all electrodes below the pads
+#     all_shank_pads = implant_mapping[implant_mapping['shank_id'] == shank_id].sort_values('depth', ascending=False)
+    
+#     # right side of shank
+#     if single_side is not None:
+#         all_shank_pads = all_shank_pads[all_shank_pads.shank_side == 'right']
+    
+#     # make plot
+#     fig, (left_ax, right_ax, corr_ax) = plt.subplots(1, 3, figsize=(16, 9), sharey=True, 
+#                                             width_ratios=[.005,.9, .1])
+#     fig.subplots_adjust(wspace=0, hspace=0, right=.97, left=.03)
+#     fig.suptitle(f"{DEVICE_NAME} - {shank_mapping.shank_name.iloc[0]}", fontsize=16)
+    
+#     el_pads_rects = []
+#     prv_trace = None
+#     # iterate over all pads in the shank/ polyimide electrodes    
+#     for pad_id in all_shank_pads.pad_id.unique():
+#         # get info for the pad
+#         pad_info = all_shank_pads[all_shank_pads.pad_id == pad_id][['depth', 'metal', 'el_pair']].iloc[0]
+
+#         # draw only depth subset
+#         if min_depth <= pad_info['depth'] <= max_depth:
+#             # draw the electrode pad with color for metalization layer
+#             col = 'purple' if pad_info['metal'] == 2 else 'green'
+#             el_pads_rects.append(plt.Rectangle((0-13/2, pad_info['depth']-13/2), 
+#                                                13, 13, edgecolor=col, 
+#                                                facecolor='none', lw=1))
+#             # draw a line bewteen the electrode pairs (on same filber)
+#             el_pair_depths = all_shank_pads[all_shank_pads.el_pair == pad_info["el_pair"]].depth
+#             el_pair_depths = el_pair_depths.unique()
+#             left_ax.plot([8, 8], [min(el_pair_depths), max(el_pair_depths)], 
+#                          color='black', lw=1)
+            
+#             # check if the pad is in the data, eg is one of the electrodes below
+#             # the pad is in the data
+#             if (pad_id == shank_mapping.pad_id.values).any():
+#                 el_i = int(shank_mapping[shank_mapping.pad_id == pad_id].index[0])
+                
+#                 trace = data.loc[el_i] * scaler * -1 # negative because depth flipped
+#                 right_ax.plot(trace+pad_info['depth'], color=col, lw=1)
+#                 # right_ax.plot(-1*trace+pad_info['depth'], color='k', lw=1)
+#                 el_pads_rects[-1].set_facecolor(col)
+#                 left_ax.text(-16/2, pad_info['depth'], f"e{el_i:05d}", 
+#                              va='center', ha='right', fontsize=6)
+                
+#                 if prv_trace is not None and prv_depth is not None:
+#                     corr = np.corrcoef(prv_trace, trace)[0,1]
+#                     corr_ax.plot(corr, pad_info['depth'], 'o', color='black')
+#                     print(corr, pad_info['depth'])
+#                 prv_trace = trace.copy()
+#                 prv_depth = pad_info['depth']
+            
+#     # set up x-axis for right plot      
+#     right_ax.set_xlim(0, data.columns[-1])
+#     right_ax.set_xticklabels([f"{xt/1000:.0f}ms" for xt in right_ax.get_xticks()])
+#     # set up y-axis for right plot
+#     right_ax.yaxis.set_ticks_position('right')
+#     right_ax.yaxis.set_label_position('right')
+#     right_ax.set_ylabel('Depth (um)')
+    
+#     # draw yscale amplitude bar
+#     right_ax.plot([data.columns[-1], data.columns[-1]],  
+#                   [min_depth+50, min_depth+50+scaler], color='black', lw=4)
+#     right_ax.text(data.columns[-1], min_depth+50+scaler/2, f"1mV",
+#                     va='center', ha='left', fontsize=9)
+    
+#     # set up x, y-axis for left plot
+#     left_ax.set_xlim(-13/2, 10)
+#     left_ax.xaxis.set_visible(False)
+#     left_ax.set_ylim(max_depth, min_depth)
+#     left_ax.tick_params(axis='y', which='both', left=False, labelleft=False)
+    
+    
+#     # make the canvas for the correlation plot transparent
+#     corr_ax.set_facecolor('none')
     
 
-def validate_shank_map(data, implant_mapping, shank_id=2, min_depth=0, 
-                       max_depth=8200, scaler=80):
+#     # remove spines and add electrode pads
+#     [left_ax.add_patch(rect) for rect in el_pads_rects]
+#     [spine.set_visible(False) for spine in right_ax.spines.values()]
+#     [spine.set_visible(False) for spine in left_ax.spines.values()]
+#     [spine.set_visible(False) for spine in corr_ax.spines.values()]
+
+#     plt.show()
+
+
+def view_spikes(data, implant_mapping, spikes, scaler=80):
+    rec_els = data.index.get_level_values('mea1k_el')
+    rec_subset_mapping = implant_mapping[implant_mapping.mea1k_el.isin(rec_els)]
+    print(spikes)
+    print(data)
+    print(rec_subset_mapping)
+    
+    fig, ax = plt.subplots(figsize=(16, 9))
+    fig.subplots_adjust(wspace=0, hspace=0, right=.97, left=.03)
+    [spine.set_visible(False) for spine in ax.spines.values()]
+    ax.spines['left'].set_visible(True)
+    
+    for el_identifer, trace in data.iterrows():
+        # if el_i not in spikes.index:
+        #     continue
+        # print(el_identifer)
+        # print(trace)
+        channel = el_identifer[4]
+        depth = el_identifer[1]
+        
+        
+        trace = (trace * scaler * -1) + depth
+        ax.plot(trace.values, color='black', lw=1)
+        
+        if channel in spikes.Channel:
+            sp = spikes[spikes.Channel == channel]
+            print(trace.iloc[sp.Timestamp])
+            print(trace.iloc[sp.Timestamp]*sp.shape[0])
+            ax.scatter(sp.Timestamp, trace.iloc[sp.Timestamp], color='red', s=100, alpha=.8, marker='|')
+    
+    ax.set_ylim(rec_subset_mapping.depth.min(), rec_subset_mapping.depth.max())
+    plt.show()
+
+def raster_spikes(spikes, implant_mapping, shank_id, sample_interval_us=50):
+    # Make a raster plot of the spike times, each row is a different unit, colored by channel
+    print(spikes)
+    print(implant_mapping)
+    shank_implan_mapping = implant_mapping[implant_mapping.shank_id == shank_id]
+    fig, ax = plt.subplots(ncols=2, figsize=[10, 5], sharey=True, width_ratios=[.9, .1])
+    fig.subplots_adjust(wspace=0, hspace=0, right=.97, left=.06)
+    unique_channels = np.unique(spikes['Channel'])
+    colors = plt.cm.get_cmap('tab20', len(unique_channels))
+
+    for idx, chnl in enumerate(unique_channels):
+        channel_spikes = spikes[spikes['Channel'] == chnl]
+        chnl_depth = implant_mapping.iloc[chnl].depth
+        chnl_shank = implant_mapping.iloc[chnl].shank_id
+        if chnl_shank != shank_id:
+            continue
+        # Convert spike times from sample IDs to minutes
+        spike_times_minutes = (channel_spikes.index * sample_interval_us) / 1e6 / 60
+        ax[0].plot(spike_times_minutes, np.ones_like(spike_times_minutes) * chnl_depth, '|', markersize=2, color=colors(idx))
+
+    from_depth = shank_implan_mapping.depth.min()
+    to_depth = shank_implan_mapping.depth.max()
+    ax[0].set_ylim(to_depth + 1, from_depth - 1)
+    ax[0].set_ylabel('Depth [mm]')
+    ax[0].set_yticks(np.arange(from_depth, to_depth, 1000))
+    ax[0].set_yticklabels([f"{d//1000}" for d in ax[0].get_yticks()])
+    ax[0].set_xlabel('Time [min]')
+
+    for chnl, info in shank_implan_mapping.iterrows():
+        col = 'purple' if info.metal == 2 else 'green'
+        alpha = 1 if chnl in unique_channels else .1
+        x = ((info.depth / to_depth) * (1 if info.shank_side == 'left' else -1)) 
+        plt.scatter([x], (info.depth-to_depth)*-1, color=col, s=10, alpha=alpha, marker='s')
+        
+    ax[1].tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+    ax[0].spines['top'].set_visible(False)
+    [ax[1].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
+    ax[0].set_title(f"Raster Plot of Spike Times by Channel - Anterior long shank (HPC)")
+    plt.show()
+
+
+def validate_shank_map(data, implant_mapping, scaler):
     print('------------------------------------')
     print(data)
     print(implant_mapping)
-    
-    # first subset the mapping to the electrodes that are in the data
-    shank_mapping = implant_mapping[implant_mapping.mea1k_el.isin(data.index)].set_index('mea1k_el')
-    shank_mapping = shank_mapping[shank_mapping['shank_id'] == shank_id]
-    # this subset has all pads, but also all electrodes below the pads
-    all_shank_pads = implant_mapping[implant_mapping['shank_id'] == shank_id].sort_values('depth', ascending=False)
-    
-    # right side of shank
-    all_shank_pads = all_shank_pads[all_shank_pads.shank_side == 'right']
+    rec_els = data.index.get_level_values('mea1k_el')
+    rec_subset_mapping = implant_mapping[implant_mapping.mea1k_el.isin(rec_els)]
+    min_depth, max_depth = rec_subset_mapping.depth.min(), rec_subset_mapping.depth.max()
     
     # make plot
-    fig, (left_ax, right_ax) = plt.subplots(1, 2, figsize=(16, 9), sharey=True, 
-                                            width_ratios=[.005,.9])
-    fig.subplots_adjust(wspace=0, hspace=0, right=.9, left=.03)
-    fig.suptitle(f"{DEVICE_NAME} - {shank_mapping.shank_name.iloc[0]}", fontsize=16)
+    fig, (left_ax, right_ax, corr_ax) = plt.subplots(1, 3, figsize=(16, 9), sharey=True, 
+                                            width_ratios=[.005,.9, .1])
+    fig.subplots_adjust(wspace=0, hspace=0, right=.97, left=.03)
+    shank_id = data.index[0][0]
+    shank_name = implant_mapping[implant_mapping.shank_id == shank_id].shank_name.values[0]
+    fig.suptitle(f"{C.DEVICE_NAME} - {shank_name}", fontsize=16)
     
     el_pads_rects = []
     # iterate over all pads in the shank/ polyimide electrodes    
-    for pad_id in all_shank_pads.pad_id.unique():
+    for pad_id in implant_mapping[~implant_mapping.shank_id.isna()].pad_id.unique():
         # get info for the pad
-        pad_info = all_shank_pads[all_shank_pads.pad_id == pad_id][['depth', 'metal', 'el_pair']].iloc[0]
-
-        # draw only depth subset
-        if min_depth <= pad_info['depth'] <= max_depth:
-            # draw the electrode pad with color for metalization layer
-            col = 'purple' if pad_info['metal'] == 2 else 'green'
-            el_pads_rects.append(plt.Rectangle((0-13/2, pad_info['depth']-13/2), 
-                                               13, 13, edgecolor=col, 
-                                               facecolor='none', lw=1))
-            # draw a line bewteen the electrode pairs (on same filber)
-            el_pair_depths = all_shank_pads[all_shank_pads.el_pair == pad_info["el_pair"]].depth
-            el_pair_depths = el_pair_depths.unique()
-            left_ax.plot([8, 8], [min(el_pair_depths), max(el_pair_depths)], 
-                         color='black', lw=1)
+        metal = implant_mapping[implant_mapping.pad_id == pad_id].metal.values[0]
+        depth = implant_mapping[implant_mapping.pad_id == pad_id].depth.values[0]
+        fiber = implant_mapping[implant_mapping.pad_id == pad_id].el_pair.values[0]
+        
+        col = 'purple' if metal == 2 else 'green'
+        el_pads_rects.append(plt.Rectangle((0-13/2, depth-13/2), 
+                                            13, 13, edgecolor=col, 
+                                            facecolor='none', lw=1))
+        # draw a line bewteen the electrode pairs (on same filber)
+        el_pair_depths = implant_mapping[implant_mapping.el_pair == fiber].depth
+        el_pair_depths = el_pair_depths.unique()
+        left_ax.plot([8, 8], [min(el_pair_depths), max(el_pair_depths)], 
+                        color='black', lw=1)
+        
+        # check if the pad is in the data, eg is one of the electrodes below
+        # the pad is in the data
+        if (pad_id == rec_subset_mapping.pad_id.values).any():
+            el_i = int(rec_subset_mapping[rec_subset_mapping.pad_id == pad_id].mea1k_el)
+            idx = np.where(data.index.get_level_values('mea1k_el') == el_i)[0][0]
+            trace = data.iloc[idx] * scaler * -1 # negative because depth flipped
             
-            # check if the pad is in the data, eg is one of the electrodes below
-            # the pad is in the data
-            if (pad_id == shank_mapping.pad_id.values).any():
-                el_i = int(shank_mapping[shank_mapping.pad_id == pad_id].index[0])
+            # plot correlation of neighboring electrodes
+            trace_style = {'linestyle': 'solid', 'linewidth': 1}
+            if idx > 0 and idx < len(data)-1:
+                prv_trace = data.iloc[idx-1] * scaler * -1
+                nxt_trace = data.iloc[idx+1] * scaler * -1
+                corr_prv = np.corrcoef(prv_trace, trace)[0,1]
+                corr_nxt = np.corrcoef(nxt_trace, trace)[0,1]
+                avg_corr = max(corr_prv, corr_nxt)
+                corr_ax.scatter(avg_corr, depth, color=C.SHANK_BASE_COLORS[shank_id])
                 
-                trace = data.loc[el_i] * scaler * -1 # negative because depth flipped
-                right_ax.plot(trace+pad_info['depth'], color=col, lw=1)
-                # right_ax.plot(-1*trace+pad_info['depth'], color='k', lw=1)
-                el_pads_rects[-1].set_facecolor(col)
-                left_ax.text(-16/2, pad_info['depth'], f"e{el_i:05d}", 
-                             va='center', ha='right', fontsize=6)
+                goodtrace = avg_corr > .8
+                trace_style = {'alpha': 1 if goodtrace else .5}
             
+            # draw the actual trace
+            right_ax.plot(trace+depth, color=col, **trace_style)
+            # right_ax.plot(-1*trace+pad_info['depth'], color='k', lw=1)
+            el_pads_rects[-1].set_facecolor(col)
+            left_ax.text(-16/2, depth, f"e{el_i:05d}", 
+                            va='center', ha='right', fontsize=6)
+        
     # set up x-axis for right plot      
     right_ax.set_xlim(0, data.columns[-1])
     right_ax.set_xticklabels([f"{xt/1000:.0f}ms" for xt in right_ax.get_xticks()])
     # set up y-axis for right plot
-    right_ax.yaxis.set_ticks_position('right')
-    right_ax.yaxis.set_label_position('right')
-    right_ax.set_ylabel('Depth (um)')
+    
+    corr_ax.yaxis.set_ticks_position('right')
+    corr_ax.yaxis.set_label_position('right')
+    corr_ax.set_ylabel('Depth (um)')
+    corr_ax.set_xlabel('Depth Neighbour Correlation')
     
     # draw yscale amplitude bar
     right_ax.plot([data.columns[-1], data.columns[-1]],  
@@ -255,10 +500,76 @@ def validate_shank_map(data, implant_mapping, shank_id=2, min_depth=0,
     left_ax.xaxis.set_visible(False)
     left_ax.set_ylim(max_depth, min_depth)
     left_ax.tick_params(axis='y', which='both', left=False, labelleft=False)
+    
+    
+    # make the canvas for the correlation plot transparent
+    corr_ax.set_facecolor('none')
+    
 
     # remove spines and add electrode pads
     [left_ax.add_patch(rect) for rect in el_pads_rects]
     [spine.set_visible(False) for spine in right_ax.spines.values()]
     [spine.set_visible(False) for spine in left_ax.spines.values()]
+    [spine.set_visible(False) for spine in corr_ax.spines.values()]
 
+    plt.show()
+    
+def vis_depth_corr_stabiiity(data):
+    nshanks = len(data.index.get_level_values('shank_id').unique())
+    nsessions = len(data.index.get_level_values('session_date').unique())
+
+    # check which depth range each shank has, use for axis size scaling
+    minmax_depth = lambda shankd: (shankd.index.get_level_values('depth').min(), 
+                                   shankd.index.get_level_values('depth').max())
+    depth_limits = np.stack(data.groupby('shank_id').apply(minmax_depth).values)
+    depth_ranges = depth_limits[:,1] - depth_limits[:,0]
+    height_ratios = depth_ranges / depth_ranges.sum()
+    
+    fig, axes = plt.subplots(figsize=(14, 9), nrows=nshanks, ncols=nsessions, 
+                             sharex=True,
+                           gridspec_kw={'height_ratios': height_ratios})
+    fig.subplots_adjust(left=.03, right=.99, top=.9, bottom=.1, hspace=.1)
+    
+    for session_i, session_date in enumerate(data.index.get_level_values('session_date').unique()):
+        print(session_date)
+        session_data = data.loc[session_date]
+        axes[0, session_i].set_title(f"{session_date}") 
+        axes[-1, session_i].set_xlabel('Depth Neighbour Correlation')
+    
+        for shank_id in data.index.get_level_values('shank_id').unique():
+            shank_data = session_data.loc[shank_id]
+            ax = axes[int(shank_id)-1, session_i]
+            
+            corr, depth = shank_data.values, shank_data.index.get_level_values('depth').values
+            # ax.scatter(corr, depth,
+            #             color=C.SHANK_BASE_COLORS[shank_id], s=20, alpha=.7)
+            # change to hoiizontal bar plot
+            # print(corr, depth)
+            # for i, (c,d) in enumerate(zip(corr, depth)):
+            #     # ax.axhline(d, c, 0, color=C.SHANK_BASE_COLORS[shank_id], lw=1, alpha=.8)
+            #     ax.plot([0, c], [d, d], color=C.SHANK_BASE_COLORS[shank_id], alpha=.5, lw=2)
+            
+            if session_i != 0:
+                prv_session_data = data.loc[data.index.get_level_values('session_date').unique()[session_i-1]]
+                prv_session_data_shank = prv_session_data.loc[shank_id]
+                
+                diff_corr = np.abs(prv_session_data_shank.values-corr)
+                # plot median diff correlation
+                ax.scatter(np.mean(diff_corr[~np.isnan(diff_corr)]), np.median(depth),
+                        color='black', s=200, alpha=1, marker='|')
+                for diff_corr, depth in zip(diff_corr, depth):
+                    ax.plot([0, diff_corr], [depth, depth], lw=2,
+                             alpha=.8, color=C.SHANK_BASE_COLORS[shank_id])    
+                
+        for i, ax in enumerate(axes[:, session_i]):
+            ax.grid("on", axis="x")
+            # grid only on x-axis
+            [ax.spines[spine].set_visible(False) for spine in ax.spines]
+            ax.set_yticks([])
+            if session_i == 0:
+                ax.set_ylabel(f"Shank {i+1}")
+        
+                
+                
+        
     plt.show()
