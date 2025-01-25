@@ -9,7 +9,7 @@ import napari
 from napari.utils import DirectLabelColormap
 
 import ephys_constants as C
-from analyze_connectivity import draw_mea1k
+from mea1k_viz import draw_mea1k
 
 def align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivty_measures_path):
     path = os.path.join(C.NAS_DIR, "electrode_devices", ELECTRODE_DEVICE_NAME, 
@@ -18,11 +18,11 @@ def align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivty_mea
     print(mapping)
     
     # path = os.path.join(C.NAS_DIR, connectivty_measures_path, 'connectivity_ampl.png')
-    path = os.path.join(C.NAS_DIR, connectivty_measures_path, 'extr_connectivity_25.png')
+    path = os.path.join(C.NAS_DIR, connectivty_measures_path, 'processed', 'extr_connectivity_5.png')
     print(path)
     mea1k_connectivity_png = cv2.imread(path)[:,:,0] # black and white
     # path = os.path.join(C.NAS_DIR, connectivty_measures_path, 'ext_signal_ampl.csv')
-    path = os.path.join(C.NAS_DIR, connectivty_measures_path, 'extr_connectivity_25.csv')
+    path = os.path.join(C.NAS_DIR, connectivty_measures_path, 'processed', 'extr_connectivity_5.csv')
     mea1k_connectivity = pd.read_csv(path, index_col=[0]).sort_index()
     mea1k_connectivity.rename(columns={'connectivity': 'mea1k_connectivity'}, inplace=True)
     mea1k_connectivity.drop("ampl", inplace=True, axis=1)
@@ -93,8 +93,9 @@ def align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivty_mea
     ranks = ranks.groupby('pad_id').rank(ascending=False).sort_index()
     pad_alignment['connectivity_order'] = ranks['mea1k_connectivity']
     # the best electrode is rounted if it has a connectivity > 80%
-    pad_alignment['routed'] = ((pad_alignment['mea1k_connectivity']>20) & 
-                               (pad_alignment['connectivity_order'] == 1.0)).fillna(False)
+    pad_alignment['routed'] = ((pad_alignment['mea1k_connectivity']>0.8) & 
+                               (pad_alignment['connectivity_order'] == 1.0) &
+                               (pad_alignment['shank_id'].notna())).fillna(False)
     
     # append the electrodes that are not under any pad    
     under_pad_els = mea1k_connectivity.index.intersection(pad_alignment.mea1k_el)
@@ -129,13 +130,13 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
         if el_i not in pad_alignment.mea1k_el.values:
             continue # not measured during connectivity analysis
         el_entry = pad_alignment[pad_alignment['mea1k_el'] == el_i].iloc[0]
-        el_rec.set_alpha(min(1,el_entry.mea1k_connectivity/25))
+        el_rec.set_alpha(min(1,el_entry.mea1k_connectivity/5))
         if pd.isna(el_entry.pad_id):
             continue
         col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['r', 'g', 'b']].values[0]/255
         el_rec.set_facecolor(col)
         
-        if (el_entry.connectivity_order == 1) and (el_entry.mea1k_connectivity > .8):
+        if (el_entry.connectivity_order == 1) and (el_entry.mea1k_connectivity > .8) and el_entry.notna()["shank_id"]:
             el_rec.set_linewidth(2)
             el_rec.set_edgecolor("white")
             
@@ -149,6 +150,7 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
     plt.show()
     
 def main():
+    # rat 006
     # ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
     # HEADSTAGE_DEVICE_NAME = 'MEA1K03'
     # date = '241016'
@@ -161,18 +163,31 @@ def main():
     # # align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path)
     # plot_pad_alignment(IMPLANT_DEVICE_NAME)
     
+    # testing on high density interconnect
+    # ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
+    # HEADSTAGE_DEVICE_NAME = 'MEA1K05'
+    # date = '241129'
+    # batch = 5
+    # IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
+    # # rec_dir_name = f"{date}_ext25mV_1KHz_allels"
+    # rec_dir_name = '25mVext_oneShankbatch2_press/processed'
+    # connectivity_rec_path = os.path.join(C.NAS_DIR, 'implant_devices', 
+    #                                      IMPLANT_DEVICE_NAME, 'recordings', 
+    #                                      rec_dir_name)
+    # align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path)
+    # plot_pad_alignment(IMPLANT_DEVICE_NAME)
     
-    ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
-    HEADSTAGE_DEVICE_NAME = 'MEA1K05'
-    date = '241129'
+    # rat 011
+    ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
+    HEADSTAGE_DEVICE_NAME = 'MEA1K06'
+    date = '241211'
     batch = 5
     IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
-    # rec_dir_name = f"{date}_ext25mV_1KHz_allels"
-    rec_dir_name = '25mVext_oneShankbatch2_press/processed'
+    rec_dir_name = 'bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3'
     connectivity_rec_path = os.path.join(C.NAS_DIR, 'implant_devices', 
                                          IMPLANT_DEVICE_NAME, 'recordings', 
                                          rec_dir_name)
-    align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path)
+    # align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path)
     plot_pad_alignment(IMPLANT_DEVICE_NAME)
     
 if __name__ == '__main__':

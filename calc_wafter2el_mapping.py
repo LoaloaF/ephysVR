@@ -16,8 +16,8 @@ def detect_wafer_pads(path, precomputed=False, save=False):
     fname_base = os.path.basename(path)
     circles_fullfname = f"{path}/detected_pads_{fname_base}.csv"
     if not precomputed:
-        # image = cv2.imread(f"{path}/waferpic_{fname_base}.png")
-        image = cv2.imread(f"{path}/waferpic.png")
+        image = cv2.imread(f'{path}/waferpic_{fname_base}.png')
+        
         
         # Convert the image to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -25,23 +25,23 @@ def detect_wafer_pads(path, precomputed=False, save=False):
 
         # Use the Hough Circle Transform to detect circles
         # smaller wafer pads
-        circles = cv2.HoughCircles(blurred, 
-                                cv2.HOUGH_GRADIENT, 
-                                dp=1.4, 
-                                minDist=45, 
-                                param1=60, 
-                                param2=10, 
-                                minRadius=13, 
-                                maxRadius=27)
-        # large wafer pads
         # circles = cv2.HoughCircles(blurred, 
         #                         cv2.HOUGH_GRADIENT, 
         #                         dp=1.4, 
-        #                         minDist=65, 
-        #                         param1=50, 
-        #                         param2=20, 
-        #                         minRadius=17, 
-        #                         maxRadius=33)
+        #                         minDist=45, 
+        #                         param1=60, 
+        #                         param2=10, 
+        #                         minRadius=13, 
+        #                         maxRadius=27)
+        # large wafer pads
+        circles = cv2.HoughCircles(blurred, 
+                                cv2.HOUGH_GRADIENT, 
+                                dp=1.4, 
+                                minDist=65, 
+                                param1=50, 
+                                param2=20, 
+                                minRadius=17, 
+                                maxRadius=33)
 
         circles = np.round(circles[0, :]).astype("int")
         circles = np.array([(y, x) for (x, y, r) in circles])
@@ -616,6 +616,7 @@ def finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=True):
 if __name__ == "__main__":
     ELECTRODE_DEVICE_NAME = "H1278pad4shank"
     # ELECTRODE_DEVICE_NAME = "H1628pad1shank"
+    # ELECTRODE_DEVICE_NAME = "H1384pad4shank" # not done yet
     path = os.path.join(NAS_DIR, "electrode_devices", ELECTRODE_DEVICE_NAME)
     print(path)
 
