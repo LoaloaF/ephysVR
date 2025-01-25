@@ -12,12 +12,10 @@ def main():
     # subdir = "implant_devices/241101_headstage09_50pad1shank/"
     # subdir = "mea1k_well_devices//4983/"
     # subdir = "implant_devices/241016_headstage03_46pad4shank/recordings"
-    subdir = "headstage_devices/MEA1K06/recordings"
-    # rec_dir = "bonding4_2+2shank_B6_241209_ext5mV1Khz_innerThinShank"
-    rec_dir = "bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3"
-    post_download_wait_time = 1.6
+    subdir = "headstage_devices/MEA1K07/recordings"
+    rec_dir = "shortcut_stim_post_badGP/"
+    post_download_wait_time = .6
     rec_time = 2
-    gain = 7
     # which_configs = "all_parallel"
     configs_basepath = os.path.join(C.NAS_DIR, "mea1k_configs", '')
     # configs_basepath = os.path.join(C.NAS_DIR, "implant_devices", '241016_headstage03_46pad4shank')
@@ -28,8 +26,9 @@ def main():
     
     path = os.path.join(C.NAS_DIR, subdir, rec_dir)
     print(f"Recording path exists: {os.path.exists(path)} - ", path)
-    reset_MEA1K(gain=gain)    
+    
     s = maxlab.Saving()
+
     fnames = glob(os.path.join(configs_basepath, which_configs, "*.cfg"))
     for i, config_fullfname in enumerate(sorted(fnames)):
         print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}")

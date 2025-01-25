@@ -31,7 +31,6 @@ def bandpass_filter(signal, sampling_rate, lowcut, highcut, order=4):
     
     # Apply the filter to the signal using filtfilt for zero-phase filtering
     filtered_signal = filtfilt(b, a, signal)
-    
     return filtered_signal
 
 def extract_average_amplitude(signal):
@@ -103,7 +102,8 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
     return power_1KHz, mean_ampl
 
 def get_n_configs(path):
-    n = len(glob(os.path.join(path, "config_*.raw.h5")))
+    n = len(glob(os.path.join(path, "el_config_*.raw.h5")))
+    # n = len(glob(os.path.join(path, "config_*.raw.h5")))
     print(f"Found {n} configurations\n")
     return n
 
@@ -133,6 +133,9 @@ def get_h5_mapping(path, config_i):
         if fname not in os.listdir(path):
             fname = f'config_set_{config_i:05}.raw.h5'
         
+            if fname not in os.listdir(path):
+                fname = f'el_config_{config_i:03}.raw.h5'
+            
     with h5py.File(os.path.join(path, fname), 'r') as file:
         # print(file.keys())
         # print(file["settings"]['gain'].keys())
@@ -157,6 +160,9 @@ def read_data(path, config_i, convert2vol=False, row_slice=slice(None), col_slic
         if fname not in os.listdir(path):
             fname = f'config_set_{config_i:05}.raw.h5'
         
+            if fname not in os.listdir(path):
+                fname = f'el_config_{config_i:03}.raw.h5'
+            
     with h5py.File(os.path.join(path, fname), 'r') as file:
         print("Reading data...", flush=True)
         data = np.array(file['sig'][row_slice, col_slice])
@@ -292,7 +298,7 @@ def convert_to_vol(data):
 def extract_traces(path, config_i, debug=False):
     print(f"Extracting traces for config {config_i:03d}", flush=True)
     mapping, _ = get_h5_mapping(path, config_i)
-    chnl_i = np.where(mapping.index == config_i)[0][0]
+    # chnl_i = np.where(mapping.index == config_i)[0][0]
     # chnl_i = 0
     
     mapping = mapping.sort_values()
@@ -310,7 +316,7 @@ def extract_traces(path, config_i, debug=False):
     # plt.show()
     
     powers_ampl = [estimate_frequency_power(t, SR, 970, 1030,
-                                            debug=debug if i == chnl_i else False) 
+                                            debug=True) 
                    for i,t in enumerate(traces)]
     powers, amplitudes = zip(*powers_ampl)
     
@@ -342,6 +348,7 @@ def parallel_extract_traces(PATH, debug=False):
 def main():
     basepath = "/mnt/SpatialSequenceLearning/Simon/impedance/"
     basepath = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/"
+    basepath = "/mnt/SpatialSequenceLearning/"
     device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent1024_rec2'
     # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleAll'
     device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleElAll'
@@ -349,6 +356,7 @@ def main():
     device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_ext1KHz_Current_singelEl_rec1'
     # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_dry_ext1KHz_rec4'
     # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_meshstim_rec1'
+    device_name = "headstage_devices/MEA1K05/recordings/25mVext_oneShankbatch2_press"
     PATH = basepath + device_name
     # PATH = "/Users/loaloa/local_data/impedance_bonded_extCurrent_singleAll"
     print(PATH)
@@ -370,7 +378,9 @@ def main():
     config_names = get_config_names(PATH)
     # config_names = [cn for cn in config_names if cn in mea1k[x, y]]
     
-    for config_i in config_names:
+    # for config_i in config_names:
+    for config_i in range(get_n_configs(PATH)):
+        print(config_i)
         # if config_i == 106:
         power = extract_traces(PATH, config_i, debug=False)
         powers.append(power)

@@ -20,8 +20,8 @@ def setup_array(electrodes, stim_electrodes=None, randomize_routing=False):
     
     if not randomize_routing:
         array.select_electrodes(electrodes)
-        # array.connect_all_floating_amplifiers()
-        # array.connect_amplifier_to_ringnode(0)
+        array.connect_all_floating_amplifiers()
+        array.connect_amplifier_to_ringnode(0)
 
     else:
         print("Randomizing routing...", end="", flush=True)
@@ -36,7 +36,7 @@ def setup_array(electrodes, stim_electrodes=None, randomize_routing=False):
     
     array.route()
     array.download()
-    array.offset()
+    # maxlab.offset()
     print("Done.")
     return array
 
@@ -52,7 +52,8 @@ def try_routing(els, return_array=False, stim_electrodes=None, randomize_routing
     succ_routed = [m.electrode for m in array.get_config().mappings]
     failed_routing.extend([el for el in els if el not in succ_routed])
     if failed_routing:
-        print(f"Failed routing {len(failed_routing)}: {failed_routing}")
+        pass
+        # print(f"Failed routing {len(failed_routing)}: {failed_routing}")
     if return_array:
         return succ_routed, failed_routing, array
     array.close()
@@ -135,41 +136,46 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, nreps
 #     return stim_els, stim_units, failed_stim_els
 
 def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[], with_download=False):
-        array.connect_electrode_to_stimulation(el)
-        stim_unit = array.query_stimulation_at_electrode(el)
+    config_before = array_config2df(array)
+
+    used_up_stim_units = []
+    array.connect_electrode_to_stimulation(el)
+    stim_unit = array.query_stimulation_at_electrode(el)
+    success = False
+    # print(f"Trying to connect El{el} to stim unit {stim_unit}, used {used_up_stim_units}", flush=True)
+    
+    # unknown error case, could not find routing?
+    if not stim_unit:
+        print(f"Warning - Could not connect El{el} to a stim unit.")
         success = False
-        
-        # unknown error case, could not find routing?
-        if not stim_unit:
-            print(f"Warning - Could not connect El{el} to a stim unit.")
-            success = False
-        
-        # stim unit not used yet, 
-        elif int(stim_unit) not in used_up_stim_units:
-            used_up_stim_units.append(int(stim_unit))
-            success = True
-            # print("connected", el, stim_unit)
-            if with_download:
-                config_before = array_config2df(array)
-                array.download()
-                if config_before.equals(array_config2df(array)):
-                    success = False
-            
-            if len(used_up_stim_units) == 32:
-                print("Used up all 32 stim units.")
+    
+    # stim unit not used yet, 
+    elif int(stim_unit) not in used_up_stim_units:
+        used_up_stim_units.append(int(stim_unit))
+        success = True
+        # print("connected", el, stim_unit)
+        if with_download:
+            array.download()
+            if not config_before.equals(array_config2df(array)):
                 success = False
-        return success, used_up_stim_units
+                
+        
+        if len(used_up_stim_units) == 32:
+            print("Used up all 32 stim units.")
+            success = False
+    
+    return success, used_up_stim_units
 
 
 
 
 
-def start_saving(s, dir_name, fname):
+def start_saving(s, dir_name, fname, channels=list(range(1024))):
     s.set_legacy_format(True)
     s.open_directory(dir_name)
     s.start_file(fname)
     s.group_delete_all()
-    s.group_define(0, "all_channels", list(range(1024)))
+    s.group_define(0, "all_channels", channels)
     print(f"Successfully opened file and defined group. Starting recording {dir_name}/{fname}...")
     s.start_recording([0])
 

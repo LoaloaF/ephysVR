@@ -288,47 +288,51 @@ def make_3x3_stim_config(config_dirname):
     canvas = np.zeros((120, 220))
     mea1k_stim_els_left = np.arange(26400)
     
-    config_routed_els, config_stim_els, config_tile_indices = [], [], []
+    config_routed_els, config_stim_els, config_el2tile_map = [], [], {}
     config_i, tile_i, fail_counter = 0, 0, 0
     while True:
         # attampt to route another 3x3 tile, with stim electrode in the center
         stim_el = np.random.choice(np.setdiff1d(mea1k_stim_els_left, config_routed_els))
         # print(len(mea1k_stim_els_left), end=' ')
         tile_els = sample_3x3_tiles(stim_el)
+        if np.isin(config_routed_els, tile_els).any():
+            print("\nTile el overlap with other tiles. Skipping.")
+            continue
         
-        # _, failed_routing, array = try_routing([*config_routed_els, *tile_els], 
-        #                                        stim_electrodes=[*config_stim_els, stim_el],
-        #                                        return_array=True)
-        failed_routing = [stim_el] if np.random.rand() > 0.99 else []
+        _, failed_routing, array = try_routing([*config_routed_els, *tile_els], 
+                                               stim_electrodes=[*config_stim_els, stim_el],
+                                               return_array=True)
+        # failed_routing = [stim_el] if np.random.rand() > 0.99 else []
         
         # could the new tile be routed without chaning the previous config?
         if len(failed_routing) != 0:
-            fail_counter += 1
-            if fail_counter > 10:
-                print(f"Failed to route {len(failed_routing)} electrodes. "
-                      f"Retrying {10-fail_counter} more times.")
+            if fail_counter < 10:
+                fail_counter += 1
+                print(f"\tFail {fail_counter}/10", end=',')
                 continue
             
             # finalize the current config, save it and start a new one
             else:
+                array = try_routing(config_routed_els, stim_electrodes=config_stim_els,
+                                    return_array=True)[2]
                 print("Failed to route 10 times in a row. Stopping.")
                 # new config, save current config
                 fname = f"el_config_{config_i:03}_{tile_i:03}tiles.cfg"
                 config_fullfname = os.path.join(fulldirname, fname)
                 print(f"Saving config number {config_i:03} with {tile_i:03} "
-                      f"tiles as {config_fullfname}")
+                      f"tiles as {config_fullfname}. {len(mea1k_stim_els_left)} left\n")
                 
-                # # csv of config
-                # config_mapping = array_config2df(array)
-                # config_mapping["tile"] = config_tile_indices
-                # config_mapping['stim'] = config_mapping.electrode.isin(config_stim_els)
-                # config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
-                # # save config in mea1k specific format
-                # array.save_config(config_fullfname)
-                # array.close()
+                # csv of config
+                config_mapping = array_config2df(array)
+                config_mapping["tile"] = [config_el2tile_map[el] for el in config_mapping.electrode]
+                config_mapping['stim'] = config_mapping.electrode.isin(config_stim_els)
+                config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
+                # save config in mea1k specific format
+                array.save_config(config_fullfname)
+                array.close()
                 
                 # update for next config
-                config_routed_els, config_stim_els, config_tile_indices = [], [], []
+                config_routed_els, config_stim_els, config_el2tile_map = [], [], {}
                 tile_i, fail_counter = 0, 0
                 config_i += 1
 
@@ -337,10 +341,11 @@ def make_3x3_stim_config(config_dirname):
             canvas[tile_els//220, tile_els%220] += 1
             
             config_routed_els.extend(tile_els)
-            config_tile_indices.extend([tile_i]*len(tile_els))
+            config_el2tile_map.update({el:tile_i for el in tile_els})
             config_stim_els.append(stim_el)
             
             tile_i += 1
+            fail_counter = 0
             # drop sampled electrode from the pool
             mea1k_stim_els_left = np.setdiff1d(mea1k_stim_els_left, [stim_el])
             if len(mea1k_stim_els_left) == 0:
@@ -370,7 +375,7 @@ def main():
     # # TODO check that this still runs fine, then detele try_bonded_routing
     # seed = 1
     # np.random.seed(seed)
-    # make_full_padlayout_configs(device_name=C.DEVICE_NAME_RAT006)
+    # make_full_padlayout_configs(device_name=C.DEVICE_NAMfE_RAT006)
     
     # seed = 42
     # np.random.seed(seed)

@@ -1,210 +1,109 @@
-import os
 import numpy as np
+import os
+import h5py
+import mea1k_ephys as mea1k
+import utils
+import time
+import ephys_constants as EC
+from mea1k_ephys import read_raw_data, get_recording_version, filter_trace, extract_average_amplitude
+from extract_connectivity import estimate_frequency_power, bandpass_filter
 import pandas as pd
+from mea1k_viz import draw_mea1k
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import matplotlib.colors as mcolors
-import matplotlib.colorbar as mcolorbar
-import cv2
 
-def viz_stim_pattern(data):
-    mea1k = np.zeros(26400, dtype=float)
-    
-    config = 0
-    # tile = 1
-    stimset = 1
-    print(data.index.unique("stim_set"))
-    
-    # print(data.loc[config, stimset])
-    all_stimulated = []
-    for tile in data.loc[config, stimset].index.get_level_values('tile').unique():
-        d = data.loc[config, stimset, :, tile]
-        stimulated = d[d.index.get_level_values('stimulated')==True]
-        print(list(stimulated.index))
-        all_stimulated.extend(list(stimulated.index.get_level_values('el'))) # should be 1
-        # print(stimulated)
-        rec = d[d.index.get_level_values('stimulated')==False]
-        # mea1k[stimulated.index.get_level_values('el')] = stimulated.values
-        mea1k[rec.index.get_level_values('el')] = rec.values
-    fig, ax = plt.subplots()
-    ax.set_title("Stimulated Pattern")
-    fig.subplots_adjust(top=.99, bottom=.01, right=.8)
-    cmap = plt.get_cmap('viridis')
-    cmap.set_bad('black')
-    mea1k[mea1k==0] = np.nan
-    im = plt.imshow(mea1k.reshape(120,220), cmap=cmap)
-    
-    # coo = els2xy(all_stimulated)
-    # print(coo)
-    # stimulated = data[data.index.get_level_values('stimulated')==True]
-    # draw an x at the stimulated electrodes
-    plt.scatter(np.array(all_stimulated)% 220, np.array(all_stimulated)// 220, marker='2', color='white', s=100, linewidths=1)
-    
-        # Create an axis for the colorbar that matches the height of the imshow plot
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    cbar = fig.colorbar(im, cax=cax)
-    cbar.set_label('1KHz Power')    
-    
-    plt.show()
+def get_hdf5_fnames_from_dir(subdir):
+    fnames, ids = [], []
+    for fname in sorted(os.listdir(subdir)):
+        if fname.endswith('raw.h5'):
+            fnames.append(fname)
+            # check 4 digit case...
+            pruned_fname = fname.replace('.raw.h5', '')
+            if pruned_fname[-4].isdigit():
+                ids.append(int(pruned_fname[-4:]))
+            else:
+                ids.append(int(pruned_fname[-3:]))
+    return fnames, ids
 
-def mean_power_connectivity(data, path):
-    if 'stimulated' in data.index.names:
-        connectivity = data[data.index.get_level_values('stimulated')==False].groupby("el").mean()
-        lbl = '1KhZ Power'
-        which = 'power'
-    else:
-        # connectivity = data.droplevel('config')
-        which = 'ampl'
-        # connectivity = data[which]/ (2/1000) # 2 uA to mA
-        connectivity = data[which]
-        lbl = '1KhZ Power' if which == 'power' else 'Amplitude [mV]'
-        pass
-    print(connectivity)
-    
-    mea1k = np.zeros(26400, dtype=float)
-    mea1k[connectivity.index] = connectivity.values
-    mea1k = mea1k.reshape(120,220)
-    mea1k[mea1k==0] = np.nan
-    
-    # plt.hist(mea1k.flatten(), bins=100)
-    # plt.show()
-    
-    # cmap = plt.get_cmap('gray_r')
-    cmap = plt.get_cmap('viridis')
-    vmin, vmax = connectivity.values.min(), connectivity.values.max()/4
-    # vmax = 25
-    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
-    
-    
+def save_output(subdir, data, fname):
+    fullpath = os.path.join(subdir, "processed")
+    if not os.path.exists(fullpath):
+        print("creating processed output dir")
+        os.makedirs(fullpath)
+    data.to_csv(os.path.join(fullpath, fname))
 
-    # mask = cv2.imread(f"{path}/connectivity_ampl_aligned.png")
-    # print(mask)
-    # plt.imshow(mask)
-    # plt.show()
-    
-    (fig, ax), el_pads = draw_mea1k()
-    # (fig, ax), el_pads = draw_mea1k(bg='white', el_color='#dddddd')
-    fig_cb, _ = draw_mea1K_colorbar(cmap, norm, lbl)
-
-    # x, y = np.meshgrid(np.arange(39,39+15), np.arange(9,9+15))
-    # subset = np.arange(26400).reshape(120,220)[x,y].flatten()
-    
-    # subset = connectivity.index[:2023]
-    
-    
-    
-    # set the color of the pads to the mean power
-    for i, rec in enumerate(el_pads):
-        if i in connectivity.index: #and i in subset:
-            rec.set_facecolor(cmap(norm(mea1k.flatten()[i])))
-            
-            # if i in subset:
-            #     rec.set_edgecolor('red')
-    print("Saving the figure")
-    print(f"{path}/connectivity_{which}.png")
-    fig.savefig(f"{path}/connectivity_{which}.png", dpi=300, transparent=True, 
-                bbox_inches='tight', pad_inches=0)
-    fig_cb.savefig(f"{path}/colorbar_{which}.png", dpi=300, transparent=True,
-                bbox_inches='tight', pad_inches=0)
-    plt.show()
-    
-def vis_recording_pattern(path):
-    # x, y = np.meshgrid(np.arange(39,39+15), np.arange(9,9+15))
-    # subset = np.arange(26400).reshape(120,220)[x,y].flatten()
-    
-    subset = np.random.choice(np.arange(26400), size=1024)
-    
-    (fig, ax), el_pads = draw_mea1k()
-    for i, rec in enumerate(el_pads):
-        if i in subset:
-            rec.set_edgecolor('red')
+def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
+    fnames, ids = get_hdf5_fnames_from_dir(subdir)
+    all_data = []
+    for fname, i in zip(fnames, ids):
+        print(f"Config {i} of {len(fnames)}")
+        data = read_raw_data(subdir, fname, convert2vol=True,
+                             subtract_dc_offset=False, col_slice=slice(0, n_samples))
         
-    fig.savefig(f"{path}/recording_pattern_2.svg", dpi=300, transparent=True, 
-                bbox_inches='tight', pad_inches=0)
+        print("Filtering...")
+        mean_ampl = []
+        for j,row in enumerate(data.values):
+            debug = True if j <10 and debug else False
+            _, m_ampl = estimate_frequency_power(row, sampling_rate=EC.SAMPLING_RATE, 
+                                                 debug=debug, min_band=960, max_band=1040)
+            mean_ampl.append(m_ampl)
         
+        data = pd.DataFrame(mean_ampl, index=data.index, columns=['ampl'])
+        data['connectivity'] = data.ampl.values/input_ampl_mV 
+        data.index = pd.MultiIndex.from_product([[i],data.index], names=['config', 'el'])
+        print(f"Done. n >80%: {(data.connectivity >.8).sum()}\n")
+
+        all_data.append(data)
+    save_output(subdir, pd.concat(all_data), f"extr_connectivity_{input_ampl_mV}.csv")
+        
+def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
+    fullfname = os.path.join(subdir, "processed", f"extr_connectivity_{input_ampl_mV}.csv")
+    data = pd.read_csv(fullfname)
+    data.set_index('el', inplace=True)  
+    print(data)    
+    plt.hist(data['ampl'], bins=100)
     plt.show()
-            
-    
-    
-    
-    
-def draw_mea1K_colorbar(cmap, norm, lbl):
-    cbar_fig, cbar_ax = plt.subplots(figsize=(1.4, 2100/300))
-    cbar_fig.subplots_adjust(top=1, bottom=0, right=1, left=0)
-    cbar_fig.subplots_adjust(right=0.25)
-    cbar = mcolorbar.ColorbarBase(cbar_ax, cmap=cmap, norm=norm)
-    cbar.set_label(lbl)
-    return cbar_fig, cbar
-
-def draw_mea1k(bg='black', el_color='#222222'):
-    fig, ax = plt.subplots(figsize=(3850/300, 2100/300), facecolor='none')
-    fig.subplots_adjust(top=1, bottom=0, right=1, left=0)
-    # fig.patch.set_facecolor('black')
-    ax.set_facecolor(bg)
-    
-    # draw 26400 colors from hsv colormap
-    # cmap = plt.cm.get_cmap('hsv', 26400)
-    if el_color == 'hsv':
-        cmap = plt.get_cmap('hsv', 26400)
-        colors = [list(col) for col in cmap(np.linspace(0, 1, 26400))]
-    else:
-        colors = [el_color]*26400
-    
-    i = 0
-    recs = []
-    # mea1k_yx = []
-    for y in np.arange(0+17.5/4, 2100, 17.5):
-        for x in np.arange(0+17.5/4, 3850, 17.5):
-            recs.append(plt.Rectangle((x, y), 9, 9, facecolor=colors[i], 
-                                      edgecolor='none', alpha=.7))
-            # mea1k_yx.append((x+4.5,y+4.5))
-            i += 1
-    # plt.scatter(*zip(*mea1k_yx), c='red', s=10)
-            
-
-    [ax.add_patch(rec) for rec in recs]
-    ax.set_ylim(2100, 0)
-    ax.set_xlim(0,3850)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_aspect('equal', adjustable='box')
-    [ax.spines[spine].set_visible(False) for spine in ax.spines]
-    
-    # plt.show()
-    # plt.savefig(f"./el_pads_v3.png", dpi=300, transparent=True if bg=='transparent' else False, 
-    #             bbox_inches='tight', pad_inches=0, )
-    return (fig, ax), recs
+    (fig,ax), el_recs = draw_mea1k()
+    for el_i, el_recs in enumerate(el_recs):
+        if el_i not in data.index:
+            print("missing", el_i, end=' ')
+            continue
+        whiteness = np.clip(data.loc[el_i].connectivity*cmap_scaler, 0, 1)
+        el_recs.set_facecolor((whiteness, whiteness, whiteness))
+    fig.savefig(fullfname.replace(".csv", ".png"), dpi=300, transparent=True, 
+                bbox_inches='tight', pad_inches=0)  
+    plt.show()
     
 def main():
-    basepath = "/mnt/SpatialSequenceLearning/Simon/impedance/"
-    basepath = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Simon/impedance/"
-    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_neighbours3'
-    device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent1024_rec2'
-    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_ext1KHz_rec3'
-    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_dry_ext1KHz_rec4'
+    input_ampl_mV = 5
+    n_samples = 20_000
     
-    device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_meshstim_rec1'
-
-    # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_extCurrent_singleElAll'
-    PATH = basepath + device_name
-    # PATH = "/Users/loaloa/local_data/impedance_bonded_extCurrent_singleAll"
+    subdirs = [
+        # "headstage_devices/MEA1K05/recordings/nothingExt_oneShankbatch2_no_press",
+        # "headstage_devices/MEA1K05/recordings/25mVext_oneShankbatch2_no_press",
+        # "headstage_devices/MEA1K05/recordings/25mVext_oneShankbatch2_press",
+        # "headstage_devices/MEA1K06/recordings/bonding_singleshank_241206_ext5mV1Khz_morepressure",
+        # "headstage_devices/MEA1K06/recordings/bonding3_singleshank_B6_241207_ext5mV1Khz",
+        # "headstage_devices/MEA1K06/recordings/bonding3_singleshank_B6_241207+2_ext5mV1Khz_rec2",
+        # "headstage_devices/MEA1K06/recordings/bonding4_2+2shank_B6_241209_ext5mV1Khz_outerThinShank",
+        # "headstage_devices/MEA1K05/recordings/bonding_4shank_B4_241207_ext5mV1Khz",
+        # "headstage_devices/MEA1K07/recordings/bonding_1shank_B5_24121_ext5mV1Khz_silk_morepressure",
+        # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk",
+        # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_rec2",
+        # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_morePressure",
+        # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_shank3",
+        "headstage_devices/MEA1K06/recordings/bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3.1",
+        
+        
+    ]
     
-    if not os.path.exists(PATH):
-        print("Path does not exist: ", PATH)
-        return
+    for subdir in subdirs:
+        subdir = os.path.join(EC.NAS_DIR, subdir)
+        if not os.path.exists(os.path.join(subdir)):
+            print(f"Error: {os.path.join(subdir)} does not exist.")
+            continue
+        
+        extract_connectivity(subdir, input_ampl_mV, n_samples)
+        vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
     
-    # fname = 'ext_current_powers.pkl'
-    fname = 'extracted_signal.pkl'
-    data = pd.read_pickle(f"{PATH}/{fname}")
-    mean_power_connectivity(data, PATH)
-    
-    
-    # vis_recording_pattern(PATH)
-    
-    # viz_stim_pattern(data)
-    # draw_mea1k(bg='white')
-
-
 if __name__ == "__main__":
     main()
