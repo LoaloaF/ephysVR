@@ -1,6 +1,7 @@
 import os
 from glob import glob
 import time
+import datetime
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,23 +12,12 @@ from mea1k_utils import start_saving, stop_saving, try_routing
 
 from mea1k_utils import setup_array, array_config2df
 
-def make_bonding_config(device_name, date_str):
-    # def try_bonded_routing(els):
-    #     print(f"\n\nMaking config for mapping {len(els)} shank-connected-pads to"
-    #             f" electrodes on MEA1K  chip...")
-        
-    #     array = setup_array(els, randomize_routing=True)
-    #     # array.download()
-    #     succ_routed = [m.electrode for m in array.get_config().mappings]
-    #     failed_routing = [el for el in els if el not in succ_routed]
-    #     print(f"Failed routing {len(failed_routing)}: {failed_routing}")
-    #     array.close()
-    #     return succ_routed, failed_routing
-
+def make_bonding_config(device_name, config_name_prefix, seed):
     implant_mapping = get_implant_mapping(C.NAS_DIR, device_name)
     # slice to electrodes under pads that are routed to a shank PI electrode
     implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
-
+    print(implant_mapping)
+    
     sel_which_rank = 1
     els = implant_mapping[(implant_mapping.connectivity_order==sel_which_rank) & 
                           (implant_mapping.mea1k_connectivity>20)].mea1k_el.values
@@ -54,7 +44,7 @@ def make_bonding_config(device_name, date_str):
     # array = setup_array(els)
     # array.download()
     config_fullfname = os.path.join(C.NAS_DIR, "implant_devices", C.DEVICE_NAME, 
-                                    f"bonded_{C.DEVICE_NAME}_{date_str}_{len(els)}chnls.cfg")
+                                    'bonding', f"{config_name_prefix}_{len(els):4d}ElConfig_{C.DEVICE_NAME}_S{seed}.cfg")
     # csv of config
     config_mapping = array_config2df(array)
     config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
@@ -358,9 +348,13 @@ def make_3x3_stim_config(config_dirname):
     
     
 def main():
-    # seed = 46
-    # np.random.seed(seed)
-    # make_bonding_config(device_name=C.DEVICE_NAME_RAT006)
+    seed = 46
+    np.random.seed(seed)
+    
+    config_name_prefix = "R06_"+datetime.datetime.now().strftime("%m.%d")
+    make_bonding_config(device_name=C.DEVICE_NAME_RAT006, 
+                        config_name_prefix=config_name_prefix,
+                        seed=seed)
     
     # seed = 1
     # np.random.seed(seed)
@@ -381,9 +375,9 @@ def main():
     # np.random.seed(seed)
     # make_9x3x16_meshgrid_config(config_dirname=f"9x3x16_meshgrid_seed{seed}")
     
-    seed = 42
-    np.random.seed(seed)
-    make_3x3_stim_config(config_dirname=f"3x3_stim_seed{seed}")
+    # seed = 42
+    # np.random.seed(seed)
+    # make_3x3_stim_config(config_dirname=f"3x3_stim_seed{seed}")
     
 
     

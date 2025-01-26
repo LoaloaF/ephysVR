@@ -261,10 +261,16 @@ def get_recording_mapping(path, fname):
     el_xy = mapping[:, 2:4]
     return channels, el_xy
     
-def get_implant_mapping(nas_dir, device_name):
+def get_implant_mapping_depr(nas_dir, device_name):
     fullfname = os.path.join(nas_dir, 'implant_devices', device_name, 
                             #  'bonding_electrode_map.csv')
                              f'bonding_electrode_map_46pad4shank.csv')
+    bonding_electrode_map = pd.read_csv(fullfname, index_col=0)
+    return bonding_electrode_map
+
+def get_implant_mapping(nas_dir, device_name):
+    fullfname = os.path.join(nas_dir, 'implant_devices', device_name, 
+                             'bonding', f'bonding_mapping_{device_name}.csv')
     bonding_electrode_map = pd.read_csv(fullfname, index_col=0)
     return bonding_electrode_map
 
@@ -392,7 +398,7 @@ def second_recording():
     # # # routed
     # PATH = '/Users/loaloa/local_data'
     # fname = 'Trace_20241025_15_35_38.raw.h5'
-    # data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
+    # data = read_raw_data(PATH, fname, conpvert2vol=True, col_slice=slice(0, 1000))
     # mapping, _ = get_recording_mapping(PATH, fname)
     
     # # all chaannels
