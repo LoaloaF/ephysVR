@@ -271,7 +271,7 @@ def get_implant_mapping_depr(nas_dir, device_name):
 def get_implant_mapping(nas_dir, device_name):
     fullfname = os.path.join(nas_dir, 'implant_devices', device_name, 
                              'bonding', f'bonding_mapping_{device_name}.csv')
-    bonding_electrode_map = pd.read_csv(fullfname, index_col=0)
+    bonding_electrode_map = pd.read_csv(fullfname, index_col=None)
     return bonding_electrode_map
 
 def assign_mapping_to_data(data, implant_mapping, 

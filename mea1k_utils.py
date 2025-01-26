@@ -94,18 +94,24 @@ def turn_on_stimulation_units(stim_units, dac_id=0, mode='voltage'):
 #         time.sleep(rep_delay_s)
 #     return seq
 
-def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, nreps=1):
-	seq = maxlab.Sequence()
-	# Create a time array, 50 us * 20kHz = 1000 samples, 1 khz exmaple
-	t = np.linspace(0,1, int(C.SAMPLING_RATE/f))
-	# Create a sine wave with a frequency of 1 kHz
-	sine_wave = (amplitude * np.sin(t*2*np.pi)).astype(int) +512
-	for i in range(nreps):
-		for j in range(ncycles):
-			for ampl in sine_wave:
-				seq.append(maxlab.chip.DAC(dac_id, ampl))
-				seq.append(maxlab.system.DelaySamples(1))
-	return seq
+def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, nreps=1, voltage_conversion=False):
+    if voltage_conversion:
+        daq_lsb = maxlab.query_DAC_lsb_mV()
+        # daq_lsb = maxlab.system.query_DAC_lsb()
+        print(f"DAQ LSB: {daq_lsb}")
+        amplitude = int(amplitude / daq_lsb)
+    
+    seq = maxlab.Sequence()
+    # Create a time array, 50 us * 20kHz = 1000 samples, 1 khz exmaple
+    t = np.linspace(0,1, int(C.SAMPLING_RATE/f))
+    # Create a sine wave with a frequency of 1 kHz
+    sine_wave = (amplitude * np.sin(t*2*np.pi)).astype(int) +512
+    for i in range(nreps):
+        for j in range(ncycles):
+            for ampl in sine_wave:
+                seq.append(maxlab.chip.DAC(dac_id, ampl))
+                seq.append(maxlab.system.DelaySamples(1))
+    return seq
 
 # def connect_el2stim_units(array, stim_electrodes):
 #     # stim_els collects electrodes that are sucessfully connected    
@@ -158,7 +164,8 @@ def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[], with_download
             array.download()
             if not config_before.equals(array_config2df(array)):
                 success = False
-                
+            readoutchannel = maxlab.chip.StimulationUnit(stim_unit).get_readout_channel()             
+            print(f"Connected El{el} to stim unit {stim_unit} (readout channel {readoutchannel}).")
         
         if len(used_up_stim_units) == 32:
             print("Used up all 32 stim units.")

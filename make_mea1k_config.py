@@ -22,8 +22,8 @@ def make_bonding_config(device_name, config_name_prefix, seed):
     els = implant_mapping[(implant_mapping.connectivity_order==sel_which_rank) & 
                           (implant_mapping.mea1k_connectivity>20)].mea1k_el.values
     while True:
-        # succ_routed, failed_routing = try_bonded_routing(els)
-        succ_routed, failed_routing, array = try_routing(els, randomize_routing=True)
+        succ_routed, failed_routing, array = try_routing(els, randomize_routing=True,
+                                                         return_array=True)
 
         if len(failed_routing) == 0:
             print("Done.")
@@ -43,16 +43,73 @@ def make_bonding_config(device_name, config_name_prefix, seed):
 
     # array = setup_array(els)
     # array.download()
-    config_fullfname = os.path.join(C.NAS_DIR, "implant_devices", C.DEVICE_NAME, 
-                                    'bonding', f"{config_name_prefix}_{len(els):4d}ElConfig_{C.DEVICE_NAME}_S{seed}.cfg")
+    config_fullfname = os.path.join(C.NAS_DIR, "implant_devices", device_name, 'bonding', 
+                                    f"{config_name_prefix}_{len(els):4d}ElConfig_S{seed}_{device_name}.cfg")
     # csv of config
+    print(config_fullfname)
     config_mapping = array_config2df(array)
     config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
     
     # save config in mea1k specific format
     array.save_config(config_fullfname)
     array.close()
+    
 
+def extend_config_to_double_pad_stim(device_name, config_name):
+    implant_mapping = get_implant_mapping(C.NAS_DIR, device_name)
+    # slice to electrodes under pads that are routed to a shank PI electrode
+    implant_mapping = implant_mapping[implant_mapping.shank_id.isin((1, 2))]
+    print("Filtered implant_mapping by shank_id:\n", implant_mapping)
+    
+    config_fullfname = os.path.join(C.NAS_DIR, "implant_devices", device_name, 'bonding', 
+                                    f"{config_name}_{device_name}.csv")
+    config = pd.read_csv(config_fullfname, index_col=None)
+    print("Config data:\n", config)
+    
+    config = config[config.electrode.isin(implant_mapping.mea1k_el)]
+    prim_els = config.electrode.values
+    print("Filtered config by electrode:\n", config)
+    
+    pads = implant_mapping[implant_mapping.mea1k_el.isin(config.electrode)].pad_id.unique()
+    print("Pads:\n", pads)
+    print("Number of pads:", len(pads))
+    
+    potential_second_els = implant_mapping[
+        (implant_mapping.pad_id.isin(pads)) &
+        (implant_mapping.mea1k_connectivity > 20) &
+        (~implant_mapping.mea1k_el.isin(config.electrode))
+    ]
+    print("Potential second electrodes:\n", potential_second_els)
+
+
+    # Group by pad_id and get the index of the row with the lowest connectivity_order
+    idx = potential_second_els.groupby('pad_id')['connectivity_order'].idxmin()
+    # Use these indices to filter the original DataFrame
+    secondary_els = potential_second_els.loc[idx].mea1k_el.values
+    print("Selected second electrodes:\n", secondary_els)
+    
+    merged_els = np.concatenate([prim_els, secondary_els])
+    succ_routed, failed_routing, array = try_routing(merged_els, randomize_routing=True,
+                                                     return_array=True)
+    print(f"Failed routing {len(failed_routing)}: {failed_routing}")
+    config_fullfname = os.path.join(C.NAS_DIR, "implant_devices", device_name, 'bonding', 
+                                    f"Stim_{config_name}_{device_name}.cfg")
+    # csv of config
+    print(config_fullfname)
+    config_mapping = array_config2df(array)
+    config_mapping['pads'] = implant_mapping.set_index('mea1k_el').loc[config_mapping.electrode].pad_id.values
+    config_mapping['shank'] = implant_mapping.set_index('mea1k_el').loc[config_mapping.electrode].shank_id.values
+    config_mapping['depth'] = implant_mapping.set_index('mea1k_el').loc[config_mapping.electrode].depth.values
+    config_mapping.sort_values(['shank', 'depth', 'pads'], inplace=True)    
+    print(config_mapping)
+    
+    config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
+    
+    # save config in mea1k specific format
+    array.save_config(config_fullfname)
+    array.close()
+    
+    
 # def try_routing(els):
 #     array = setup_array(els, randomize_routing=False)
 #     array.download()
@@ -61,6 +118,7 @@ def make_bonding_config(device_name, config_name_prefix, seed):
 #     print(f"Failed routing {len(failed_routing)}: {failed_routing}")
 #     array.close()
 #     return succ_routed, failed_routing
+
 
 def make_full_padlayout_configs(device_name, ):
     implant_mapping = get_implant_mapping(C.NAS_DIR, device_name)
@@ -342,7 +400,6 @@ def make_3x3_stim_config(config_dirname):
                 print("Done.")
                 break
         
-        
     plt.imshow(canvas)
     plt.show()
     
@@ -351,11 +408,14 @@ def main():
     seed = 46
     np.random.seed(seed)
     
-    config_name_prefix = "R06_"+datetime.datetime.now().strftime("%m.%d")
-    make_bonding_config(device_name=C.DEVICE_NAME_RAT006, 
-                        config_name_prefix=config_name_prefix,
-                        seed=seed)
-    
+    config_name_prefix = "R06_12.Nov"
+    # make_bonding_config(device_name=C.DEVICE_NAME_RAT006, 
+    #                     config_name_prefix=config_name_prefix,
+    #                     seed=seed)
+    extend_config_to_double_pad_stim(device_name=C.DEVICE_NAME_RAT006,
+                                     config_name="R06_12.Nov_829ElConfig_S46")
+
+
     # seed = 1
     # np.random.seed(seed)
     # make_9x3x16_meshgrid_config(config_dirname=f"9x3x16_meshgrid_S{seed}")

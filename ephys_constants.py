@@ -7,7 +7,7 @@ import numpy as np
 SAMPLING_RATE = 20_000
 MAX_AMPL_mV = 3300.
 ADC_RESOLUTION = 2**10
-DEVICE_NAME = '241016_headstage03_46pad4shank'
+# DEVICE_NAME = '241016_headstage03_46pad4shank'
 # DEVICE_NAME_RAT006 = '241016_headstage03_46pad4shank'
 DEVICE_NAME_RAT006 = '241016_MEA1K03_H1278pad4shankB5'
 DEVICE_NAME_RAT011 = '241211_MEA1K06_H1278pad4shankB5'
@@ -18,7 +18,12 @@ def _delfault_paths():
     user = os.getlogin()
     print(f"OS: {which_os}, User: {user}")
     
-    if which_os == 'Linux' and user == 'houmanjava':
+    if which_os == 'Linux' and user == 'loaloa':
+        nas_dir = "/mnt/NTnas/BMI/VirtualReality/SpatialSequenceLearning/"
+        local_data_dir = "/home/loaloa/local_data/"
+        code_dir = "/home/loaloa/homedataXPS/projects/ratvr/VirtualReality/ephysVR"
+        
+    elif which_os == 'Linux' and user == 'houmanjava':
         nas_dir = "/mnt/SpatialSequenceLearning/"
         local_data_dir = "/home/houmanjava/local_data/"
         code_dir = "/home/houmanjava/meatesting/ephysVR"
