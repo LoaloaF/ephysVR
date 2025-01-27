@@ -330,6 +330,47 @@ def make_9x3x16_meshgrid_config(config_dirname):
         if len(configured_tile_indices) == len(all_tile_indices):
             print(f"Done. Routing all pads in {config_i} configs.")
             break 
+
+def make_invivo_stim_config(implant_name, config_dirname):
+    fulldirname = os.path.join(C.NAS_DIR, "implant_devices", implant_name, 
+                               "bonding", config_dirname)
+    print(fulldirname)
+    if not os.path.exists(fulldirname):
+        os.makedirs(fulldirname)
+    
+    implant_mapping = get_implant_mapping(C.NAS_DIR, implant_name)
+    implant_mapping = implant_mapping[(implant_mapping.shank_id<3) &
+                                      (implant_mapping.mea1k_connectivity>20) &
+                                      (implant_mapping.connectivity_order<4)]
+    implant_mapping = implant_mapping.sort_values(['shank_id', 'depth', 'connectivity_order']).reset_index(drop=True)
+    print(implant_mapping)
+    
+    for pad_id in implant_mapping.pad_id.unique():
+        pad_subset = implant_mapping[implant_mapping.pad_id==pad_id]
+        stim_el = pad_subset.mea1k_el.values[0]
+        pad_depth = pad_subset.depth.values[0]
+        pad_shank = pad_subset.shank_id.values[0]
+        print(pad_depth)
+        in_vicinity = implant_mapping[(implant_mapping.shank_id==pad_shank) &
+                                      ((implant_mapping.depth > pad_depth-400) &
+                                      (implant_mapping.depth < pad_depth+400))]        
+        print(in_vicinity)
+        _, failed_routing, array = try_routing(in_vicinity.mea1k_el.values, 
+                                               stim_electrodes=[stim_el],
+                                               return_array=True)
+        if len(failed_routing) != 0:
+            print(f"Failed routing {len(failed_routing)}: {failed_routing}")
+            continue
+        fname = f"el_config_S{int(pad_shank)}D{int(pad_depth):04}.cfg"
+        config_fullfname = os.path.join(fulldirname, fname)
+        
+        # csv of config
+        config_mapping = array_config2df(array)
+        config_mapping['stim'] = config_mapping.electrode == stim_el
+        config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
+        # save config in mea1k specific format
+        array.save_config(config_fullfname)
+        array.close()
     
 def make_3x3_stim_config(config_dirname):
     fulldirname = os.path.join(C.NAS_DIR, "mea1k_configs", config_dirname)
@@ -412,9 +453,12 @@ def main():
     # make_bonding_config(device_name=C.DEVICE_NAME_RAT006, 
     #                     config_name_prefix=config_name_prefix,
     #                     seed=seed)
-    extend_config_to_double_pad_stim(device_name=C.DEVICE_NAME_RAT006,
-                                     config_name="R06_12.Nov_829ElConfig_S46")
-
+    # extend_config_to_double_pad_stim(device_name=C.DEVICE_NAME_RAT006,
+    #                                  config_name="R06_12.Nov_829ElConfig_S46")
+    
+    
+    make_invivo_stim_config(implant_name=C.DEVICE_NAME_RAT006, 
+                            config_dirname="invivo_localstim_configs")
 
     # seed = 1
     # np.random.seed(seed)

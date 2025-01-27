@@ -44,7 +44,7 @@ def try_routing(els, return_array=False, stim_electrodes=None, randomize_routing
     array = setup_array(els, stim_electrodes=stim_electrodes, randomize_routing=randomize_routing)
     failed_routing = []
     if stim_electrodes:
-        # print(f"Stimulation electrodes: {stim_electrodes}")
+        print(f"Stimulation electrodes: {stim_electrodes}")
         res = [attampt_connect_el2stim_unit(el, array, with_download=True)[0]
                for el in stim_electrodes]
         failed_routing = [el for i, el in enumerate(stim_electrodes) if not res[i]]
@@ -76,6 +76,15 @@ def turn_on_stimulation_units(stim_units, dac_id=0, mode='voltage'):
         stim.dac_source(dac_id)
         maxlab.send(stim)
     print("Done.")
+    
+def turn_off_stimulation_units(stim_units):
+    print(f"Turning off stim units {len(stim_units)}...", end="", flush=True)
+    for stim_unit in stim_units:
+        stim = maxlab.chip.StimulationUnit(str(stim_unit))
+        stim.power_up(False)
+        stim.connect(False)
+        maxlab.send(stim)
+    print("Done.")
 
 # def create_stim_sequence(dac=0, amplitude=25, npulses=10, nreps=3, inter_pulse_interval=100, rep_delay_s=.1):
 #     def append_stimulation_pulse(seq, amplitude):
@@ -96,7 +105,7 @@ def turn_on_stimulation_units(stim_units, dac_id=0, mode='voltage'):
 
 def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, nreps=1, voltage_conversion=False):
     if voltage_conversion:
-        daq_lsb = maxlab.query_DAC_lsb_mV()
+        daq_lsb = float(maxlab.query_DAC_lsb_mV())
         # daq_lsb = maxlab.system.query_DAC_lsb()
         print(f"DAQ LSB: {daq_lsb}")
         amplitude = int(amplitude / daq_lsb)
@@ -113,6 +122,93 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, nreps
                 seq.append(maxlab.system.DelaySamples(1))
     return seq
 
+def create_stim_pulse_sequence(dac_id=0, amplitude=25, pulse_duration=167e-6, 
+                               inter_phase_interval=67e-6, frequency=50, 
+                               burst_duration=400e-3, nreps=1,
+                               voltage_conversion=False):
+    """
+    Create a sequence of biphasic, charge-balanced stimulation pulses.
+
+    Parameters:
+        dac_id (int): DAC ID for stimulation.
+        amplitude (int): Peak amplitude of the stimulation pulses (in arbitrary units).
+        pulse_duration (float): Duration of each phase of the pulse in seconds.
+        inter_phase_interval (float): Interval between the cathodic and anodic phases in seconds.
+        frequency (float): Frequency of the pulse train in Hz.
+        burst_duration (float): Duration of each burst in seconds.
+        nreps (int): Number of burst repetitions.
+
+    Returns:
+        seq: A sequence object containing the stimulation pulses.
+    """
+    if voltage_conversion:
+        daq_lsb = float(maxlab.query_DAC_lsb_mV())
+        # daq_lsb = maxlab.system.query_DAC_lsb()
+        print(f"DAQ LSB: {daq_lsb}")
+        amplitude = int(amplitude / daq_lsb)
+    
+    
+    seq = maxlab.Sequence()
+    
+    # Parameters
+    frequency = 50  # Hz
+    burst_duration = 400e-3  # seconds
+    n_pulses = int(burst_duration * frequency)
+    burst_interval = 1 / frequency  # seconds
+    pulse_duration = 167e-6  # seconds per phase
+    inter_phase_interval = 67e-6  # seconds
+    sampling_rate = 20000  # Hz (20 kHz)
+    samples_per_us = sampling_rate / 1e6
+
+    # print all of thse values
+    print(f"n_pulses: {n_pulses}, burst_interval: {burst_interval}, pulse_duration: {pulse_duration}, inter_phase_interval: {inter_phase_interval}, sampling_rate: {sampling_rate}, samples_per_us: {samples_per_us}")
+    
+
+
+    for _ in range(nreps):
+        for _ in range(n_pulses):
+            # Cathodic phase
+            seq.append(maxlab.chip.DAC(dac_id, 512 - amplitude))
+            seq.append(maxlab.system.DelaySamples(int(pulse_duration * samples_per_us * 1e6)))
+            print(int(pulse_duration * samples_per_us * 1e6))
+            # Inter-phase interval
+            seq.append(maxlab.chip.DAC(dac_id, 512))  # Zero amplitude for interval
+            seq.append(maxlab.system.DelaySamples(int(inter_phase_interval * samples_per_us * 1e6)))
+            print(int(inter_phase_interval * samples_per_us * 1e6))
+            # Anodic phase
+            seq.append(maxlab.chip.DAC(dac_id, 512 + amplitude))
+            seq.append(maxlab.system.DelaySamples(int(pulse_duration * samples_per_us * 1e6)))
+            print(int(pulse_duration * samples_per_us * 1e6))
+            print()
+        # Burst interval
+        # inter_burst_delay = int((burst_interval - burst_duration) * sampling_rate)
+        # print(inter_burst_delay)
+        # if inter_burst_delay > 0:
+        #     seq.append(maxlab.system.DelaySamples(inter_burst_delay))
+            seq.append(maxlab.system.DelaySamples(13+20*20))
+
+    return seq
+
+
+def create_stim_onoff_sequence(dac_id=0, amplitude=25, pulse_duration=5_000_000, 
+                               voltage_conversion=True):
+    seq = maxlab.Sequence()
+    
+    if voltage_conversion:
+        daq_lsb = float(maxlab.query_DAC_lsb_mV())
+        # daq_lsb = maxlab.system.query_DAC_lsb()
+        print(f"DAQ LSB: {daq_lsb}")
+        amplitude = int(amplitude / daq_lsb)
+        
+    seq.append(maxlab.chip.DAC(dac_id, 512 + amplitude))
+    seq.append(maxlab.system.DelaySamples(int(pulse_duration/50)))
+    seq.append(maxlab.chip.DAC(dac_id, 512))
+    seq.append(maxlab.system.DelaySamples(1))
+    seq.append(maxlab.chip.DAC(dac_id, 512 - amplitude))
+    seq.append(maxlab.system.DelaySamples(int(pulse_duration/50)))
+    seq.append(maxlab.chip.DAC(dac_id, 512))
+    seq.append(maxlab.system.DelaySamples(1))
+    return seq
 # def connect_el2stim_units(array, stim_electrodes):
 #     # stim_els collects electrodes that are sucessfully connected    
 #     stim_els, stim_units = [], []

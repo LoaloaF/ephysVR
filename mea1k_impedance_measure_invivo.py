@@ -18,24 +18,36 @@ def stimulate(base_config_name, path, rec_time, post_download_wait_time, s, stim
     config_fullfname = os.path.join(path, "..", "..", "bonding", base_config_name)
     print(f"Loading config: {config_fullfname}")
     array.load_config(config_fullfname)
-    start_saving(s, dir_name=path, fname="recording")
+    # start_saving(s, dir_name=path, fname="recording")
 
     config_map = pd.read_csv(config_fullfname.replace(".cfg", ".csv"))
     for pad in config_map.pads.unique():
         stim_el = config_map.electrode[config_map.pads == pad].iloc[0]
         print(f"Stimulating pad {pad} with electrode {stim_el}")
-        attampt_connect_el2stim_unit(stim_el, array, with_download=True)
-        array.download()
+        # attampt_connect_el2stim_unit(stim_el, array, with_download=True)
+        
+        _, failed_routing, array = try_routing([*config_map.electrode[:50], stim_el], 
+                                               stim_electrodes=[stim_el],
+                                               return_array=True)
+        # failed_routing = [stim_el] if np.random.rand() > 0.99 else []
+        if len(failed_routing) != 0:
+            print(f"Failed routing {len(failed_routing)}: {failed_routing}")
+            continue
+        
+        # array.download()
         time.sleep(post_download_wait_time)
     
         print(f"\nStimulating ~ ~ ~ ~ ~ ~ ~ ~ ")
         stim_seq.send()
         time.sleep(rec_time)
+        
         array.disconnect_electrode_from_stimulation(stim_el)
+        # for el in config_map.electrode:
+        #     array.disconnect_electrode_from_stimulation(el)
         
     # stimulation
     array.close()
-    stop_saving(s)
+    # stop_saving(s)
 
 def main():
     # ======== PARAMETERS ========

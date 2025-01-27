@@ -11,39 +11,79 @@ import numpy as np
 import ephys_constants as C
 from mea1k_utils import start_saving, stop_saving, try_routing
 from mea1k_utils import attampt_connect_el2stim_unit, create_stim_sine_sequence
-from mea1k_utils import reset_MEA1K, turn_on_stimulation_units, array_config2df
+from mea1k_utils import reset_MEA1K, turn_on_stimulation_units, array_config2df, turn_off_stimulation_units
 
-def process_config(config_fullfname, path, rec_time, post_download_wait_time, s, stim_seq):
+from mea1k_utils import create_stim_pulse_sequence
+from mea1k_utils import create_stim_onoff_sequence
+
+def process_config(config_fullfname, path, rec_time, post_download_wait_time, s, 
+                   stim_seq, mode):
     array = maxlab.chip.Array()
     array.load_config(config_fullfname)
     
     config_map = pd.read_csv(config_fullfname.replace(".cfg", ".csv"))
     for stim_el in config_map.electrode[config_map.stim].tolist():
-        attampt_connect_el2stim_unit(stim_el, array, with_download=False)
+        success, stim_units = attampt_connect_el2stim_unit(stim_el, array, with_download=False)
+        print(success) # turn on ?
+        
     array.download()
-    time.sleep(post_download_wait_time)
-    
     fname = os.path.basename(config_fullfname).replace(".cfg", "")
-    print(f"\nStimulating ~ ~ ~ ~ ~ ~ ~ ~ "
-          f"{config_map.stim.sum()} electrodes ")
     start_saving(s, dir_name=path, fname=fname)
+    time.sleep(post_download_wait_time/2)
+    
+    turn_on_stimulation_units(stim_units, mode=mode)
+    time.sleep(post_download_wait_time/2)
+    
+    print(f"\nStimulating ~ ~ ~ ~ ~ ~ ~ ~ "
+          f"on {stim_units} ")
     stim_seq.send()
     time.sleep(rec_time)
     # stimulation
+    turn_off_stimulation_units(stim_units)
+    array.download()
+    time.sleep(.1)
     array.close()
     stop_saving(s)
 
 def main():
     # ======== PARAMETERS ========
-    subdir = "headstage_devices/MEA1K06/recordings"
-    rec_dir = "shortcut_stim_bonding3_singleshank_B6_241207"
-    rec_dir = "bonding4_2+2shank_B6_241209_ripped"
-    post_download_wait_time = .4
+    subdir = f"implant_devices/{C.DEVICE_NAME_RAT006}/recordings"
+
+    amplitude = 20
+    # mode = "voltage"
+    mode = "large_current"
+    # stimpulse = 'sine'
+    stimpulse = 'onoff'
+    rec_time = 5
+    # stimpulse = 'sine'
+    
+    t = datetime.datetime.now().strftime("%H:%M:%S")
+    rec_dir = f"{t}_invivo_localstim_{mode=}_{stimpulse=}_{amplitude=}"
+    
+    post_download_wait_time = .6
     log2file = False
-    rec_time = .6
-    gain = 112
-    configs_basepath = os.path.join(C.NAS_DIR, "mea1k_configs", '')
-    which_configs = "3x3_stim_seed42"
+    # rec_time = 1.8
+    gain = 512
+    configs_basepath = os.path.join(C.NAS_DIR, "implant_devices", C.DEVICE_NAME_RAT006, 
+                                    'bonding', )
+    which_configs = "invivo_localstim_configs"
+    
+    # stim
+    if stimpulse == 'sine':
+        stim_seq = create_stim_sine_sequence(dac_id=0, amplitude=amplitude, f=1000, ncycles=400, 
+                                             nreps=1, voltage_conversion=mode=='voltage')
+    elif stimpulse == 'bursting':
+        stim_seq = create_stim_pulse_sequence(dac_id=0, amplitude=amplitude, 
+                                              pulse_duration=167e-6, 
+                                              inter_phase_interval=67e-6, 
+                                              frequency=50, 
+                                              burst_duration=400e-3, nreps=1,
+                                              voltage_conversion=mode=='voltage')
+    
+    elif stimpulse == 'onoff':
+        stim_seq = create_stim_onoff_sequence(dac_id=0, amplitude=amplitude,
+                                               pulse_duration=2_000_000, 
+                                               voltage_conversion=mode=='voltage')
     # ======== PARAMETERS ========
     
     if log2file:
@@ -55,15 +95,15 @@ def main():
     print(f"Recording path exists: {os.path.exists(path)} - ", path)
     
     s = maxlab.Saving()
-    stim_seq = create_stim_sine_sequence(dac_id=0, amplitude=5, f=1000, ncycles=1000, nreps=1)
     reset_MEA1K(gain=gain, enable_stimulation_power=True)
-    turn_on_stimulation_units(list(range(32)), mode='voltage')
+    turn_off_stimulation_units(list(range(32)))
     
     fnames = glob(os.path.join(configs_basepath, which_configs, "*.cfg"))
     for i, config_fullfname in enumerate(sorted(fnames)):
         print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}", flush=True)
-        process_config(config_fullfname, path, rec_time, post_download_wait_time, s, stim_seq)
-        
+        process_config(config_fullfname, path, rec_time, post_download_wait_time, 
+                       s, stim_seq, mode=mode)
+        break
     if log2file:
         logfile.close()
         
