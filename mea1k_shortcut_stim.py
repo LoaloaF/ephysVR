@@ -39,7 +39,7 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
     stim_seq.send()
     time.sleep(rec_time)
     # stimulation
-    turn_off_stimulation_units(stim_units)
+    # turn_off_stimulation_units(stim_units)
     array.download()
     time.sleep(.1)
     array.close()
@@ -49,21 +49,22 @@ def main():
     # ======== PARAMETERS ========
     subdir = f"implant_devices/{C.DEVICE_NAME_RAT006}/recordings"
 
-    amplitude = 20
+    amplitude = 500
     # mode = "voltage"
     mode = "large_current"
-    # stimpulse = 'sine'
-    stimpulse = 'onoff'
-    rec_time = 5
+    stimpulse = 'sine'
+    # stimpulse = 'onoff'
+    # stimpulse = 'bursting'
+    # rec_time = .1
     # stimpulse = 'sine'
     
     t = datetime.datetime.now().strftime("%H:%M:%S")
-    rec_dir = f"{t}_invivo_localstim_{mode=}_{stimpulse=}_{amplitude=}"
+    rec_dir = f"{t}_invivo_localstim_{mode=}_{stimpulse=}2_{amplitude=}"
     
     post_download_wait_time = .6
     log2file = False
-    # rec_time = 1.8
-    gain = 512
+    rec_time = 1
+    gain = 7
     configs_basepath = os.path.join(C.NAS_DIR, "implant_devices", C.DEVICE_NAME_RAT006, 
                                     'bonding', )
     which_configs = "invivo_localstim_configs"
@@ -96,14 +97,15 @@ def main():
     
     s = maxlab.Saving()
     reset_MEA1K(gain=gain, enable_stimulation_power=True)
-    turn_off_stimulation_units(list(range(32)))
+    # turn_off_stimulation_units(list(range(32)))
     
     fnames = glob(os.path.join(configs_basepath, which_configs, "*.cfg"))
     for i, config_fullfname in enumerate(sorted(fnames)):
         print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}", flush=True)
         process_config(config_fullfname, path, rec_time, post_download_wait_time, 
                        s, stim_seq, mode=mode)
-        break
+        # if i>3:
+        #     break
     if log2file:
         logfile.close()
         

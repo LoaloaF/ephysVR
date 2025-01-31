@@ -185,7 +185,7 @@ def create_stim_pulse_sequence(dac_id=0, amplitude=25, pulse_duration=167e-6,
         # print(inter_burst_delay)
         # if inter_burst_delay > 0:
         #     seq.append(maxlab.system.DelaySamples(inter_burst_delay))
-            seq.append(maxlab.system.DelaySamples(13+20*20))
+            seq.append(maxlab.system.DelaySamples(13+20))
 
     return seq
 
