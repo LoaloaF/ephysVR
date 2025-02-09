@@ -99,19 +99,19 @@ def convert_to_vol(data, path, fname):
     print(data) 
     return data
 
-# def process_data_chunk(data_chunk, resolution, shift_to_real_potential):
-#     # Perform in-place operations to save memory
-#     np.subtract(data_chunk, ADC_RESOLUTION / 2, out=data_chunk)
-#     np.multiply(data_chunk, resolution, out=data_chunk)
-#     if shift_to_real_potential:
-#         np.add(data_chunk, MAX_AMPL_mV / 2, out=data_chunk)
-#     np.multiply(data_chunk, 1000, out=data_chunk)
-#     np.rint(data_chunk, out=data_chunk)
-#     # data_chunk -= data_chunk[:,0][:, np.newaxis]
-#     # assert np.max(data_chunk) < 2**15 and np.min(data_chunk) > -2**15, "Data is not in int16 range"
-#     # data_chunk = data_chunk.astype(np.int16)
+def process_data_chunk(data_chunk, resolution, shift_to_real_potential):
+    # Perform in-place operations to save memory
+    np.subtract(data_chunk, ADC_RESOLUTION / 2, out=data_chunk)
+    np.multiply(data_chunk, resolution, out=data_chunk)
+    if shift_to_real_potential:
+        np.add(data_chunk, MAX_AMPL_mV / 2, out=data_chunk)
+    np.multiply(data_chunk, 1000, out=data_chunk)
+    np.rint(data_chunk, out=data_chunk)
+    # data_chunk -= data_chunk[:,0][:, np.newaxis]
+    # assert np.max(data_chunk) < 2**15 and np.min(data_chunk) > -2**15, "Data is not in int16 range"
+    # data_chunk = data_chunk.astype(np.int16)
     
-#     return data_chunk
+    return data_chunk
 
 
 # def convert_to_vol_chunk(data_chunk, resolution, shift_to_real_potential):
@@ -122,31 +122,31 @@ def convert_to_vol(data, path, fname):
 #         np.add(data_chunk, MAX_AMPL_mV / 2, out=data_chunk)
 #     return data_chunk
 
-# def convert_to_vol(data, path, fname, shift_to_real_potential=True):
-#     # scale data to mv
-#     gain = get_recording_gain(path, fname)
-#     resolution = get_recording_resolution(gain)
+def convert_to_vol2(data, path, fname, shift_to_real_potential=True):
+    # scale data to mv
+    gain = get_recording_gain(path, fname)
+    resolution = get_recording_resolution(gain)
     
-#     # Convert data to float16 to save space
-#     if data.dtype != np.float16:
-#         data = data.astype(np.float16, copy=False)
+    # Convert data to float16 to save space
+    if data.dtype != np.float16:
+        data = data.astype(np.float16, copy=False)
     
-#     # Determine the number of chunks and the chunk size
-#     num_chunks = cpu_count()
-#     chunk_size = len(data) // num_chunks
+    # Determine the number of chunks and the chunk size
+    num_chunks = cpu_count()
+    chunk_size = len(data) // num_chunks
     
-#     # Create a list of data chunks
-#     data_chunks = [data[i*chunk_size:(i+1)*chunk_size] for i in range(num_chunks)]
+    # Create a list of data chunks
+    data_chunks = [data[i*chunk_size:(i+1)*chunk_size] for i in range(num_chunks)]
     
-#     # Create a pool of workers
-#     with Pool(processes=num_chunks) as pool:
-#         # Process each chunk in parallel
-#         results = pool.starmap(process_data_chunk, [(chunk, resolution, shift_to_real_potential) for chunk in data_chunks])
+    # Create a pool of workers
+    with Pool(processes=num_chunks) as pool:
+        # Process each chunk in parallel
+        results = pool.starmap(process_data_chunk, [(chunk, resolution, shift_to_real_potential) for chunk in data_chunks])
     
-#     # Combine the results back into a single array
-#     data = np.concatenate(results)
+    # Combine the results back into a single array
+    data = np.concatenate(results)
     
-#     return data
+    return data
 
 def convert_to_vol(data, path, fname, shift_to_real_potential=True):
     # scale data to mv
@@ -211,6 +211,7 @@ def read_raw_data(path, fname, convert2vol=False, to_df=True, subtract_dc_offset
     start_time = time.time()
     if convert2vol:
         raw_data = convert_to_vol(raw_data, path, fname, shift_to_real_potential=False)
+        # raw_data = convert_to_vol2(raw_data, path, fname, shift_to_real_potential=False)
         if convert2uVInt:
             # raw_data = (raw_data*1000).round() #.astype(np.int32) # max ampl 3.3V -> 3.3 million uV -> int32
             np.multiply(raw_data, 1000, out=raw_data)

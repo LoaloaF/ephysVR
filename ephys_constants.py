@@ -4,6 +4,9 @@ import os
 import pandas as pd
 import numpy as np
 
+EPHYS_DECOMPRESS_WITH_MULTIPROCESSING = True
+EPHYS_DECOMPRESS_CHUNKSIZE_S = 60 *5 # 5 minutes
+
 SAMPLING_RATE = 20_000
 MAX_AMPL_mV = 3300.
 ADC_RESOLUTION = 2**10
