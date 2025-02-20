@@ -9,7 +9,7 @@ import time
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION
+from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION, MEA_OVERRIDE_GAIN
 import ephys_constants as C
 
 
@@ -67,6 +67,9 @@ def get_recording_gain(path, fname):
         with h5py.File(os.path.join(path, fname), 'r') as file:
             gain = file['data_store/data0000/settings/gain'][:][0].item()
     print(f"Recording gain: {gain}")  
+    if MEA_OVERRIDE_GAIN:
+        print(f"Overriding gain to {MEA_OVERRIDE_GAIN}")
+        return MEA_OVERRIDE_GAIN
     return gain
 
 def get_recording_sampling_rate(path, fname):

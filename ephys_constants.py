@@ -16,6 +16,8 @@ DEVICE_NAME_RAT006 = '241016_MEA1K03_H1278pad4shankB5'
 DEVICE_NAME_RAT011 = '241211_MEA1K06_H1278pad4shankB5'
 SEED = 43
 
+MEA_OVERRIDE_GAIN = 7
+
 def _delfault_paths():
     which_os = platform.system()
     user = os.getlogin()
