@@ -10,7 +10,7 @@ from multiprocessing import Pool, cpu_count
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION, NAS_DIR
+from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION, device_paths
 from CustomLogger import CustomLogger as Logger
 
 def _get_recording_gain(path, fname):
@@ -50,7 +50,25 @@ def _get_recording_version(path, fname):
             fmt = 'all_channels'
     return fmt
 
-def _get_recording_mapping(path, fname):
+def _get_implant_config_fname(implant_name, animal_name, date):
+    nas_dir = device_paths()[0]
+    path = os.path.join(nas_dir, 'devices', 'implant_devices', implant_name, 'bonding')
+    animal_config = [f for f in os.listdir(path) 
+                     if f.startswith(animal_name) and f.endswith('.cfg')]
+    Logger().logger.debug(f"Implant configurations found for {implant_name}, "
+                          f"{animal_name}: {animal_config}")
+    if len(animal_config) > 1:
+        Logger().logger.warning(f"Multiple implant configurations found for "
+                                f"{animal_name}. Should use {date}. For now "
+                                "simply most recent.")
+    elif len(animal_config) == 0:
+        raise ValueError(f"No implant configuration found for {animal_name}")
+    return os.path.join(path, animal_config[-1])
+    
+
+        
+
+def _get_recording_config(path, fname):
     rec_file_fmt = _get_recording_version(path, fname)
     if rec_file_fmt == 'legacy':
         mapping_key = 'mapping'
@@ -59,9 +77,15 @@ def _get_recording_mapping(path, fname):
     with h5py.File(os.path.join(path, fname), 'r') as file:
         mapping = np.array([list(m) for m in np.array(file[mapping_key])])
     if mapping.shape[0] == 0:
-        Logger().logger.warning("Mapping is empty, using default bonded mapping")
-        mapping = pd.read_csv("assets/default_bonded_mapping.csv", index_col=0).iloc[:,0]
-        return mapping, None
+        Logger().logger.warning("Mapping is empty in h5, inferring mapping from path...")
+        
+        # infer the mapping from the path
+        session_name = os.path.basename(path)
+        date, _, animal_name = session_name.split('_')[:3]
+        implant_name = _animal_name2implant_device(animal_name)
+        config_fullfname = _get_implant_config_fname(implant_name, animal_name, date)
+        mapping = pd.read_csv(config_fullfname.replace(".cfg", '.csv'), 
+                              index_col=None).values
         
     channels = mapping[:, :2].astype(int)
     channels = pd.Series(channels[:,0], index=channels[:,1]).sort_values()
@@ -114,8 +138,8 @@ def _read_mea1k_file(path, fname, dtype=np.float16, row_slice=slice(None),
     rec_file_fmt = _get_recording_version(path, fname)
     data_key = _get_data_key(rec_file_fmt)
     Logger().logger.debug(f"Reading MEA1K ephys data (format: {rec_file_fmt}) "
-                          f"with row slice {row_slice}, col slice {col_slice}, "
-                          f"casting to `{dtype}`...")
+                          f"casting to `{dtype}` with col slice {col_slice}, "
+                          f"row slice {row_slice}...")
 
     # read the MEA1K file
     start_time = time.time()
@@ -132,20 +156,22 @@ def read_raw_data(path, fname, convert2uV_int16=False, convert2mV_float16=False,
     raw_data = _read_mea1k_file(path, fname, row_slice=row_slice, 
                                 col_slice=col_slice, dtype=dtype)
     
-    # if data is recorded with format `all_channels`, we use mapping to subset the amplifers
-    raw_data_mapping, _ = _get_recording_mapping(path, fname)
-    raw_data = raw_data[raw_data_mapping.values]
+    if not isinstance(row_slice, pd.Index):
+        # if data is recorded with format `all_channels`, we use mapping to subset the amplifers
+        raw_data_mapping, _ = _get_recording_config(path, fname)
+        raw_data = raw_data[raw_data_mapping.values]
     
-    gain = _get_recording_gain(path, fname)
     if convert2uV_int16 or convert2mV_float16:
+        gain = _get_recording_gain(path, fname)
         raw_data = _ADC2voltage(raw_data, gain, convert2uV_int16=convert2uV_int16, 
-                                    subtract_dc_offset=subtract_dc_offset)
+                                subtract_dc_offset=subtract_dc_offset,)
     elif subtract_dc_offset:
         raw_data -= raw_data[:,0][:, np.newaxis]
-    Logger().logger.debug(f"Data:\n{raw_data}")
     
-    if to_df:
-        raw_data_mapping, _ = _get_recording_mapping(path, fname)
+    Logger().logger.debug(f"Data:\n{raw_data if raw_data.shape[1]>1 else raw_data.T}")
+    
+    if to_df and not isinstance(row_slice, pd.Index):
+        raw_data_mapping, _ = _get_recording_config(path, fname)
         # should already be in this order
         raw_data.index = raw_data_mapping.index
         raw_data.index.name = 'el'
@@ -162,8 +188,9 @@ def read_raw_data(path, fname, convert2uV_int16=False, convert2mV_float16=False,
 
 def mea1k_raw2decompressed_dat_file(path, fname, session_name, chunk_size_s=60,
                                     convert2uV_int16=False, convert2mV_float16=False, 
-                                    subtract_dc_offset=False):
+                                    subtract_dc_offset=False, exclude_shanks=[]):
     L = Logger()
+    
     _, rec_length = _get_recording_shape(path, fname)
     chunk_indices = np.arange(0, rec_length, chunk_size_s*SAMPLING_RATE)
     chunk_indices = np.append(chunk_indices, rec_length)
@@ -171,39 +198,73 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, chunk_size_s=60,
                    f"{len(chunk_indices)} x {chunk_size_s}s chunks.")
     L.spacer("debug")
     
-    output_fname = f"{session_name}_ephys_traces.dat"
-    open(os.path.join(path, output_fname), 'w').close()
+    # get bonding mapping (mea1k el -> polyimide pad / shank electrode)
+    # and match with the mea1k el of the recording file
+    implant_mapping = _get_recording_implant_mapping(path, fname, session_name)
+    n_per_shank_els = implant_mapping.shank_id.value_counts().sort_index()
+    n_per_shank_els['no_shank_connection'] = implant_mapping.shank_id.isna().sum()
+    L.logger.debug(L.fmtmsg([f"Recorded from {implant_mapping.shape[0]} MEA1K "
+                              "electrodes that were bonded to these shanks:",
+                              n_per_shank_els.to_dict()]))
+    if n_per_shank_els['no_shank_connection'] > 0:
+        L.logger.warning(f"Recorded from {n_per_shank_els['no_shank_connection']}"
+                         " MEA1K electrodes that were not bonded/ connected to a "
+                         "shank. Will be excluded.")
+        implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
+    
+    if len(exclude_shanks) > 0:
+        L.logger.debug(f"Excluding MEA1K electrodes bonded to shanks "
+                       f"{exclude_shanks} from the recording...")
+        implant_mapping = implant_mapping[~implant_mapping.shank_id.isin(exclude_shanks)]
+    # this can be used to reorder the raw data according to physical layout
+    shank_order = implant_mapping[['shank_id', 'depth']].values.argsort(axis=0)[:, 0]
+    
+    # create the output file that we will append to
+    out_fullfname = os.path.join(path,f"{session_name}_{len(implant_mapping)}_ephys_traces.dat")
+    open(out_fullfname, 'w').close()
+    # save the mapping file
+    implant_mapping.iloc[shank_order].to_csv(out_fullfname.replace(".dat", "_mapping.csv"))
     
     # calculate the initial DC offset, use for all later chunks
     if subtract_dc_offset:
         subtract_dc_offset = read_raw_data(path, fname, convert2uV_int16=convert2uV_int16,
                                            convert2mV_float16=convert2mV_float16,
-                                           col_slice=slice(0,1))
+                                           col_slice=slice(0,1), row_slice=implant_mapping.index)
+    # iterate of time chunks of the data (all channels) and process them
     for i in range(len(chunk_indices)-1):
         col_slice = slice(chunk_indices[i], chunk_indices[i+1])
         data_chunk = read_raw_data(path, fname, convert2uV_int16=convert2uV_int16,
                                    convert2mV_float16=convert2mV_float16,
                                    subtract_dc_offset=subtract_dc_offset,
-                                   col_slice=col_slice)
+                                   col_slice=col_slice,
+                                   row_slice=implant_mapping.index)
+        # reorder to sort by shank and then depth of electrode on that shank
+        data = data_chunk[shank_order]
+        
+        if i == 0 and L.LOGGING_LEVEL == 'DEBUG':
+            import matplotlib.pyplot as plt
+            # plot traces
+            plt.figure()
+            for j,row in enumerate(data):
+                if j<300:
+                    continue
+                plt.plot(row[:20_000]+j*1000)
+            plt.show()
 
         # write to file
-        with open(os.path.join(path,output_fname), 'ab') as f:
+        with open(out_fullfname, 'ab') as f:
             L.logger.debug(f"Writing {data_chunk.shape} chunk {i+1}/{len(chunk_indices)-1} to file...")
             data_chunk.flatten(order="F").tofile(f)
             L.spacer("debug")
             
-    # insert the channel count into the filename..
-    n_sites = data_chunk.shape[0]
-    os.rename(os.path.join(path, output_fname),
-              os.path.join(path, f"{session_name}_{n_sites}_ephys_traces.dat")) 
+def _get_recording_implant_mapping(path, mea1k_rec_fname, session_name):
+    L = Logger()
+    rec_config, _ = _get_recording_config(path, mea1k_rec_fname)
+    rec_mea1k_els = rec_config.index.values
+    rec_mea1k_chnls = rec_config.values
+    L.logger.debug(f"Recording config:\n{rec_config}")
     
-    
-def complement_raw_traces_dat_file(path, mea1k_rec_fname, session_name):
-    rec_mapping, _ = _get_recording_mapping(path, mea1k_rec_fname)
-    n_sites = rec_mapping.shape[0]
-    rec_mea1k_els = rec_mapping.index.values
-    rec_mea1k_chnls = rec_mapping.values
-    
+    # infer what implant was used
     # hacky way of getting animal, but metadata is far away
     animal_name = os.path.basename(path).split('_')[2].replace("_", "")
     # get the general mapping from NAS, then reindex this table to fit the recording
@@ -213,27 +274,24 @@ def complement_raw_traces_dat_file(path, mea1k_rec_fname, session_name):
     implant_mapping.index = rec_mea1k_chnls
     implant_mapping.index.name = 'amplifier_id'
     # copying and subseting the implant mapping for the specific config used in this rec
-    implant_mapping.to_csv(os.path.join(path, f"{session_name}_{n_sites}_ephys_traces_mapping.csv"))
+    # implant_mapping.to_csv(os.path.join(path, f"{session_name}_{n_sites}_ephys_traces_mapping.csv"))
     Logger().logger.debug(f"Implant mapping:\n{implant_mapping}")
+    return implant_mapping
     
-    # TODO: implement this for spike sorting
-    # write_probe_file()
-    
-    # TODO: implement this for viewing in Neuroscope
-    # create_neuroscope_xml_from_template()
-        
 def get_implant_mapping(implant_name=None, animal_name=None):
+    nas_dir = device_paths()[0]
     if animal_name is not None:
         implant_name = _animal_name2implant_device(animal_name)
     if implant_name is not None:
-        fullfname = os.path.join(NAS_DIR, 'devices', 'implant_devices', implant_name, 
+        fullfname = os.path.join(nas_dir, 'devices', 'implant_devices', implant_name, 
                                 'bonding', f'bonding_mapping_{implant_name}.csv')
     else:
         raise ValueError("Either `implant_name` or `animal_name` must be provided")
     return pd.read_csv(fullfname, index_col=None)
 
 def _animal_name2implant_device(animal_name):
-    fullfname = os.path.join(NAS_DIR, 'devices', 'implant_to_animal_map.csv')
+    nas_dir = device_paths()[0]
+    fullfname = os.path.join(nas_dir, 'devices', 'implant_to_animal_map.csv')
     mapping = pd.read_csv(fullfname, index_col=0, header=0)
     Logger().logger.debug(f"Animal->Implant map:\n{mapping}")
     if animal_name in mapping.index:
@@ -400,19 +458,19 @@ def second_recording():
     # PATH = '/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Other/mea1k_first'
     # fname = 'ephys_output.raw.h5'
     # data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
-    # mapping, _ = _get_recording_mapping(PATH, fname)
+    # mapping, _ = _get_recording_config(PATH, fname)
     
     # # # routed
     # PATH = '/Users/loaloa/local_data'
     # fname = 'Trace_20241025_15_35_38.raw.h5'
     # data = read_raw_data(PATH, fname, conpvert2vol=True, col_slice=slice(0, 1000))
-    # mapping, _ = _get_recording_mapping(PATH, fname)
+    # mapping, _ = _get_recording_config(PATH, fname)
     
     # # all chaannels
     PATH = '/mnt/SpatialSequenceLearning/RUN_rYL006/rYL006_P1100/2024-11-15_15-48_rYL006_P1100_LinearTrackStop_35min/'
     fname = 'ephys_output.raw.h5'
     data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
-    mapping, _ = _get_recording_mapping(PATH, fname)
+    mapping, _ = _get_recording_config(PATH, fname)
 
 def main():
     second_recording()
