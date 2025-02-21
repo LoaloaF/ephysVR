@@ -1,26 +1,32 @@
 import os
-from glob import glob
-import time
-import datetime
+import sys
+
+# to import from parent dir
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from CustomLogger import CustomLogger as Logger
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 import ephys_constants as C
 from mea1k_ephys import get_implant_mapping
-from mea1k_utils import start_saving, stop_saving, try_routing
+from mea1k_modules.mea1k_config_utils import setup_array, array_config2df, try_routing
+from mea1k_modules.mea1k_raw_preproc import animal_name2implant_device
 
-from mea1k_utils import setup_array, array_config2df
-
-def make_bonding_config(device_name, config_name_prefix, seed):
-    implant_mapping = get_implant_mapping(C.NAS_DIR, device_name)
-    # slice to electrodes under pads that are routed to a shank PI electrode
+def make_bonding_config(animal_name, config_name_prefix):
+    nas_dir = C.device_paths()[0]
+    
+    # get the bonding mapping for the animal
+    device_name = animal_name2implant_device(animal_name)
+    implant_mapping = get_implant_mapping(nas_dir, device_name)
     implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
     print(implant_mapping)
-    
+
+    # first try to route the best connected electrodes under a pad, then try the next rank
     sel_which_rank = 1
     els = implant_mapping[(implant_mapping.connectivity_order==sel_which_rank) & 
-                          (implant_mapping.mea1k_connectivity>20)].mea1k_el.values
+                          (implant_mapping.mea1k_connectivity>.8)].mea1k_el.values
     while True:
         succ_routed, failed_routing, array = try_routing(els, randomize_routing=True,
                                                          return_array=True)
@@ -35,16 +41,17 @@ def make_bonding_config(device_name, config_name_prefix, seed):
         missing_pads = implant_mapping[implant_mapping.mea1k_el.isin(failed_routing)].pad_id
         missing_pads = implant_mapping[implant_mapping.pad_id.isin(missing_pads)]
         
+        # get the alternative electrodes with good enough connectivity
         alt_els = missing_pads[missing_pads.connectivity_order==sel_which_rank].mea1k_el
-        good_enough_connec_mask = missing_pads[missing_pads.connectivity_order==sel_which_rank].mea1k_connectivity > 20
-        print(f"{sum(good_enough_connec_mask)} / {len(good_enough_connec_mask)} alternative electrodes have good enough connectivity")
+        rank_mask = missing_pads.connectivity_order == sel_which_rank
+        good_enough_connec_mask = missing_pads[rank_mask].mea1k_connectivity > .8
+        print(f"{sum(good_enough_connec_mask)} / {len(good_enough_connec_mask)} "
+              "alternative electrodes have good enough connectivity")
         alt_els = alt_els[good_enough_connec_mask].values
         els = succ_routed + alt_els.tolist()
 
-    # array = setup_array(els)
-    # array.download()
-    config_fullfname = os.path.join(C.NAS_DIR, "implant_devices", device_name, 'bonding', 
-                                    f"{config_name_prefix}_{len(els):4d}ElConfig_S{seed}_{device_name}.cfg")
+    config_fullfname = os.path.join(nas_dir, "devices", "implant_devices", device_name, 'bonding', 
+                                    f"{config_name_prefix}_{len(els):4d}ElConfig.cfg")
     # csv of config
     print(config_fullfname)
     config_mapping = array_config2df(array)
@@ -54,14 +61,45 @@ def make_bonding_config(device_name, config_name_prefix, seed):
     array.save_config(config_fullfname)
     array.close()
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+#TODO CHECK what is relevant below here (3x3 stim ?)
 
 def extend_config_to_double_pad_stim(device_name, config_name):
-    implant_mapping = get_implant_mapping(C.NAS_DIR, device_name)
+    implant_mapping = get_implant_mapping(nas_dir, device_name)
     # slice to electrodes under pads that are routed to a shank PI electrode
     implant_mapping = implant_mapping[implant_mapping.shank_id.isin((1, 2))]
     print("Filtered implant_mapping by shank_id:\n", implant_mapping)
     
-    config_fullfname = os.path.join(C.NAS_DIR, "implant_devices", device_name, 'bonding', 
+    config_fullfname = os.path.join(nas_dir, "implant_devices", device_name, 'bonding', 
                                     f"{config_name}_{device_name}.csv")
     config = pd.read_csv(config_fullfname, index_col=None)
     print("Config data:\n", config)
@@ -92,7 +130,7 @@ def extend_config_to_double_pad_stim(device_name, config_name):
     succ_routed, failed_routing, array = try_routing(merged_els, randomize_routing=True,
                                                      return_array=True)
     print(f"Failed routing {len(failed_routing)}: {failed_routing}")
-    config_fullfname = os.path.join(C.NAS_DIR, "implant_devices", device_name, 'bonding', 
+    config_fullfname = os.path.join(nas_dir, "implant_devices", device_name, 'bonding', 
                                     f"Stim_{config_name}_{device_name}.cfg")
     # csv of config
     print(config_fullfname)
@@ -121,7 +159,7 @@ def extend_config_to_double_pad_stim(device_name, config_name):
 
 
 def make_full_padlayout_configs(device_name, ):
-    implant_mapping = get_implant_mapping(C.NAS_DIR, device_name)
+    implant_mapping = get_implant_mapping(nas_dir, device_name)
     # slice to electrodes under pads that are routed to a shank PI electrode
     implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
 
@@ -143,7 +181,7 @@ def make_full_padlayout_configs(device_name, ):
                 # array = setup_array(config_i_els, randomize_routing=False)
                 # array.download()
                 
-                config_fullfname = os.path.join(C.NAS_DIR, "implant_devices", 
+                config_fullfname = os.path.join(nas_dir, "implant_devices", 
                                                 C.DEVICE_NAME, "full_padlayout_configs", 
                                                 f"el_config_{config_i:03}_{pad_counter:03}pads.cfg")
                 print(f"Saving config number {config_i:03} with {pad_counter:03} "
@@ -268,7 +306,7 @@ def get_all_9x3x16_meshgrid_electrodes():
     return all_tile_sets_els
     
 def make_9x3x16_meshgrid_config(config_dirname):
-    fulldirname = os.path.join(C.NAS_DIR, "mea1k_configs", config_dirname)
+    fulldirname = os.path.join(nas_dir, "mea1k_configs", config_dirname)
     if not os.path.exists(fulldirname):
         os.makedirs(fulldirname)
         
@@ -332,13 +370,13 @@ def make_9x3x16_meshgrid_config(config_dirname):
             break 
 
 def make_invivo_stim_config(implant_name, config_dirname):
-    fulldirname = os.path.join(C.NAS_DIR, "implant_devices", implant_name, 
+    fulldirname = os.path.join(nas_dir, "implant_devices", implant_name, 
                                "bonding", config_dirname)
     print(fulldirname)
     if not os.path.exists(fulldirname):
         os.makedirs(fulldirname)
     
-    implant_mapping = get_implant_mapping(C.NAS_DIR, implant_name)
+    implant_mapping = get_implant_mapping(nas_dir, implant_name)
     implant_mapping = implant_mapping[(implant_mapping.shank_id<3) &
                                       (implant_mapping.mea1k_connectivity>20) &
                                       (implant_mapping.connectivity_order<4)]
@@ -373,7 +411,7 @@ def make_invivo_stim_config(implant_name, config_dirname):
         array.close()
     
 def make_3x3_stim_config(config_dirname):
-    fulldirname = os.path.join(C.NAS_DIR, "mea1k_configs", config_dirname)
+    fulldirname = os.path.join(nas_dir, "mea1k_configs", config_dirname)
     canvas = np.zeros((120, 220))
     mea1k_stim_els_left = np.arange(26400)
     
@@ -446,19 +484,22 @@ def make_3x3_stim_config(config_dirname):
     
     
 def main():
-    seed = 46
+    # L = Logger()
+    # L.init_logger(None, None, "DEBUG")
+    
+    seed = 42
     np.random.seed(seed)
     
-    config_name_prefix = "R06_12.Nov"
-    # make_bonding_config(device_name=C.DEVICE_NAME_RAT006, 
-    #                     config_name_prefix=config_name_prefix,
-    #                     seed=seed)
+    config_name_prefix = "R10_21.Feb"
+    make_bonding_config(animal_name="rYL010", 
+                        config_name_prefix=config_name_prefix,
+                        seed=seed)
+    
     # extend_config_to_double_pad_stim(device_name=C.DEVICE_NAME_RAT006,
     #                                  config_name="R06_12.Nov_829ElConfig_S46")
     
-    
-    make_invivo_stim_config(implant_name=C.DEVICE_NAME_RAT006, 
-                            config_dirname="invivo_localstim_configs")
+    # make_invivo_stim_config(implant_name=C.DEVICE_NAME_RAT006, 
+    #                         config_dirname="invivo_localstim_configs")
 
     # seed = 1
     # np.random.seed(seed)

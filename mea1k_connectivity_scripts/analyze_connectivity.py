@@ -1,15 +1,19 @@
-import numpy as np
 import os
-import h5py
-import mea1k_ephys as mea1k
-import utils
-import time
-import ephys_constants as EC
-from mea1k_ephys import read_raw_data, get_recording_version, filter_trace, extract_average_amplitude
-from extract_connectivity_depr import estimate_frequency_power, bandpass_filter
+import sys
+
+# to import from parent dir
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from CustomLogger import CustomLogger as Logger
+
+import numpy as np
 import pandas as pd
-from mea1k_viz import draw_mea1k
 import matplotlib.pyplot as plt
+
+import ephys_constants as C
+from mea1k_modules.mea1k_raw_preproc import read_raw_data
+from signal_helpers import estimate_frequency_power
+
+from mea1k_viz import draw_mea1k
 
 def get_hdf5_fnames_from_dir(subdir):
     fnames, ids = [], []
@@ -36,14 +40,14 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
     all_data = []
     for fname, i in zip(fnames, ids):
         print(f"Config {i} of {len(fnames)}")
-        data = read_raw_data(subdir, fname, convert2vol=True,
-                             subtract_dc_offset=False, col_slice=slice(0, n_samples))
-        
+        data = read_raw_data(subdir, fname, convert2mV_float16=True, to_df=True,
+                             col_slice=slice(0, n_samples))
+
         print("Filtering...")
         mean_ampl = []
         for j,row in enumerate(data.values):
             debug = True if j <10 and debug else False
-            _, m_ampl = estimate_frequency_power(row, sampling_rate=EC.SAMPLING_RATE, 
+            _, m_ampl = estimate_frequency_power(row, sampling_rate=C.SAMPLING_RATE, 
                                                  debug=debug, min_band=960, max_band=1040)
             mean_ampl.append(m_ampl)
         
@@ -90,8 +94,13 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     plt.imsave(fullfname.replace(".csv", "_inverted.png"), img)
     
 def main():
+    L = Logger()
+    L.init_logger(None, None, "DEBUG")
+    L.logger.info("Starting connectivity analysis")
+    
     input_ampl_mV = 8
     n_samples = 20_000
+    
     
     subdirs = [
         # "headstage_devices/MEA1K05/recordings/nothingExt_oneShankbatch2_no_press",
@@ -109,17 +118,19 @@ def main():
         # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_shank3",
         # "headstage_devices/MEA1K06/recordings/bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3.1",
         
-        "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9.2_25mVext_2_2Shankbatch5_silk",
-        
+        # "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9.2_25mVext_2_2Shankbatch5_silk",
+        "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9_25mVext_2_2Shankbatch5_silk/"
     ]
     
+    nas_dir = C.device_paths()[0]
+    
     for subdir in subdirs:
-        subdir = os.path.join(EC.NAS_DIR, subdir)
+        subdir = os.path.join(nas_dir, subdir)
         if not os.path.exists(os.path.join(subdir)):
             print(f"Error: {os.path.join(subdir)} does not exist.")
             continue
         
-        # extract_connectivity(subdir, input_ampl_mV, n_samples)
+        extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
         vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
     
 if __name__ == "__main__":

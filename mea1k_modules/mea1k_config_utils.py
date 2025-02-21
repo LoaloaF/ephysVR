@@ -12,6 +12,12 @@ def reset_MEA1K(gain, enable_stimulation_power=False):
     maxlab.offset()
     print("Done.")
 
+def get_maxlab_array():
+    return maxlab.chip.Array()
+
+def get_maxlab_saving():
+    return maxlab.Saving()
+
 def start_saving(s, dir_name, fname, channels=list(range(1024))):
     s.set_legacy_format(True)
     s.open_directory(dir_name)

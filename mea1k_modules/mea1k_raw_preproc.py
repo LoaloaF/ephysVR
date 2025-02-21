@@ -21,20 +21,6 @@ def _get_recording_gain(path, fname):
             gain = file['data_store/data0000/settings/gain'][:][0].item()
     return gain
 
-# def _get_recording_sampling_rate(path, fname):
-#     fmt = _get_recording_version(path, fname)
-#     if fmt == 'legacy':
-#         with h5py.File(os.path.join(path, fname), 'r') as file:
-#             sr = file['settings']['sampling_rate'][:][0].item()
-#     elif fmt == 'routed':
-#         with h5py.File(os.path.join(path, fname), 'r') as file:
-#             sr = file['data_store/data0000/settings/sampling_rate'][:][0].item()
-#     elif fmt == 'all_channels':
-#         with h5py.File(os.path.join(path, fname), 'r') as file:
-#             sr = file['data_store/data0000/settings/sampling_rate'][:][0].item()
-#     print(f"Recording sampling rate: {sr}")
-#     return sr
-
 def _get_recording_resolution(gain):
     return (MAX_AMPL_mV/ADC_RESOLUTION) /gain
 
@@ -80,7 +66,7 @@ def _get_recording_config(path, fname):
         # infer the mapping from the path
         session_name = os.path.basename(path)
         date, _, animal_name = session_name.split('_')[:3]
-        implant_name = _animal_name2implant_device(animal_name)
+        implant_name = animal_name2implant_device(animal_name)
         config_fullfname = _get_implant_config_fname(implant_name, animal_name, date)
         mapping = pd.read_csv(config_fullfname.replace(".cfg", '.csv'), 
                               index_col=None).values
@@ -171,7 +157,7 @@ def read_raw_data(path, fname, convert2uV_int16=False, convert2mV_float16=False,
     if to_df and not isinstance(row_slice, pd.Index):
         raw_data_mapping, _ = _get_recording_config(path, fname)
         # should already be in this order
-        raw_data.index = raw_data_mapping.index
+        raw_data = pd.DataFrame(raw_data, index=raw_data_mapping.index)
         raw_data.index.name = 'el'
 
         # if rec_file_fmt != 'legacy':
@@ -283,7 +269,7 @@ def _get_recording_implant_mapping(path, mea1k_rec_fname, session_name):
 def get_implant_mapping(implant_name=None, animal_name=None):
     nas_dir = device_paths()[0]
     if animal_name is not None:
-        implant_name = _animal_name2implant_device(animal_name)
+        implant_name = animal_name2implant_device(animal_name)
     if implant_name is not None:
         fullfname = os.path.join(nas_dir, 'devices', 'implant_devices', implant_name, 
                                 'bonding', f'bonding_mapping_{implant_name}.csv')
@@ -291,7 +277,7 @@ def get_implant_mapping(implant_name=None, animal_name=None):
         raise ValueError("Either `implant_name` or `animal_name` must be provided")
     return pd.read_csv(fullfname, index_col=None)
 
-def _animal_name2implant_device(animal_name):
+def animal_name2implant_device(animal_name):
     nas_dir = device_paths()[0]
     fullfname = os.path.join(nas_dir, 'devices', 'implant_to_animal_map.csv')
     mapping = pd.read_csv(fullfname, index_col=0, header=0)

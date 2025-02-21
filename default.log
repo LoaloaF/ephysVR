@@ -1,0 +1,285 @@
+2025-02-21 15:18:20,317|INFO|163439|analyze_connectivity|main
+	Starting connectivity analysis
+2025-02-21 15:18:21,166|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:18:21,620|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.45 seconds
+2025-02-21 15:18:21,633|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:18:21,896|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:18:21,896|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1.064   -1.064   -1.064   ... -1.525   -1.525   -1.525  ]
+ [-1.151   -1.151   -1.151   ... -0.662   -0.662   -0.662  ]
+ [-1.18    -1.18    -1.18    ... -1.381   -1.353   -1.381  ]
+ ...
+ [-1.324   -1.41    -1.381   ... -1.094   -0.9785  -1.122  ]
+ [-0.518   -0.547   -0.547   ... -0.662   -0.518   -0.6904 ]
+ [-0.4028  -0.4028  -0.4028  ...  0.02878  0.02878  0.02878]]
+2025-02-21 15:18:42,078|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:18:42,511|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.43 seconds
+2025-02-21 15:18:42,523|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:18:42,770|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:18:42,770|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1.468  -1.468  -1.496  ... -1.928  -1.899  -1.928 ]
+ [-1.295  -1.267  -1.353  ... -0.777  -0.719  -0.777 ]
+ [-1.237  -1.094  -1.496  ... -1.784  -1.324  -1.727 ]
+ ...
+ [-0.4316 -0.4604 -0.4604 ... -0.3452 -0.3452 -0.3452]
+ [ 1.468   1.468   1.468  ...  1.496   1.468   1.468 ]
+ [-0.518  -0.518  -0.518  ... -0.0863 -0.0863 -0.0863]]
+2025-02-21 15:18:44,767|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:18:45,209|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.44 seconds
+2025-02-21 15:18:45,220|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:18:45,494|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:18:45,494|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1.18   -1.18   -1.18   ... -1.611  -1.611  -1.611 ]
+ [-0.4028 -0.4028 -0.4028 ... -0.1151 -0.1151 -0.1151]
+ [-1.295  -1.295  -1.295  ... -1.438  -1.468  -1.438 ]
+ ...
+ [-0.1151 -0.1151 -0.1439 ...  0.547   0.547   0.547 ]
+ [ 0.9497  0.9497  0.9497 ...  1.007   1.007   1.007 ]
+ [ 0.8057  0.8057  0.8057 ...  0.8057  0.8057  0.8057]]
+2025-02-21 15:18:47,575|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:18:48,049|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.47 seconds
+2025-02-21 15:18:48,064|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:18:48,364|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:18:48,364|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1.87    -1.87    -1.87    ... -1.842   -1.842   -1.842  ]
+ [ 0.02878  0.02878  0.02878 ... -0.02878 -0.02878 -0.02878]
+ [-1.525   -1.525   -1.525   ... -1.669   -1.669   -1.669  ]
+ ...
+ [-0.8633  -0.892   -0.8633  ... -0.777   -0.777   -0.8057 ]
+ [-0.3452  -0.3452  -0.2014  ... -0.4028  -0.1726  -0.2878 ]
+ [-0.2878  -0.2878  -0.2878  ... -0.02878 -0.02878 -0.02878]]
+2025-02-21 15:18:50,416|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:18:50,845|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.43 seconds
+2025-02-21 15:18:50,858|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:18:51,098|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:18:51,099|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1.727  -1.727  -1.756  ... -1.727  -1.727  -1.727 ]
+ [-0.0863 -0.0863 -0.0863 ... -0.0863 -0.0863 -0.0863]
+ [-1.438  -1.438  -1.468  ... -1.583  -1.583  -1.583 ]
+ ...
+ [ 1.007   1.007   1.007  ...  0.374   0.374   0.374 ]
+ [ 1.669   1.669   1.641  ...  1.756   1.756   1.756 ]
+ [ 0.662   0.662   0.662  ...  0.6904  0.6904  0.6904]]
+2025-02-21 15:18:53,264|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:18:53,696|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.43 seconds
+2025-02-21 15:18:53,708|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:18:53,945|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:18:53,945|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-0.2878  -0.3167   0.05756 ... -0.719   -0.921   -0.518  ]
+ [ 0.05756  0.05756  0.02878 ...  0.05756  0.02878  0.05756]
+ [-1.669   -1.669   -1.641   ... -1.813   -1.842   -1.813  ]
+ ...
+ [ 0.       0.       0.02878 ...  0.374    0.4028   0.4028 ]
+ [ 0.748    0.748    0.748   ...  0.892    0.8633   0.892  ]
+ [ 0.547    0.518    0.662   ...  0.6045   0.6045   0.6904 ]]
+2025-02-21 15:18:56,016|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:18:56,455|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.44 seconds
+2025-02-21 15:18:56,467|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:18:56,734|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:18:56,735|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-2.445   -2.445   -2.475   ... -2.389   -2.389   -2.418  ]
+ [ 0.       0.       0.      ...  0.      -0.02878 -0.02878]
+ [-2.043   -2.043   -2.072   ... -1.985   -2.014   -1.985  ]
+ ...
+ [-0.05756 -0.0863  -0.0863  ... -0.05756 -0.0863  -0.0863 ]
+ [ 0.719    0.748    0.719   ...  0.8633   0.8345   0.8345 ]
+ [-0.374   -0.4893  -0.547   ... -0.3452  -0.4316  -0.4893 ]]
+2025-02-21 15:18:58,992|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:18:59,426|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.43 seconds
+2025-02-21 15:18:59,436|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:18:59,698|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:18:59,698|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-2.303   -2.303   -2.303   ... -2.217   -2.217   -2.217  ]
+ [-0.4316  -0.4604  -0.4316  ... -0.2302  -0.259   -0.2302 ]
+ [-1.036   -1.036   -1.036   ... -1.267   -1.295   -1.267  ]
+ ...
+ [ 1.064    1.064    1.094   ...  1.18     1.18     1.18   ]
+ [-0.1726  -0.1726  -0.1726  ...  0.      -0.02878 -0.02878]
+ [ 0.8633   0.777    0.777   ...  0.9785   0.892    0.9497 ]]
+2025-02-21 15:19:01,954|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:19:02,402|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.45 seconds
+2025-02-21 15:19:02,413|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:19:02,641|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:19:02,642|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1.813   -1.813   -1.813   ... -2.072   -2.072   -2.072  ]
+ [-0.4028  -0.374   -0.374   ... -0.2302  -0.2302  -0.2302 ]
+ [-1.122   -1.122   -1.122   ... -1.324   -1.324   -1.295  ]
+ ...
+ [-0.547   -0.547   -0.547   ...  0.       0.       0.     ]
+ [-0.9497  -0.921   -0.719   ... -1.007   -0.719   -0.719  ]
+ [-0.1151  -0.1439   0.0863  ... -0.2302   0.02878  0.05756]]
+2025-02-21 15:19:04,634|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:19:05,070|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.44 seconds
+2025-02-21 15:19:05,082|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:19:05,342|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:19:05,343|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 0.259   0.2302  0.1439 ... -0.6045 -0.2302 -0.8057]
+ [ 0.2302  0.2302  0.2302 ...  0.1151  0.1151  0.0863]
+ [-1.899  -1.928  -1.928  ... -1.87   -1.842  -1.87  ]
+ ...
+ [-1.554  -1.554  -1.554  ... -0.892  -0.892  -0.892 ]
+ [ 1.007   1.007   1.007  ...  0.9785  0.9785  0.9785]
+ [ 1.727   1.756   1.756  ...  1.611   1.611   1.611 ]]
+2025-02-21 15:19:07,333|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:19:07,803|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.47 seconds
+2025-02-21 15:19:07,812|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:19:08,052|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:19:08,053|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-2.389  -2.389  -2.36   ... -2.303  -2.303  -2.303 ]
+ [-0.4316 -0.4316 -0.4316 ... -0.259  -0.259  -0.259 ]
+ [-0.921  -0.9497 -0.921  ... -1.151  -1.151  -1.151 ]
+ ...
+ [ 1.151   1.151   1.151  ...  1.324   1.324   1.324 ]
+ [-1.525  -1.525  -1.496  ... -1.669  -1.669  -1.669 ]
+ [-0.374  -0.4028 -0.374  ... -0.259  -0.259  -0.259 ]]
+2025-02-21 15:19:09,862|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:19:10,521|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.66 seconds
+2025-02-21 15:19:10,537|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:19:10,815|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:19:10,816|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-2.102   -2.102   -2.102   ... -2.072   -2.043   -2.043  ]
+ [-0.259   -0.259   -0.259   ... -0.1439  -0.1439  -0.1151 ]
+ [-0.892   -0.8633  -0.8633  ... -1.036   -1.036   -1.007  ]
+ ...
+ [ 1.727    1.727    1.756   ...  1.41     1.41     1.438  ]
+ [ 0.6333   0.6333   0.6333  ...  0.662    0.662    0.662  ]
+ [ 0.05756  0.1439   0.1151  ...  0.05756  0.1151   0.2014 ]]
+2025-02-21 15:19:13,169|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:19:13,823|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.65 seconds
+2025-02-21 15:19:13,834|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:19:14,077|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:19:14,077|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1.267   -1.267   -1.267   ... -1.611   -1.583   -1.611  ]
+ [ 0.02878  0.02878  0.02878 ... -0.0863  -0.05756 -0.0863 ]
+ [-1.611   -1.583   -1.583   ... -1.496   -1.468   -1.468  ]
+ ...
+ [-0.1151  -0.1151  -0.1151  ...  0.4316   0.4316   0.4604 ]
+ [ 0.6904   0.6904   0.6904  ...  0.6904   0.6904   0.6904 ]
+ [-0.1151  -0.0863  -0.0863  ... -0.2302  -0.2302  -0.2302 ]]
+2025-02-21 15:19:16,324|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:19:16,774|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.45 seconds
+2025-02-21 15:19:16,790|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:19:17,106|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:19:17,107|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1.324  -1.353  -0.9785 ... -1.151  -1.353  -1.064 ]
+ [-0.2014 -0.1726 -0.1726 ... -0.0863 -0.0863 -0.0863]
+ [-1.641  -1.641  -1.583  ... -1.583  -1.611  -1.554 ]
+ ...
+ [ 0.8345  0.8345  0.8345 ...  0.921   0.921   0.892 ]
+ [ 0.9785  0.9785  0.9785 ...  1.122   1.122   1.122 ]
+ [-0.2014 -0.1726 -0.2014 ... -0.259  -0.259  -0.259 ]]
+2025-02-21 15:19:19,210|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(0, 20000, None), row slice slice(None, None, None)...
+2025-02-21 15:19:19,648|DEBUG|163439|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 20000) in 0.44 seconds
+2025-02-21 15:19:19,661|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0288mV/ adc step (1024))...
+2025-02-21 15:19:19,959|DEBUG|163439|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-02-21 15:19:19,959|DEBUG|163439|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-0.518   -0.518   -0.6045  ... -1.094   -1.094   -1.151  ]
+ [-0.1151  -0.1151  -0.1439  ... -0.05756 -0.05756 -0.0863 ]
+ [-1.18    -1.18    -1.18    ... -1.381   -1.381   -1.381  ]
+ ...
+ [-0.5757  -0.6045  -0.662   ... -0.2302  -0.2302  -0.2878 ]
+ [ 0.5757   0.5757   0.5757  ...  1.007    1.007    1.007  ]
+ [ 1.209    1.209    1.209   ...  1.122    1.122    1.122  ]]
+2025-02-21 15:46:25,102|DEBUG|164990|mea1k_raw_preproc|animal_name2implant_device
+	Animal->Implant map:
+                                implant_name
+animal_name                                 
+rYL006       241016_MEA1K03_H1278pad4shankB5
+rYL011       241211_MEA1K06_H1278pad4shankB5
+rYL010       250205_MEA1K03_H1278pad4shankB5
+2025-02-21 15:47:02,761|DEBUG|165085|mea1k_raw_preproc|animal_name2implant_device
+	Animal->Implant map:
+                                implant_name
+animal_name                                 
+rYL006       241016_MEA1K03_H1278pad4shankB5
+rYL011       241211_MEA1K06_H1278pad4shankB5
+rYL010       250205_MEA1K03_H1278pad4shankB5
+2025-02-21 15:48:08,894|DEBUG|165207|mea1k_raw_preproc|animal_name2implant_device
+	Animal->Implant map:
+                                implant_name
+animal_name                                 
+rYL006       241016_MEA1K03_H1278pad4shankB5
+rYL011       241211_MEA1K06_H1278pad4shankB5
+rYL010       250205_MEA1K03_H1278pad4shankB5
+2025-02-21 15:48:45,203|DEBUG|165318|mea1k_raw_preproc|animal_name2implant_device
+	Animal->Implant map:
+                                implant_name
+animal_name                                 
+rYL006       241016_MEA1K03_H1278pad4shankB5
+rYL011       241211_MEA1K06_H1278pad4shankB5
+rYL010       250205_MEA1K03_H1278pad4shankB5
