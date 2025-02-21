@@ -16,41 +16,78 @@ DEVICE_NAME_RAT006 = '241016_MEA1K03_H1278pad4shankB5'
 DEVICE_NAME_RAT011 = '241211_MEA1K06_H1278pad4shankB5'
 SEED = 43
 
-def _delfault_paths():
+# def _delfault_paths():
+#     which_os = platform.system()
+#     user = os.getlogin()
+#     print(f"OS: {which_os}, User: {user}")
+    
+#     if which_os == 'Linux' and user == 'loaloa':
+#         nas_dir = "/mnt/NTnas/BMI/VirtualReality/SpatialSequenceLearning/"
+#         local_data_dir = "/home/loaloa/local_data/"
+#         code_dir = "/home/loaloa/homedataXPS/projects/ratvr/VirtualReality/ephysVR"
+        
+#     elif which_os == 'Linux' and user == 'houmanjava':
+#         nas_dir = "/mnt/SpatialSequenceLearning/"
+#         local_data_dir = "/home/houmanjava/local_data/"
+#         code_dir = "/home/houmanjava/meatesting/ephysVR"
+    
+#     elif which_os == 'Linux' and user == 'vrmaster':
+#         nas_dir = "/mnt/SpatialSequenceLearning/"
+#         local_data_dir = "/home/vrmaster/local_data/"
+#         code_dir = "/home/vrmaster/Projects/VirtualReality/ephysVR"
+    
+#     elif which_os == "Darwin" and user == "root":
+#         nas_dir = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/"
+#         local_data_dir = "/Users/loaloa/local_data/"
+#         code_dir = "/Users/loaloa/homedataAir/phd/ratvr/VirtualReality/ephysVR"
+    
+#     else:
+#         nas_dir, local_data_dir, code_dir = None, None, None
+#         raise ValueError("Unknown OS or user")
+    
+#     if not os.path.exists(nas_dir):
+#         msg = f"NAS directory not found: {nas_dir} - VPN connected?"
+#         raise FileNotFoundError(msg)
+#     return nas_dir, local_data_dir, code_dir
+
+# NAS_DIR, LOCAL_DATA_DIR, CODE_DIR = _delfault_paths()
+
+def device_paths():
     which_os = platform.system()
     user = os.getlogin()
-    print(f"OS: {which_os}, User: {user}")
+    # print(f"OS: {which_os}, User: {user}")
     
-    if which_os == 'Linux' and user == 'loaloa':
-        nas_dir = "/mnt/NTnas/BMI/VirtualReality/SpatialSequenceLearning/"
-        local_data_dir = "/home/loaloa/local_data/"
-        code_dir = "/home/loaloa/homedataXPS/projects/ratvr/VirtualReality/ephysVR"
-        
-    elif which_os == 'Linux' and user == 'houmanjava':
+    if which_os == 'Linux' and user == 'houmanjava':
         nas_dir = "/mnt/SpatialSequenceLearning/"
         local_data_dir = "/home/houmanjava/local_data/"
-        code_dir = "/home/houmanjava/meatesting/ephysVR"
+        project_dir = "/home/houmanjava/meatesting/"
     
     elif which_os == 'Linux' and user == 'vrmaster':
         nas_dir = "/mnt/SpatialSequenceLearning/"
         local_data_dir = "/home/vrmaster/local_data/"
-        code_dir = "/home/vrmaster/Projects/VirtualReality/ephysVR"
+        project_dir = "/home/vrmaster/Projects/VirtualReality/"
     
     elif which_os == "Darwin" and user == "root":
         nas_dir = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/"
-        local_data_dir = "/Users/loaloa/local_data/"
-        code_dir = "/Users/loaloa/homedataAir/phd/ratvr/VirtualReality/ephysVR"
+        folders = [f for f in os.listdir("/Users") if os.path.isdir(os.path.join("/Users", f))]
+
+        if "loaloa" in folders:
+            local_data_dir = "/Users/loaloa/local_data/analysisVR_cache"
+            project_dir = "/Users/loaloa/homedataAir/phd/ratvr/VirtualReality/"
+        elif "yaohaotian" in folders:
+            local_data_dir = "/Users/yaohaotian/Downloads/Study/BME/Research/MasterThesis/code/data/analysisVR_cache"
+            project_dir = "/Users/yaohaotian/Downloads/Study/BME/Research/MasterThesis/code/"
+        else:
+            raise ValueError("Unknown MacOS user")
     
     else:
-        nas_dir, local_data_dir, code_dir = None, None, None
+        nas_dir, local_data_dir, project_dir = None, None, None
         raise ValueError("Unknown OS or user")
     
     if not os.path.exists(nas_dir):
         msg = f"NAS directory not found: {nas_dir} - VPN connected?"
         raise FileNotFoundError(msg)
-    return nas_dir, local_data_dir, code_dir
-
-NAS_DIR, LOCAL_DATA_DIR, CODE_DIR = _delfault_paths()
+    return nas_dir, local_data_dir, project_dir
 
 def _mea1k_el_center_table_micrometer():
     el_i = 0
@@ -101,7 +138,8 @@ MEA1K_EL_WIDTH_MICROMETER = 5
 MEA1K_EL_HEIGHT_MICROMETER = 9
 
 def _mea1k_el_pixel_table():
-    cached_fullfname = os.path.join(CODE_DIR, 'assets', "mea1k_el_pixel_table.pkl")
+    code_dir = device_paths()[2]
+    cached_fullfname = os.path.join(code_dir, 'ephysVR', 'assets', "mea1k_el_pixel_table.pkl")
     if os.path.exists(cached_fullfname):
         return pd.read_pickle(cached_fullfname)
     

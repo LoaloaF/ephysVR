@@ -94,7 +94,7 @@ def correlate_traces(config_traces, implant_mapping):
     ax.set_yticklabels([config_traces.index[i] for i in ticks])
     plt.show()
 
-def draw_mea1k(bg='black', el_color='#222222'):
+def draw_mea1k(bg='black', el_color='#111111'):
     fig, ax = plt.subplots(figsize=(3850/300, 2100/300), facecolor='none')
     fig.subplots_adjust(top=1, bottom=0, right=1, left=0)
     # fig.patch.set_facecolor('black')

@@ -10,7 +10,7 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 
-from ephys_constants import DEVICE_NAME, NAS_DIR
+from ephys_constants import device_paths
 
 def detect_wafer_pads(path, precomputed=False, save=False):
     fname_base = os.path.basename(path)
@@ -614,10 +614,11 @@ def finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=True):
     
 
 if __name__ == "__main__":
-    ELECTRODE_DEVICE_NAME = "H1278pad4shank"
-    # ELECTRODE_DEVICE_NAME = "H1628pad1shank"
-    # ELECTRODE_DEVICE_NAME = "H1384pad4shank" # not done yet
-    path = os.path.join(NAS_DIR, "electrode_devices", ELECTRODE_DEVICE_NAME)
+    nas_dir = device_paths()[0]
+    # device_name = "H1278pad4shank"
+    device_name = "H1628pad1shank"
+    # device_name = "H1384pad4shank" # not done yet
+    path = os.path.join(nas_dir, "devices", "electrode_devices", device_name)
     print(path)
 
     # detect the pads using cv2.HoughCircles on um-scale image
