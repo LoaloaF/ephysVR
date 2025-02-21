@@ -6,7 +6,7 @@ import utils
 import time
 import ephys_constants as EC
 from mea1k_ephys import read_raw_data, get_recording_version, filter_trace, extract_average_amplitude
-from extract_connectivity import estimate_frequency_power, bandpass_filter
+from extract_connectivity_depr import estimate_frequency_power, bandpass_filter
 import pandas as pd
 from mea1k_viz import draw_mea1k
 import matplotlib.pyplot as plt
@@ -49,14 +49,15 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
         
         data = pd.DataFrame(mean_ampl, index=data.index, columns=['ampl'])
         data['connectivity'] = data.ampl.values/input_ampl_mV 
+        data['input_ampl_mV'] = input_ampl_mV
         data.index = pd.MultiIndex.from_product([[i],data.index], names=['config', 'el'])
         print(f"Done. n >80%: {(data.connectivity >.8).sum()}\n")
 
         all_data.append(data)
-    save_output(subdir, pd.concat(all_data), f"extr_connectivity_{input_ampl_mV}.csv")
+    save_output(subdir, pd.concat(all_data), f"extr_connectivity.csv")
         
 def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
-    fullfname = os.path.join(subdir, "processed", f"extr_connectivity_{input_ampl_mV}.csv")
+    fullfname = os.path.join(subdir, "processed", f"extr_connectivity.csv")
     data = pd.read_csv(fullfname)
     data.set_index('el', inplace=True)  
     print(data)    
@@ -67,14 +68,29 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
         if el_i not in data.index:
             print("missing", el_i, end=' ')
             continue
+        # needed for new local configs that were used for a hort time
+        if data.loc[el_i].shape[0] == 2:
+            print("duplicate", el_i, end=' ')
+            continue
         whiteness = np.clip(data.loc[el_i].connectivity*cmap_scaler, 0, 1)
         el_recs.set_facecolor((whiteness, whiteness, whiteness))
-    fig.savefig(fullfname.replace(".csv", ".png"), dpi=300, transparent=True, 
+    fig.savefig(fullfname.replace(".csv", ".png"), dpi=300, transparent=False, 
                 bbox_inches='tight', pad_inches=0)  
     plt.show()
     
+    # save a second version with the colors inverted
+    img = plt.imread(fullfname.replace(".csv", ".png"))
+    img = img[:,:,:3]
+    # invert colors
+    img = (img*-1) + 1 
+    plt.imshow(img)
+    plt.axis('off')
+    
+    # save inverted
+    plt.imsave(fullfname.replace(".csv", "_inverted.png"), img)
+    
 def main():
-    input_ampl_mV = 5
+    input_ampl_mV = 8
     n_samples = 20_000
     
     subdirs = [
@@ -91,8 +107,9 @@ def main():
         # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_rec2",
         # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_morePressure",
         # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_shank3",
-        "headstage_devices/MEA1K06/recordings/bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3.1",
+        # "headstage_devices/MEA1K06/recordings/bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3.1",
         
+        "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9.2_25mVext_2_2Shankbatch5_silk",
         
     ]
     
@@ -102,7 +119,7 @@ def main():
             print(f"Error: {os.path.join(subdir)} does not exist.")
             continue
         
-        extract_connectivity(subdir, input_ampl_mV, n_samples)
+        # extract_connectivity(subdir, input_ampl_mV, n_samples)
         vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
     
 if __name__ == "__main__":

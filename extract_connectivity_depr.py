@@ -137,14 +137,8 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
     return power_1KHz, mean_ampl
 
 def get_n_configs(path):
-<<<<<<< HEAD:extract_connectivity.py
     n = len(glob(os.path.join(path, "el_config_*.raw.h5")))
     # n = len(glob(os.path.join(path, "config_*.raw.h5")))
-=======
-    n = len(glob(os.path.join(path, "config_*.raw.h5")))
-    # n = len(glob(os.path.join(path, "el_config_*.raw.h5")))
-    
->>>>>>> c04ae56960f2ed30ebc3ddaaf4cf73fa0929ee1b:extract_connectivity_depr.py
     print(f"Found {n} configurations\n")
     return n
 
@@ -345,16 +339,7 @@ def extract_traces(path, config_i, debug=False):
     print(f"Extracting traces for config {config_i:03d}", flush=True)
     mapping, _ = get_h5_mapping(path, config_i)
     # chnl_i = np.where(mapping.index == config_i)[0][0]
-<<<<<<< HEAD:extract_connectivity.py
     # chnl_i = 0
-=======
-    print(mapping)
-    chnl_i = 2200
-    # if 22746 in mapping.index:
-    #     el_22746 = mapping.loc[22746]
-    #     print(el_22746)
-    #     chnl_i = el_22746
->>>>>>> c04ae56960f2ed30ebc3ddaaf4cf73fa0929ee1b:extract_connectivity_depr.py
     
     mapping = mapping.sort_values()
     traces = read_data(path, config_i, convert2vol=True, row_slice=mapping.values,
@@ -371,16 +356,9 @@ def extract_traces(path, config_i, debug=False):
     #     #     print(f"Channel {mapping.index[i]}, {i}")
     #     plt.plot(s, alpha=.5)
     # plt.show()
-<<<<<<< HEAD:extract_connectivity.py
     
     powers_ampl = [estimate_frequency_power(t, SR, 970, 1030,
                                             debug=True) 
-=======
-    # print(traces.dtype)
-    # print(traces)
-    powers_ampl = [estimate_frequency_power(t, SR, 0, 300, 
-                                            debug=debug if True else False) 
->>>>>>> c04ae56960f2ed30ebc3ddaaf4cf73fa0929ee1b:extract_connectivity_depr.py
                    for i,t in enumerate(traces)]
     powers, amplitudes = zip(*powers_ampl)
     
@@ -420,17 +398,7 @@ def main():
     # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_ext1KHz_Current_singelEl_rec1'
     # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_dry_ext1KHz_rec4'
     # device_name = 'device_headmount_new2EpoxyWalls/impedance_bonded_meshstim_rec1'
-<<<<<<< HEAD:extract_connectivity.py
     device_name = "headstage_devices/MEA1K05/recordings/25mVext_oneShankbatch2_press"
-=======
-    # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded_dryDay2_ext1KHz_rec6'
-    device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded4_D0_1KHz_1024_rec1'
-    # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded2_D1_singlePadStim_1uA_onelong'
-    # device_name = 'device_headmount_new3EpoxyWalls/impedance_bonded4_D0_1KHz_1024_rec1'
-    # device_name = 'device_headmount_new3EpoxyWalls/connectivity_bonded4_D8_brain_1024_rec2'
-    
-    
->>>>>>> c04ae56960f2ed30ebc3ddaaf4cf73fa0929ee1b:extract_connectivity_depr.py
     PATH = basepath + device_name
     # PATH = "/Users/loaloa/local_data/impedance_bonded_extCurrent_singleAll"
     print(PATH)
@@ -463,19 +431,12 @@ def main():
     # config_names = [cn for cn in config_names if cn in mea1k[x, y]]
     
     # for config_i in config_names:
-<<<<<<< HEAD:extract_connectivity.py
     for config_i in range(get_n_configs(PATH)):
         print(config_i)
         # if config_i == 106:
         power = extract_traces(PATH, config_i, debug=False)
         powers.append(power)
         pd.concat(powers).sort_values('ampl').to_pickle(f"{PATH}/extracted_signal.pkl")
-=======
-    #     # if config_i == 106:
-    #     power = extract_traces(PATH, config_i, debug=False)
-    #     powers.append(power)
-    #     pd.concat(powers).sort_values('ampl').to_pickle(f"{PATH}/extracted_signal.pkl")
->>>>>>> c04ae56960f2ed30ebc3ddaaf4cf73fa0929ee1b:extract_connectivity_depr.py
     
     
     # print(f"Done\n{PATH}/extracted_signal2.pkl")
