@@ -4,12 +4,33 @@ import ephys_constants as C
 import numpy as np
 
 def reset_MEA1K(gain, enable_stimulation_power=False):
-    print(f"Resetting MEA1K with gain of {gain}...", end='', flush=True)
+    print(f"Resetting MEA1K with gain of {gain}, then offset...", end='', flush=True)
     maxlab.util.initialize()
     if enable_stimulation_power:
         maxlab.send(maxlab.chip.Core().enable_stimulation_power(True))
     maxlab.send(maxlab.chip.Amplifier().set_gain(gain))
+    maxlab.offset()
     print("Done.")
+
+def start_saving(s, dir_name, fname, channels=list(range(1024))):
+    s.set_legacy_format(True)
+    s.open_directory(dir_name)
+    s.start_file(fname)
+    s.group_delete_all()
+    s.group_define(0, "all_channels", channels)
+    print(f"Successfully opened file and defined group. Starting recording {dir_name}/{fname}...")
+    s.start_recording([0])
+
+def stop_saving(s):
+    print("Stopping recording...")
+    s.stop_recording()
+    s.stop_file()
+    s.group_delete_all()
+    
+def array_config2df(array):
+    rows = [(m.channel, m.electrode, m.x, m.y) for m in array.get_config().mappings]
+    config_df = pd.DataFrame(rows, columns=["channel", "electrode", "x", "y"])
+    return config_df
 
 def setup_array(electrodes, stim_electrodes=None, randomize_routing=False):
     print(f"Setting up array with {len(electrodes)} els (reset,route&download)...", 
@@ -41,7 +62,8 @@ def setup_array(electrodes, stim_electrodes=None, randomize_routing=False):
     return array
 
 def try_routing(els, return_array=False, stim_electrodes=None, randomize_routing=False):
-    array = setup_array(els, stim_electrodes=stim_electrodes, randomize_routing=randomize_routing)
+    array = setup_array(els, stim_electrodes=stim_electrodes, 
+                        randomize_routing=randomize_routing)
     failed_routing = []
     if stim_electrodes:
         print(f"Stimulation electrodes: {stim_electrodes}")
@@ -73,6 +95,8 @@ def turn_on_stimulation_units(stim_units, dac_id=0, mode='voltage'):
         elif mode == 'large_current':
             stim.set_current_mode()
             stim.set_large_current_range()
+        else:
+            raise ValueError(f"Unknown mode: {mode}")
         stim.dac_source(dac_id)
         maxlab.send(stim)
     print("Done.")
@@ -86,27 +110,42 @@ def turn_off_stimulation_units(stim_units):
         maxlab.send(stim)
     print("Done.")
 
-# def create_stim_sequence(dac=0, amplitude=25, npulses=10, nreps=3, inter_pulse_interval=100, rep_delay_s=.1):
-#     def append_stimulation_pulse(seq, amplitude):
-#         seq.append(maxlab.chip.DAC(0, 512-amplitude))
-#         seq.append(maxlab.system.DelaySamples(4))
-#         seq.append(maxlab.chip.DAC(0, 512+amplitude))
-#         seq.append(maxlab.system.DelaySamples(4))
-#         seq.append(maxlab.chip.DAC(0, 512))
-#         return seq
+def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[], with_download=False):
+    config_before = array_config2df(array)
 
-#     seq = maxlab.Sequence()config_fullfname
-#     for i in range(nreps):
-#         for j in range(npulses):
-#             append_stimulation_pulse(seq, amplitude) # 25 *2.83mV - current mode?
-#             seq.append(maxlab.system.DelaySamples(inter_pulse_interval)) #5ms
-#         time.sleep(rep_delay_s)
-#     return seq
+    used_up_stim_units = []
+    array.connect_electrode_to_stimulation(el)
+    stim_unit = array.query_stimulation_at_electrode(el)
+    success = False
+    # print(f"Trying to connect El{el} to stim unit {stim_unit}, used {used_up_stim_units}", flush=True)
+    
+    # unknown error case, could not find routing?
+    if not stim_unit:
+        print(f"Warning - Could not connect El{el} to a stim unit.")
+        success = False
+    
+    # stim unit not used yet, 
+    elif int(stim_unit) not in used_up_stim_units:
+        used_up_stim_units.append(int(stim_unit))
+        success = True
+        # print("connected", el, stim_unit)
+        if with_download:
+            array.download()
+            if not config_before.equals(array_config2df(array)):
+                success = False
+            readoutchannel = maxlab.chip.StimulationUnit(stim_unit).get_readout_channel()             
+            print(f"Connected El{el} to stim unit {stim_unit} (readout channel {readoutchannel}).")
+        
+        if len(used_up_stim_units) == 32:
+            print("Used up all 32 stim units.")
+            success = False
+    
+    return success, used_up_stim_units
 
-def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, nreps=1, voltage_conversion=False):
+def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, 
+                              nreps=1, voltage_conversion=False):
     if voltage_conversion:
         daq_lsb = float(maxlab.query_DAC_lsb_mV())
-        # daq_lsb = maxlab.system.query_DAC_lsb()
         print(f"DAQ LSB: {daq_lsb}")
         amplitude = int(amplitude / daq_lsb)
     
@@ -121,6 +160,29 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, nreps
                 seq.append(maxlab.chip.DAC(dac_id, ampl))
                 seq.append(maxlab.system.DelaySamples(1))
     return seq
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### NOT TESTED YET ##############################
 
 def create_stim_pulse_sequence(dac_id=0, amplitude=25, pulse_duration=167e-6, 
                                inter_phase_interval=67e-6, frequency=50, 
@@ -163,8 +225,6 @@ def create_stim_pulse_sequence(dac_id=0, amplitude=25, pulse_duration=167e-6,
     # print all of thse values
     print(f"n_pulses: {n_pulses}, burst_interval: {burst_interval}, pulse_duration: {pulse_duration}, inter_phase_interval: {inter_phase_interval}, sampling_rate: {sampling_rate}, samples_per_us: {samples_per_us}")
     
-
-
     for _ in range(nreps):
         for _ in range(n_pulses):
             # Cathodic phase
@@ -189,7 +249,6 @@ def create_stim_pulse_sequence(dac_id=0, amplitude=25, pulse_duration=167e-6,
 
     return seq
 
-
 def create_stim_onoff_sequence(dac_id=0, amplitude=25, pulse_duration=5_000_000, 
                                voltage_conversion=True):
     seq = maxlab.Sequence()
@@ -209,86 +268,3 @@ def create_stim_onoff_sequence(dac_id=0, amplitude=25, pulse_duration=5_000_000,
     seq.append(maxlab.chip.DAC(dac_id, 512))
     seq.append(maxlab.system.DelaySamples(1))
     return seq
-# def connect_el2stim_units(array, stim_electrodes):
-#     # stim_els collects electrodes that are sucessfully connected    
-#     stim_els, stim_units = [], []
-#     # failed_stim_els collects electrodes where no stimulation units could be connected to
-#     failed_stim_els = []
-#     for el in stim_electrodes:
-#         array.connect_electrode_to_stimulation(el)
-#         stim_unit = array.query_stimulation_at_electrode(el)
-        
-#         # unknown error case, could not find routing?
-#         if not stim_unit:
-#             print(f"Warning - Could not connect El{el} to a stim unit.")
-#             failed_stim_els.append(el)
-        
-#         # stim unit not used yet, 
-#         elif int(stim_unit) not in stim_units:
-#             stim_units.append(int(stim_unit))
-#             stim_els.append(el)
-            
-#             if len(stim_units) == 32:
-#                 print("Used up all 32 stim units.")
-#                 break
-        
-#         # stim unit already assigned case        
-#         else:
-#             array.disconnect_electrode_from_stimulation(el)
-#     return stim_els, stim_units, failed_stim_els
-
-def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[], with_download=False):
-    config_before = array_config2df(array)
-
-    used_up_stim_units = []
-    array.connect_electrode_to_stimulation(el)
-    stim_unit = array.query_stimulation_at_electrode(el)
-    success = False
-    # print(f"Trying to connect El{el} to stim unit {stim_unit}, used {used_up_stim_units}", flush=True)
-    
-    # unknown error case, could not find routing?
-    if not stim_unit:
-        print(f"Warning - Could not connect El{el} to a stim unit.")
-        success = False
-    
-    # stim unit not used yet, 
-    elif int(stim_unit) not in used_up_stim_units:
-        used_up_stim_units.append(int(stim_unit))
-        success = True
-        # print("connected", el, stim_unit)
-        if with_download:
-            array.download()
-            if not config_before.equals(array_config2df(array)):
-                success = False
-            readoutchannel = maxlab.chip.StimulationUnit(stim_unit).get_readout_channel()             
-            print(f"Connected El{el} to stim unit {stim_unit} (readout channel {readoutchannel}).")
-        
-        if len(used_up_stim_units) == 32:
-            print("Used up all 32 stim units.")
-            success = False
-    
-    return success, used_up_stim_units
-
-
-
-
-
-def start_saving(s, dir_name, fname, channels=list(range(1024))):
-    s.set_legacy_format(True)
-    s.open_directory(dir_name)
-    s.start_file(fname)
-    s.group_delete_all()
-    s.group_define(0, "all_channels", channels)
-    print(f"Successfully opened file and defined group. Starting recording {dir_name}/{fname}...")
-    s.start_recording([0])
-
-def stop_saving(s):
-    print("Stopping recording...")
-    s.stop_recording()
-    s.stop_file()
-    s.group_delete_all()
-    
-def array_config2df(array):
-    rows = [(m.channel, m.electrode, m.x, m.y) for m in array.get_config().mappings]
-    config_df = pd.DataFrame(rows, columns=["channel", "electrode", "x", "y"])
-    return config_df

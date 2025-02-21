@@ -2,50 +2,43 @@ import os
 from glob import glob
 import time
 
-import maxlab
+from ephys_constants import delfault_paths
+import mea1k_modules.mea1k_config_utils as mea1k
 
-import ephys_constants as C
-from mea1k_utils import start_saving, stop_saving, reset_MEA1K
 def main():
-
     # ======== PARAMETERS ========
-    # subdir = "implant_devices/241101_headstage09_50pad1shank/"
+    nas_dir = delfault_paths()[0]
     # subdir = "mea1k_well_devices//4983/"
-    # subdir = "implant_devices/241016_headstage03_46pad4shank/recordings"
     subdir = "headstage_devices/MEA1K06/recordings"
-    # rec_dir = "bonding4_2+2shank_B6_241209_ext5mV1Khz_innerThinShank"
     rec_dir = "bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3"
     post_download_wait_time = 1.6
     rec_time = 2
     gain = 7
-    # which_configs = "all_parallel"
-    configs_basepath = os.path.join(C.NAS_DIR, "mea1k_configs", '')
-    # configs_basepath = os.path.join(C.NAS_DIR, "implant_devices", '241016_headstage03_46pad4shank')
-    # which_configs = "full_padlayout_configs_real"
-    # which_configs = "4x4_tile_meshgrid_seed42"
+    configs_basepath = os.path.join(nas_dir, "mea1k_configs", '')
     which_configs = "all_parallel"
+    # which_configs = "4x4_tile_meshgrid_seed42"
     # ======== PARAMETERS ========
     
-    path = os.path.join(C.NAS_DIR, subdir, rec_dir)
+    path = os.path.join(nas_dir, subdir, rec_dir)
     print(f"Recording path exists: {os.path.exists(path)} - ", path)
-    reset_MEA1K(gain=gain)    
-    s = maxlab.Saving()
+    mea1k.reset_MEA1K(gain=gain)    
+    s = mea1k.get_maxlab_saving()
     fnames = glob(os.path.join(configs_basepath, which_configs, "*.cfg"))
     for i, config_fullfname in enumerate(sorted(fnames)):
         print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}")
         
-        array = maxlab.chip.Array()
+        array = mea1k.get_maxlab_array()
         array.load_config(config_fullfname)
         print("Downloading presaved config...")
         array.download()
         time.sleep(post_download_wait_time)        
         
         fname = os.path.basename(config_fullfname).replace(".cfg", "")
-        start_saving(s, dir_name=path, fname=fname)
+        mea1k.start_saving(s, dir_name=path, fname=fname)
         time.sleep(rec_time)
         
         array.close()
-        stop_saving(s)
+        mea1k.stop_saving(s)
 
 if __name__ == "__main__":
     main()

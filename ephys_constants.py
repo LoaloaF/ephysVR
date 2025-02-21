@@ -18,7 +18,7 @@ SEED = 43
 
 MEA_OVERRIDE_GAIN = 7
 
-def _delfault_paths():
+def device_paths():
     which_os = platform.system()
     user = os.getlogin()
     # print(f"OS: {which_os}, User: {user}")

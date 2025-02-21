@@ -5,8 +5,6 @@ import time
 import numpy as np
 import pandas as pd
 
-from multiprocessing import Pool, cpu_count
-
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
@@ -23,19 +21,19 @@ def _get_recording_gain(path, fname):
             gain = file['data_store/data0000/settings/gain'][:][0].item()
     return gain
 
-def _get_recording_sampling_rate(path, fname):
-    fmt = _get_recording_version(path, fname)
-    if fmt == 'legacy':
-        with h5py.File(os.path.join(path, fname), 'r') as file:
-            sr = file['settings']['sampling_rate'][:][0].item()
-    elif fmt == 'routed':
-        with h5py.File(os.path.join(path, fname), 'r') as file:
-            sr = file['data_store/data0000/settings/sampling_rate'][:][0].item()
-    elif fmt == 'all_channels':
-        with h5py.File(os.path.join(path, fname), 'r') as file:
-            sr = file['data_store/data0000/settings/sampling_rate'][:][0].item()
-    print(f"Recording sampling rate: {sr}")
-    return sr
+# def _get_recording_sampling_rate(path, fname):
+#     fmt = _get_recording_version(path, fname)
+#     if fmt == 'legacy':
+#         with h5py.File(os.path.join(path, fname), 'r') as file:
+#             sr = file['settings']['sampling_rate'][:][0].item()
+#     elif fmt == 'routed':
+#         with h5py.File(os.path.join(path, fname), 'r') as file:
+#             sr = file['data_store/data0000/settings/sampling_rate'][:][0].item()
+#     elif fmt == 'all_channels':
+#         with h5py.File(os.path.join(path, fname), 'r') as file:
+#             sr = file['data_store/data0000/settings/sampling_rate'][:][0].item()
+#     print(f"Recording sampling rate: {sr}")
+#     return sr
 
 def _get_recording_resolution(gain):
     return (MAX_AMPL_mV/ADC_RESOLUTION) /gain
@@ -191,7 +189,11 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, chunk_size_s=60,
                                     subtract_dc_offset=False, exclude_shanks=[]):
     L = Logger()
     
-    _, rec_length = _get_recording_shape(path, fname)
+    try:
+        _, rec_length = _get_recording_shape(path, fname)
+    except OSError as e:
+        L.logger.error(f"Error: {e}")
+        return
     chunk_indices = np.arange(0, rec_length, chunk_size_s*SAMPLING_RATE)
     chunk_indices = np.append(chunk_indices, rec_length)
     L.logger.info(f"Decompressing {rec_length:,} samples in "
@@ -212,7 +214,7 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, chunk_size_s=60,
                          "shank. Will be excluded.")
         implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
     
-    if len(exclude_shanks) > 0:
+    if exclude_shanks is not None and len(exclude_shanks) > 0:
         L.logger.debug(f"Excluding MEA1K electrodes bonded to shanks "
                        f"{exclude_shanks} from the recording...")
         implant_mapping = implant_mapping[~implant_mapping.shank_id.isin(exclude_shanks)]
@@ -314,8 +316,8 @@ def _animal_name2implant_device(animal_name):
     
     
     
-    
-    
+# TODO needs to be updated    
+
 def create_neuroscope_xml_from_template(template_filename, output_filename, 
                                         channel_groups, channel_colors_dict):
     # Parse the template XML file
@@ -414,16 +416,7 @@ def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
 
 
 
-
-
-
-
-
-
-
-
-
-
+# TODO DEPRECATED FUNCTIONS
 
 def get_implant_mapping_depr(nas_dir, device_name):
     fullfname = os.path.join(nas_dir, 'implant_devices', device_name, 
@@ -432,8 +425,8 @@ def get_implant_mapping_depr(nas_dir, device_name):
     bonding_electrode_map = pd.read_csv(fullfname, index_col=0)
     return bonding_electrode_map
 
-def assign_mapping_to_data(data, implant_mapping, 
-                           shank_depth_side_multiindex=True):
+def assign_mapping_to_data_depr(data, implant_mapping, 
+                                shank_depth_side_multiindex=True):
     # mask to the electrodes in the data (routed in rec config)
     implant_mapping = implant_mapping[np.isin(implant_mapping.mea1k_el, data.index)]
     if implant_mapping.pad_id.isna().any():
@@ -452,28 +445,3 @@ def assign_mapping_to_data(data, implant_mapping,
         data.index = pd.MultiIndex.from_frame(levels)
     implant_mapping.index.name = 'channel'
     return data, implant_mapping
-
-def second_recording():
-    # # PATH = '/Users/loaloa/local_data/2024-10-21_16-08_rYL006_P0500_MotorLearning_3min'
-    # PATH = '/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/Other/mea1k_first'
-    # fname = 'ephys_output.raw.h5'
-    # data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
-    # mapping, _ = _get_recording_config(PATH, fname)
-    
-    # # # routed
-    # PATH = '/Users/loaloa/local_data'
-    # fname = 'Trace_20241025_15_35_38.raw.h5'
-    # data = read_raw_data(PATH, fname, conpvert2vol=True, col_slice=slice(0, 1000))
-    # mapping, _ = _get_recording_config(PATH, fname)
-    
-    # # all chaannels
-    PATH = '/mnt/SpatialSequenceLearning/RUN_rYL006/rYL006_P1100/2024-11-15_15-48_rYL006_P1100_LinearTrackStop_35min/'
-    fname = 'ephys_output.raw.h5'
-    data = read_raw_data(PATH, fname, convert2vol=True, col_slice=slice(0, 1000))
-    mapping, _ = _get_recording_config(PATH, fname)
-
-def main():
-    second_recording()
-
-if __name__ == "__main__":
-    main()
