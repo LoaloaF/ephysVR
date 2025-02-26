@@ -27,7 +27,7 @@ def device_paths():
     if which_os == 'Linux' and user == 'houmanjava':
         nas_dir = "/mnt/SpatialSequenceLearning/"
         local_data_dir = "/home/houmanjava/local_data/"
-        project_dir = "/home/houmanjava/meatesting/"
+        project_dir = "/home/houmanjava/VirtualReality"
     
     elif which_os == 'Linux' and user == 'vrmaster':
         nas_dir = "/mnt/SpatialSequenceLearning/"
@@ -50,7 +50,7 @@ def device_paths():
     else:
         raise ValueError("Unknown OS or user")
     
-    if not os.path.exists(nas_dir):
+    if not os.path.exists(nas_dir) or os.listdir(nas_dir) == []:
         msg = f"NAS directory not found: {nas_dir} - VPN connected?"
         print(msg)
         # raise FileNotFoundError(msg)
