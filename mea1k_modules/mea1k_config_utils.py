@@ -1,7 +1,9 @@
+import time
 import maxlab
 import pandas as pd
 import ephys_constants as C
 import numpy as np
+import math
 
 def reset_MEA1K(gain, enable_stimulation_power=False):
     print(f"Resetting MEA1K with gain of {gain}, then offset...", end='', flush=True)
@@ -167,12 +169,27 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100,
                 seq.append(maxlab.system.DelaySamples(1))
     return seq
 
+def init_fpga_sine_stim(t_period, amp_in_bits, periods=1):
+    """Create an FPGA loop on MidSupply"""
+    sineStr = ""
+    n_samples = 20
+    for i in range(0, n_samples):
+        v = int(-amp_in_bits * math.sin(periods * 2 * math.pi / n_samples * i))
+        s = int(20e3 * t_period / n_samples)
+        factor = 128  # 1.65/(3.0/1024)
+        sineStr += str(v + factor) + "/" + str(s) + " "
+        print(sineStr)
+    maxlab.send_raw("system_loop_sine_onVRef " + sineStr)
 
+def begin_fpga_sine_stim():
+    maxlab.send(maxlab.system.Switches(sw_0=1, sw_1=0, sw_2=0, sw_3=1, sw_4=0, sw_5=0, sw_6=0, sw_7=0))
+    time.sleep(0.5)
+    maxlab.send_raw("system_loop_start")
 
-
-
-
-
+def end_fpga_sine_stim():
+    maxlab.send_raw("system_loop_stop")
+    maxlab.send(maxlab.system.Switches(sw_0=0, sw_1=0, sw_2=0, sw_3=0, sw_4=0, sw_5=0, sw_6=0, sw_7=0))
+    time.sleep(0.5)
 
 
 
