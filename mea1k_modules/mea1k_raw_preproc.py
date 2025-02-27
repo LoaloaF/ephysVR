@@ -34,20 +34,7 @@ def _get_recording_version(path, fname):
             fmt = 'all_channels'
     return fmt
 
-def _get_implant_config_fname(implant_name, animal_name, date):
-    nas_dir = device_paths()[0]
-    path = os.path.join(nas_dir, 'devices', 'implant_devices', implant_name, 'bonding')
-    animal_config = [f for f in os.listdir(path) 
-                     if f.startswith(animal_name) and f.endswith('.cfg')]
-    Logger().logger.debug(f"Implant configurations found for {implant_name}, "
-                          f"{animal_name}: {animal_config}")
-    if len(animal_config) > 1:
-        Logger().logger.warning(f"Multiple implant configurations found for "
-                                f"{animal_name}. Should use {date}. For now "
-                                "simply most recent.")
-    elif len(animal_config) == 0:
-        raise ValueError(f"No implant configuration found for {animal_name}")
-    return os.path.join(path, animal_config[-1])
+    
     
 
         
@@ -67,7 +54,7 @@ def _get_recording_config(path, fname):
         session_name = os.path.basename(path)
         date, _, animal_name = session_name.split('_')[:3]
         implant_name = animal_name2implant_device(animal_name)
-        config_fullfname = _get_implant_config_fname(implant_name, animal_name, date)
+        config_fullfname = _get_implant_config_fullfname(implant_name, animal_name, date)
         mapping = pd.read_csv(config_fullfname.replace(".cfg", '.csv'), 
                               index_col=None).values
         
@@ -132,7 +119,12 @@ def _read_mea1k_file(path, fname, dtype=np.float16, row_slice=slice(None),
     Logger().logger.debug(f"Done. Decompressed {raw_data.shape} in "
                           f"{time.time() - start_time:.2f} seconds")
     return raw_data
-    
+
+def read_stim_DAC(path, fname, col_slice=slice(None)):
+    dac_data = _read_mea1k_file(path, fname, row_slice=1024, 
+                                col_slice=col_slice, dtype=np.int16)
+    return dac_data
+
 def read_raw_data(path, fname, convert2uV_int16=False, convert2mV_float16=False, 
                   subtract_dc_offset=False, to_df=False, 
                   row_slice=slice(None), col_slice=slice(None)):
@@ -152,7 +144,7 @@ def read_raw_data(path, fname, convert2uV_int16=False, convert2mV_float16=False,
     elif subtract_dc_offset:
         raw_data -= raw_data[:,0][:, np.newaxis]
     
-    Logger().logger.debug(f"Data:\n{raw_data if raw_data.shape[1]>1 else raw_data.T}")
+    Logger().logger.debug(f"Data:\n{raw_data if raw_data.shape[1]>1 else raw_data.T}\n{raw_data.shape}")
     
     if to_df and not isinstance(row_slice, pd.Index):
         raw_data_mapping, _ = _get_recording_config(path, fname)
@@ -288,12 +280,20 @@ def animal_name2implant_device(animal_name):
         raise ValueError(f"No implant name found for `{animal_name}` Add to the "
                          f"mapping manually: {fullfname}")
     
-    
-    
-    
-    
-    
-    
+def _get_implant_config_fullfname(implant_name, animal_name, date):
+    nas_dir = device_paths()[0]
+    path = os.path.join(nas_dir, 'devices', 'implant_devices', implant_name, 'bonding')
+    animal_config = [f for f in os.listdir(path) 
+                     if f.startswith(animal_name) and f.endswith('.cfg')]
+    Logger().logger.info(f"Implant configurations found for {implant_name}, "
+                          f"{animal_name}: {animal_config}")
+    if len(animal_config) > 1:
+        Logger().logger.warning(f"Multiple implant configurations found for "
+                                f"{animal_name}. Should use {date}. For now "
+                                "simply most recent.")
+    elif len(animal_config) == 0:
+        raise ValueError(f"No implant configuration found for {animal_name}")
+    return os.path.join(path, animal_config[-1])
     
     
     
