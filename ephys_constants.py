@@ -22,11 +22,12 @@ def device_paths():
     which_os = platform.system()
     user = os.getlogin()
     # print(f"OS: {which_os}, User: {user}")
-    
+
+    nas_dir, local_data_dir, project_dir = None, None, None
     if which_os == 'Linux' and user == 'houmanjava':
         nas_dir = "/mnt/SpatialSequenceLearning/"
         local_data_dir = "/home/houmanjava/local_data/"
-        project_dir = "/home/houmanjava/meatesting/"
+        project_dir = "/home/houmanjava/VirtualReality"
     
     elif which_os == 'Linux' and user == 'vrmaster':
         nas_dir = "/mnt/SpatialSequenceLearning/"
@@ -47,12 +48,12 @@ def device_paths():
             raise ValueError("Unknown MacOS user")
     
     else:
-        nas_dir, local_data_dir, project_dir = None, None, None
         raise ValueError("Unknown OS or user")
     
-    if not os.path.exists(nas_dir):
+    if not os.path.exists(nas_dir) or os.listdir(nas_dir) == []:
         msg = f"NAS directory not found: {nas_dir} - VPN connected?"
-        raise FileNotFoundError(msg)
+        print(msg)
+        # raise FileNotFoundError(msg)
     return nas_dir, local_data_dir, project_dir
 
 def _mea1k_el_center_table_micrometer():
@@ -105,6 +106,8 @@ MEA1K_EL_HEIGHT_MICROMETER = 9
 
 def _mea1k_el_pixel_table():
     code_dir = device_paths()[2]
+    if code_dir is None:
+        return None
     cached_fullfname = os.path.join(code_dir, 'ephysVR', 'assets', "mea1k_el_pixel_table.pkl")
     if os.path.exists(cached_fullfname):
         return pd.read_pickle(cached_fullfname)

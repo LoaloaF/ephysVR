@@ -98,28 +98,12 @@ def main():
     L.init_logger(None, None, "DEBUG")
     L.logger.info("Starting connectivity analysis")
     
-    input_ampl_mV = 8
+    input_ampl_mV = 0.8
     n_samples = 20_000
     
-    
     subdirs = [
-        # "headstage_devices/MEA1K05/recordings/nothingExt_oneShankbatch2_no_press",
-        # "headstage_devices/MEA1K05/recordings/25mVext_oneShankbatch2_no_press",
-        # "headstage_devices/MEA1K05/recordings/25mVext_oneShankbatch2_press",
-        # "headstage_devices/MEA1K06/recordings/bonding_singleshank_241206_ext5mV1Khz_morepressure",
-        # "headstage_devices/MEA1K06/recordings/bonding3_singleshank_B6_241207_ext5mV1Khz",
-        # "headstage_devices/MEA1K06/recordings/bonding3_singleshank_B6_241207+2_ext5mV1Khz_rec2",
-        # "headstage_devices/MEA1K06/recordings/bonding4_2+2shank_B6_241209_ext5mV1Khz_outerThinShank",
-        # "headstage_devices/MEA1K05/recordings/bonding_4shank_B4_241207_ext5mV1Khz",
-        # "headstage_devices/MEA1K07/recordings/bonding_1shank_B5_24121_ext5mV1Khz_silk_morepressure",
-        # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk",
-        # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_rec2",
-        # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_morePressure",
-        # "headstage_devices/MEA1K07/recordings/bonding2_4shank_B6_241210_ext5mV1Khz_silk_shank3",
-        # "headstage_devices/MEA1K06/recordings/bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3.1",
-        
-        # "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9.2_25mVext_2_2Shankbatch5_silk",
-        "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9_25mVext_2_2Shankbatch5_silk/"
+        # "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9_25mVext_2_2Shankbatch5_silk/"
+        "devices/well_devices/4983/recordings/all_pad_testrec_VrefFPGAStim_ampl110_rec5",
     ]
     
     nas_dir = C.device_paths()[0]
