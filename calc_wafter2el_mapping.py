@@ -245,6 +245,7 @@ def shank_ordered_wafer_pads(path, wafer_pads, visualize=True):
 
 def get_device_info(path):
     fname_base = os.path.basename(path)
+    print(f'{path}/info_{fname_base}.json')
     with open(f'{path}/info_{fname_base}.json', 'r') as f:
         device_info = json.load(f)
     print(json.dumps(device_info, indent=4))
@@ -299,12 +300,8 @@ def integr_shank_geometries(wafer_pad2el, device_info):
             
             if right:
                 group_top_gap = group_gap_right
-                group_bottom_gap = 0
-                if group_info == {'n_els': 72, 'el_dist': 20, 'gap_left': 140, 'gap_right': 100}:
-                    group_bottom_gap = 20
             else:
                 group_top_gap = group_gap_left
-                group_bottom_gap = 0
             
             start = distances[-1]+group_top_gap if len(distances) else start
             end = start + (group_n_els//4) * (el_dist*4)
@@ -315,7 +312,11 @@ def integr_shank_geometries(wafer_pad2el, device_info):
             print("Group top gap: ", group_top_gap, "Start: ", start, "End: ", 
                   end, 'n:', len(group_distances), ", last one: ", group_distances[-1])
             distances.extend(group_distances)
-            distances[-1] += group_bottom_gap
+            
+            # excpetion for specifically long shanks, group 2, they need 20 um spacer at the bottom
+            if (all((right, group_n_els==72, el_dist==20, group_gap_left==140, group_gap_right==100),) or
+               all((not right, group_n_els==72, el_dist==20, group_gap_left==100, group_gap_right==140),)):
+                distances[-1] += 20
             
             
         if not right and shank_info['n_electrode_pairs']%2 != 0:
@@ -381,7 +382,7 @@ def integr_shank_geometries(wafer_pad2el, device_info):
 
 
         # the 2nd metallization layer is shifted by the spacings of the polyimide electrodes
-        # buy spacings differ for each group of electrodes
+        # but spacings differ for each group of electrodes
         print("\nCalculate spacing delta for lower metal layer")
         metal_el_shift_dist = []
         for group_info in shank_info['pad_um_center_distances']:
@@ -433,6 +434,7 @@ def assign_unqiue_colors(wafer_pad2el, device_info, visualize=True,
     def draw_shank(ax, shank_electrodes, shank_info):
         shank_name = shank_info['shank_name']
         n_pairs = shank_info['n_electrode_pairs']
+        # ax.set_aspect('equal')
         
         # get the electrode pads for each metal layer
         m1_pads = shank_electrodes[shank_electrodes.metal==1].sort_values('el_pair')
@@ -442,23 +444,23 @@ def assign_unqiue_colors(wafer_pad2el, device_info, visualize=True,
         m2_colors = m1_pads.loc[:, ['r', 'g', 'b']].values/255
         
         # Plot the depth of electrodes on the shank in the assgiend color
-        ax.scatter(np.arange(len(m1_pads)), -m1_pads.depth, facecolor=m1_colors, edgecolor='none',
-                   marker='s', alpha=.8, s=5)
-        ax.scatter(np.arange(len(m2_pads)), -m2_pads.depth, facecolor=m2_colors, edgecolor='none',
-                   marker='s', alpha=.8, s=5)
-        
-        # plot the linear pad order on the shank (same x, not v shape)
         rects = []
         for _, row in m1_pads.iterrows():
-            x = n_pairs +20
+            x = row['el_pair']
             y = -row['depth']
-            rects.append(plt.Rectangle((x-13/2, y-13/2), 13, 13, zorder=20,
+            rects.append(plt.Rectangle((x-11/2, y-11/2), 11, 11, zorder=20,
+                                       color=row[['r', 'g', 'b']].values/255, lw=1))
+            rects.append(plt.Rectangle((x-11, y-11/2), 11/4, 11, zorder=20,
                                        color='green', lw=1) )
+            ax.hlines(y, -30, 200, color='black', lw=1, alpha=.2)
         for _, row in m2_pads.iterrows():
-            x = n_pairs +20
+            x = row['el_pair']
             y = -row['depth']
-            rects.append(plt.Rectangle((x-13/2, y-13/2), 13, 13, zorder=20,
-                                       color='purple', lw=1))
+            rects.append(plt.Rectangle((x-11/2, y-11/2), 11, 11, zorder=20,
+                                       color=row[['r', 'g', 'b']].values/255, lw=1))
+            rects.append(plt.Rectangle((x-11, y-11/2), 11/4, 11, zorder=20,
+                                       color='purple', lw=1) )
+            ax.hlines(y, -30, 200, color='black', lw=1, alpha=.2)
         [ax.add_patch(rect) for rect in rects]
         
         # plot the hook
@@ -466,10 +468,10 @@ def assign_unqiue_colors(wafer_pad2el, device_info, visualize=True,
         ax.scatter(n_pairs//2, -hook_depth, marker='o', edgecolor='gray', 
                    facecolor='none', alpha=.8, s=40)
 
-        ax.set_xlim(0, n_pairs+20)
+        ax.set_xlim(-30, 200)
         ax.set_title(f"Shank {shank_id}:\n{shank_name}")
         ax.set_xticks([])
-        ax.grid(axis='y', zorder=0)
+        # ax.(axis='y', zorder=0)
         [sp.set_visible(False) for sp in ax.spines.values()]
 
         # anntotions
@@ -551,10 +553,11 @@ def assign_unqiue_colors(wafer_pad2el, device_info, visualize=True,
     
     # prepare the unique pad/polyimide electrode colors for later alignment
     el_colors = make_unique_shank_colors(device_info['shank_top_wafer_view_left2right'], 
-                                         visualize=visualize)
+                                        #  visualize=visualize)
+                                         visualize=False)
 
     if visualize:
-        fig, axes = plt.subplots(ncols=4, figsize=(12,10), sharey=True)
+        fig, axes = plt.subplots(ncols=4, figsize=(12,10), sharey=True, sharex=True)
     for shank_id in wafer_pad2el.shank_id.unique():
         if pd.isna(shank_id): continue
         shank_electrodes = wafer_pad2el[wafer_pad2el.shank_id==shank_id].sort_values('depth')
@@ -611,12 +614,13 @@ def finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=True):
     fname_base = os.path.basename(path) 
     cv2.imwrite(f"{path}/device_mapping_{fname_base}.png", canvas_bgr)
     wafer_pad2el.sort_index().to_csv(f"{path}/device_mapping_{fname_base}.csv")
+    print(f"{path}/device_mapping_{fname_base}.csv")
     
 
 if __name__ == "__main__":
     nas_dir = device_paths()[0]
-    # device_name = "H1278pad4shank"
-    device_name = "H1628pad1shank"
+    device_name = "H1278pad4shank"
+    # device_name = "H1628pad1shank"
     # device_name = "H1384pad4shank" # not done yet
     path = os.path.join(nas_dir, "devices", "electrode_devices", device_name)
     print(path)
@@ -624,7 +628,7 @@ if __name__ == "__main__":
     # detect the pads using cv2.HoughCircles on um-scale image
     detected_wafer_pads = detect_wafer_pads(path, precomputed=True, save=False)
     # # order the pads x,y according in which order they are routed to the shanks
-    wafer_pad2el = shank_ordered_wafer_pads(path, detected_wafer_pads, visualize=True)
+    wafer_pad2el = shank_ordered_wafer_pads(path, detected_wafer_pads, visualize=False)
     # # get the device info from the json file with ank info (n electrodes etc)
     device_info = get_device_info(path)
     # # add shank depth and metalization pairings to pad/polyimide electrode 

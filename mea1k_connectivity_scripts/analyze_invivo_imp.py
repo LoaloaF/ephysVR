@@ -10,7 +10,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import ephys_constants as C
-from mea1k_modules.mea1k_raw_preproc import read_raw_data, read_stim_DAC
+from mea1k_modules.mea1k_raw_preproc import read_raw_data
+from mea1k_modules.mea1k_raw_preproc import read_stim_DAC
+from mea1k_modules.mea1k_raw_preproc import get_recording_implant_mapping
+from mea1k_modules.mea1k_visualizations import vis_shank_traces
+from signal_helpers import estimate_frequency_power
+
 
 from mea1k_viz import draw_mea1k
 
@@ -37,20 +42,28 @@ def save_output(subdir, data, fname):
         os.makedirs(fullpath)
     data.to_csv(os.path.join(fullpath, fname))
 
-def extract_impedance(subdir, debug=False):
+def extract_impedance(subdir, implant_name, debug=False):
     fnames, ids = get_hdf5_fnames_from_dir(subdir)
     all_data = []
     for fname, i in zip(fnames, ids):
         print(f"Config {i} of {len(fnames)}")
-    
-        dac = read_stim_DAC(subdir, fname)
-        data = read_raw_data(subdir, fname, convert2mV_float16=True, to_df=True)
         
-        plt.subplot(2, 1, 1)
-        plt.plot(data.T)
-        plt.subplot(2, 1, 2, sharex=plt.gca())  
-        plt.plot(dac)
-        plt.show()
+        stimulated = pd.read_csv(os.path.join(subdir, fname.replace(".raw.h5", ".csv")))
+        stim_mea1k_el = stimulated[stimulated.stim].electrode.values
+        print(stim_mea1k_el)
+
+        if fname == "el_config_S1D1650.raw.h5":
+        # if True:
+            # dac = read_stim_DAC(subdir, fname)
+            data = read_raw_data(subdir, fname, convert2mV_float16=True,
+                                subtract_dc_offset=True, col_slice=slice(200, None, None))
+            mapping = get_recording_implant_mapping(subdir, fname, implant_name=implant_name)
+            vis_shank_traces(data, mapping, stim_mea1k_el=stim_mea1k_el, scaler=40)
+            # plt.subplot(2, 1, 1)
+            # plt.plot(data.T)
+            # plt.subplot(2, 1, 2, sharex=plt.gca())  
+            # plt.plot(dac)
+            # plt.show()
         
         continue
         
@@ -70,8 +83,6 @@ def extract_impedance(subdir, debug=False):
         # data.index = pd.MultiIndex.from_product([[i],data.index], names=['config', 'el'])
         # print(f"Done. n >80%: {(data.connectivity >.8).sum()}\n")
 
-        all_data.append(data)
-    save_output(subdir, pd.concat(all_data), f"extr_connectivity.csv")
         
 def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     fullfname = os.path.join(subdir, "processed", f"extr_connectivity.csv")
@@ -106,19 +117,26 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     # save inverted
     plt.imsave(fullfname.replace(".csv", "_inverted.png"), img)
     
-def main():
+def main(): 
     L = Logger()
     L.init_logger(None, None, "DEBUG")
     L.logger.info("Starting in vivo impedance analysis")
-    
-    n_samples = 20_000
-    
-    subdirs = [
-        "devices/implant_devices/241016_MEA1K03_H1278pad4shankB5/recordings/14:56:47_invivo_localstim_mode='small_current'_stimpulse='sine'_amplitude=3"
-    ]
-    
     nas_dir = C.device_paths()[0]
-    extract_impedance(os.path.join(nas_dir, subdirs[0]))
+    
+    implant_name = "241016_MEA1K03_H1278pad4shankB5"
+    subdirs = [
+        f"devices/implant_devices/{implant_name}/recordings/14:56:47_invivo_localstim_mode='small_current'_stimpulse='sine'_amplitude=3"
+    ]
+    # el_config_S1D1650.raw.h5
+    extract_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name)
+    
+    subdir = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/RUN_rYL006/rYL006_P1100/2025-01-27_13-39_rYL006_P1100_LinearTrackStop_73min"
+    data = read_raw_data(subdir, "ephys_output.raw.h5", convert2mV_float16=True, col_slice=slice(20_000, 30_000), to_df=True, subtract_dc_offset=True)
+    mapping = get_recording_implant_mapping(subdir, "ephys_output.raw.h5", animal_name="rYL006", exclude_shanks=[2,3,4])
+    mapping = mapping[mapping.depth < 2000]
+    mapping = mapping[mapping.shank_side == 'left']
+    data = data.loc[mapping.mea1k_el]
+    vis_shank_traces(data.values, mapping, scaler=180)
     
 if __name__ == "__main__":
     main()

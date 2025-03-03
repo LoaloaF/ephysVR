@@ -162,9 +162,10 @@ def read_raw_data(path, fname, convert2uV_int16=False, convert2mV_float16=False,
         # raw_data.columns = frame_nos
     return raw_data
 
-def mea1k_raw2decompressed_dat_file(path, fname, session_name, chunk_size_s=60,
-                                    convert2uV_int16=False, convert2mV_float16=False, 
-                                    subtract_dc_offset=False, exclude_shanks=[]):
+def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name, 
+                                    chunk_size_s=60, convert2uV_int16=False, 
+                                    convert2mV_float16=False, subtract_dc_offset=False, 
+                                    exclude_shanks=[]):
     L = Logger()
     
     try:
@@ -180,22 +181,9 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, chunk_size_s=60,
     
     # get bonding mapping (mea1k el -> polyimide pad / shank electrode)
     # and match with the mea1k el of the recording file
-    implant_mapping = _get_recording_implant_mapping(path, fname, session_name)
-    n_per_shank_els = implant_mapping.shank_id.value_counts().sort_index()
-    n_per_shank_els['no_shank_connection'] = implant_mapping.shank_id.isna().sum()
-    L.logger.debug(L.fmtmsg([f"Recorded from {implant_mapping.shape[0]} MEA1K "
-                              "electrodes that were bonded to these shanks:",
-                              n_per_shank_els.to_dict()]))
-    if n_per_shank_els['no_shank_connection'] > 0:
-        L.logger.warning(f"Recorded from {n_per_shank_els['no_shank_connection']}"
-                         " MEA1K electrodes that were not bonded/ connected to a "
-                         "shank. Will be excluded.")
-        implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
-    
-    if exclude_shanks is not None and len(exclude_shanks) > 0:
-        L.logger.debug(f"Excluding MEA1K electrodes bonded to shanks "
-                       f"{exclude_shanks} from the recording...")
-        implant_mapping = implant_mapping[~implant_mapping.shank_id.isin(exclude_shanks)]
+    implant_mapping = get_recording_implant_mapping(path, fname, animal_name=animal_name, 
+                                                    exclude_shanks=exclude_shanks)
+
     # this can be used to reorder the raw data according to physical layout
     shank_order = implant_mapping[['shank_id', 'depth']].values.argsort(axis=0)[:, 0]
     
@@ -237,18 +225,19 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, chunk_size_s=60,
             data_chunk.flatten(order="F").tofile(f)
             L.spacer("debug")
             
-def _get_recording_implant_mapping(path, mea1k_rec_fname, session_name):
+def get_recording_implant_mapping(path, mea1k_rec_fname, animal_name=None,
+                                  implant_name=None, exclude_shanks=None, 
+                                  drop_non_bonded=True):
     L = Logger()
     rec_config, _ = _get_recording_config(path, mea1k_rec_fname)
     rec_mea1k_els = rec_config.index.values
     rec_mea1k_chnls = rec_config.values
     L.logger.debug(f"Recording config:\n{rec_config}")
     
-    # infer what implant was used
-    # hacky way of getting animal, but metadata is far away
-    animal_name = os.path.basename(path).split('_')[2].replace("_", "")
+    # infer what implant was used, either from animal or through name itself
+    implant_mapping = _get_raw_implant_mapping(animal_name=animal_name,
+                                               implant_name=implant_name)
     # get the general mapping from NAS, then reindex this table to fit the recording
-    implant_mapping = get_implant_mapping(animal_name=animal_name)
     implant_mapping = implant_mapping.set_index('mea1k_el').reindex(rec_mea1k_els)
     implant_mapping.reset_index(inplace=True)
     implant_mapping.index = rec_mea1k_chnls
@@ -256,9 +245,30 @@ def _get_recording_implant_mapping(path, mea1k_rec_fname, session_name):
     # copying and subseting the implant mapping for the specific config used in this rec
     # implant_mapping.to_csv(os.path.join(path, f"{session_name}_{n_sites}_ephys_traces_mapping.csv"))
     Logger().logger.debug(f"Implant mapping:\n{implant_mapping}")
+
+    # check if all electrodes are bonded    
+    n_per_shank_els = implant_mapping.shank_id.value_counts().sort_index()
+    n_per_shank_els['no_shank_connection'] = implant_mapping.shank_id.isna().sum()
+    L.logger.debug(L.fmtmsg([f"Recorded from {implant_mapping.shape[0]} MEA1K "
+                              "electrodes that were bonded to these shanks:",
+                              n_per_shank_els.to_dict()]))
+    if n_per_shank_els['no_shank_connection'] > 0:
+        L.logger.warning(f"Recorded from {n_per_shank_els['no_shank_connection']}"
+                         " MEA1K electrodes that were not bonded/ connected to a "
+                         "shank.")
+        if drop_non_bonded:
+            L.logger.warning("Dropping non-bonded electrodes from the mapping")
+            implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
+    
+    if exclude_shanks is not None and len(exclude_shanks) > 0:
+        L.logger.debug(f"Excluding MEA1K electrodes bonded to shanks "
+                       f"{exclude_shanks} from the recording...")
+        implant_mapping = implant_mapping[~implant_mapping.shank_id.isin(exclude_shanks)]
+
+    Logger().logger.debug(f"Implant mapping after:\n{implant_mapping}")
     return implant_mapping
     
-def get_implant_mapping(implant_name=None, animal_name=None):
+def _get_raw_implant_mapping(implant_name=None, animal_name=None):
     nas_dir = device_paths()[0]
     if animal_name is not None:
         implant_name = animal_name2implant_device(animal_name)
@@ -360,7 +370,7 @@ def create_neuroscope_xml_from_template(template_filename, output_filename,
 def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
     data = read_raw_data(subdir, fname, convert2vol=True,  convert2uVInt=True,
                          col_slice=slice(0, 1000), subtract_dc_offset=True)
-    implant_mapping = get_implant_mapping(C.NAS_DIR, C.DEVICE_NAME)
+    implant_mapping = _get_raw_implant_mapping(C.NAS_DIR, C.DEVICE_NAME)
     data, implant_mapping = assign_mapping_to_data(data, implant_mapping)
     
     # subset shanks

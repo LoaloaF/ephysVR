@@ -13,7 +13,8 @@ import ephys_constants as C
 from mea1k_modules.mea1k_raw_preproc import read_raw_data
 from signal_helpers import estimate_frequency_power
 
-from mea1k_viz import draw_mea1k
+# from mea1k_viz import draw_mea1k
+from mea1k_modules.mea1k_visualizations import draw_mea1k
 
 def get_hdf5_fnames_from_dir(subdir):
     fnames, ids = [], []
@@ -62,6 +63,7 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
         
 def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     fullfname = os.path.join(subdir, "processed", f"extr_connectivity.csv")
+    print(fullfname)
     data = pd.read_csv(fullfname)
     data.set_index('el', inplace=True)  
     print(data)    

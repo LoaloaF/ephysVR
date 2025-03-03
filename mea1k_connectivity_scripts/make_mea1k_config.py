@@ -5,6 +5,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from CustomLogger import CustomLogger as Logger
 
+import datetime
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ from mea1k_ephys import get_implant_mapping
 from mea1k_modules.mea1k_config_utils import setup_array, array_config2df, try_routing
 from mea1k_modules.mea1k_raw_preproc import animal_name2implant_device
 
-def make_bonding_config(animal_name, config_name_prefix):
+def make_bonding_config(animal_name):
     nas_dir = C.device_paths()[0]
     
     # get the bonding mapping for the animal
@@ -50,8 +51,9 @@ def make_bonding_config(animal_name, config_name_prefix):
         alt_els = alt_els[good_enough_connec_mask].values
         els = succ_routed + alt_els.tolist()
 
+    day = datetime.datetime.now().strftime("%d.%b")
     config_fullfname = os.path.join(nas_dir, "devices", "implant_devices", device_name, 'bonding', 
-                                    f"{config_name_prefix}_{len(els):4d}ElConfig.cfg")
+                                    f"{animal_name}_{day}_{len(els):4d}ElConfig.cfg")
     # csv of config
     print(config_fullfname)
     config_mapping = array_config2df(array)
@@ -489,10 +491,7 @@ def main():
     
     seed = 42
     np.random.seed(seed)
-    
-    config_name_prefix = "R10_21.Feb"
     make_bonding_config(animal_name="rYL010", 
-                        config_name_prefix=config_name_prefix,
                         seed=seed)
     
     # extend_config_to_double_pad_stim(device_name=C.DEVICE_NAME_RAT006,

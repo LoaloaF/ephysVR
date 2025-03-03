@@ -54,6 +54,7 @@ def _align(mapping, mea1k_connectivity, alignment, split_el_device, alignment2=N
             aligned_pad.loc[:,"mea1k_connectivity"] = mea1k_connectivity.reindex(mea1k_el_underpad).values
         pad_alignment.append(aligned_pad)
     pad_alignment = pd.concat(pad_alignment, axis=0).reset_index(drop=True)
+    return pad_alignment
 
 
 def _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping):
@@ -95,7 +96,8 @@ def align_pads2mea1k(electrode_device_name, IMPLANT_DEVICE_NAME,
     mea1k_connectivity = mea1k_connectivity.reindex(np.arange(26400))
 
     viewer = napari.Viewer()
-    viewer.add_image(mea1k_connectivity_png, name='Connectivity', colormap='gray_r')
+    viewer.add_image(mea1k_connectivity_png, name='Connectivity', colormap='gray_r',
+                     opacity=.5)
     
     if split_el_device:
         # two half s that need to be aligned seperately
@@ -236,9 +238,9 @@ def main():
     connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices', 
                                          IMPLANT_DEVICE_NAME, 'recordings', 
                                          rec_dir_name)
-    # align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path,
-    #                  split_el_device)
-    plot_pad_alignment(IMPLANT_DEVICE_NAME)
+    align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path,
+                     split_el_device)
+    # plot_pad_alignment(IMPLANT_DEVICE_NAME)
     
 if __name__ == '__main__':
     main()
