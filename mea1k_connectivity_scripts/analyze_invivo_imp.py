@@ -14,7 +14,7 @@ from mea1k_modules.mea1k_raw_preproc import read_raw_data
 from mea1k_modules.mea1k_raw_preproc import read_stim_DAC
 from mea1k_modules.mea1k_raw_preproc import get_recording_implant_mapping
 from mea1k_modules.mea1k_visualizations import vis_shank_traces
-from signal_helpers import estimate_frequency_power
+# from signal_helpers import estimate_frequency_power
 
 
 from mea1k_viz import draw_mea1k
@@ -52,18 +52,20 @@ def extract_impedance(subdir, implant_name, debug=False):
         stim_mea1k_el = stimulated[stimulated.stim].electrode.values
         print(stim_mea1k_el)
 
-        if fname == "el_config_S1D1650.raw.h5":
-        # if True:
-            # dac = read_stim_DAC(subdir, fname)
-            data = read_raw_data(subdir, fname, convert2mV_float16=True,
-                                subtract_dc_offset=True, col_slice=slice(200, None, None))
+        # if fname == "el_config_S1D1650.raw.h5":
+        if True:
+            dac = read_stim_DAC(subdir, fname)
+            data = read_raw_data(subdir, fname, convert2uV=True,
+                                subtract_dc_offset=False, col_slice=slice(None, None, None))
+            print(data.min(), data.max())
             mapping = get_recording_implant_mapping(subdir, fname, implant_name=implant_name)
-            vis_shank_traces(data, mapping, stim_mea1k_el=stim_mea1k_el, scaler=40)
-            # plt.subplot(2, 1, 1)
-            # plt.plot(data.T)
-            # plt.subplot(2, 1, 2, sharex=plt.gca())  
-            # plt.plot(dac)
-            # plt.show()
+            vis_shank_traces(data, mapping, stim_mea1k_el=stim_mea1k_el, scaler=4/1000)
+            
+            plt.subplot(2, 1, 1)
+            plt.plot(data.T)
+            plt.subplot(2, 1, 2, sharex=plt.gca())  
+            plt.plot(dac)
+            plt.show()
         
         continue
         
@@ -120,7 +122,7 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
 def main(): 
     L = Logger()
     L.init_logger(None, None, "DEBUG")
-    L.logger.info("Starting in vivo impedance analysis")
+    L.logger.debug("Starting in vivo impedance analysis")
     nas_dir = C.device_paths()[0]
     
     implant_name = "241016_MEA1K03_H1278pad4shankB5"
@@ -130,13 +132,13 @@ def main():
     # el_config_S1D1650.raw.h5
     extract_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name)
     
-    subdir = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/RUN_rYL006/rYL006_P1100/2025-01-27_13-39_rYL006_P1100_LinearTrackStop_73min"
-    data = read_raw_data(subdir, "ephys_output.raw.h5", convert2mV_float16=True, col_slice=slice(20_000, 30_000), to_df=True, subtract_dc_offset=True)
-    mapping = get_recording_implant_mapping(subdir, "ephys_output.raw.h5", animal_name="rYL006", exclude_shanks=[2,3,4])
-    mapping = mapping[mapping.depth < 2000]
-    mapping = mapping[mapping.shank_side == 'left']
-    data = data.loc[mapping.mea1k_el]
-    vis_shank_traces(data.values, mapping, scaler=180)
+    # subdir = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/RUN_rYL006/rYL006_P1100/2025-01-27_13-39_rYL006_P1100_LinearTrackStop_73min"
+    # data = read_raw_data(subdir, "ephys_output.raw.h5", convert2mV_float16=True, col_slice=slice(20_000, 30_000), to_df=True, subtract_dc_offset=True)
+    # mapping = get_recording_implant_mapping(subdir, "ephys_output.raw.h5", animal_name="rYL006", exclude_shanks=[2,3,4])
+    # mapping = mapping[mapping.depth < 2000]
+    # mapping = mapping[mapping.shank_side == 'left']
+    # data = data.loc[mapping.mea1k_el]
+    # vis_shank_traces(data.values, mapping, scaler=180)
     
 if __name__ == "__main__":
     main()
