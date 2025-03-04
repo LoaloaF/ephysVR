@@ -23,6 +23,7 @@ class CustomLogger:
         self.LOGGING_LEVEL = "INFO"
         
     def init_logger(self, logging_fname, logging_dir, logging_level):
+        print(logging_level)
         ll = logging_level if logging_level is not None else self.LOGGING_LEVEL
         self.logger.setLevel(ll)
 
@@ -37,6 +38,7 @@ class CustomLogger:
         # setup logging to file
         file_hdlr = self._create_logfile_handler(logging_fname, logging_dir)
         self.logger.addHandler(file_hdlr)
+        print(f"Donw {logging_level}")
         
     def reset_logger(self):
         handlers = self.logger.handlers[:]

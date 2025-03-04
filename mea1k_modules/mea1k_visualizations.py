@@ -18,13 +18,13 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None):
     
     # rec_els = data.index.get_level_values('mea1k_el')
     # rec_subset_mapping = implant_mapping[implant_mapping.mea1k_el.isin(rec_els)]
-    min_depth, max_depth = implant_mapping.depth.min()-300, implant_mapping.depth.max()+30
+    min_depth, max_depth = implant_mapping.depth.min()-70, implant_mapping.depth.max()+70
     depth_range = max_depth - min_depth
     
     # make plot
     fig, (left_ax, right_ax, corr_ax) = plt.subplots(1, 3, figsize=(16, 9), sharey=True, 
                                             width_ratios=[0.01,.9, .1])
-    fig.subplots_adjust(wspace=0, hspace=0, right=.97, left=.03)
+    fig.subplots_adjust(wspace=0, hspace=0, right=.97, left=.04)
     # shank_id = data.index[0][0]
     # shank_id = implant_mapping.shank_id[0]
     # shank_name = implant_mapping[implant_mapping.shank_id == shank_id].shank_name.values[0]
@@ -33,6 +33,8 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None):
     el_pads_rects = []
     pad_colors = _n_sequentially_different_colors(implant_mapping.pad_id.nunique())
     implant_mapping["color"] = None
+    bg_rects = []
+    
     # iterate over all pads in the shank/ polyimide electrodes    
     for i, pad_id in enumerate(implant_mapping.pad_id.unique()):
     # for i, row in implant_mapping.iterrows():
@@ -49,25 +51,40 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None):
         if metal == 1:
             same_fiber_metal2 = implant_mapping[(implant_mapping.el_pair == fiber) &
                                                 (implant_mapping.metal == 2)]
-            if len(same_fiber_metal2) == 1:
+            if len(same_fiber_metal2)>=1:
                 same_fiber_metal2 = same_fiber_metal2.iloc[0]
                 left_ax.plot([side, side], [depth, same_fiber_metal2.depth], 
                              color='black', lw=2, alpha=.2, zorder=0)
         
+        # background rectangles indicating value range
+        
+        
         # if row.mea1k_el == stim_mea1k_el:
         #     col = 'red'
         traces_iloc = np.where(implant_mapping.pad_id == pad_id)[0]
+        stim_pad = np.isin(stim_mea1k_el, implant_mapping.iloc[traces_iloc].mea1k_el)
+        
+        min_potential = depth -scaler*6438/2
+        max_potential = depth +scaler*6438/2
+        right_ax.text(data.shape[1], max_potential, f"0 mV", va='center', ha='left', fontsize=7)
+        right_ax.text(data.shape[1], min_potential, f"6.4 mV", va='center', ha='left', fontsize=7)
+        bg_rects.append(plt.Rectangle((0, min_potential), data.shape[1], scaler*6438,
+                                      facecolor='black', alpha=.03 if not stim_pad else .15))
         
         for iloc in traces_iloc:
             if implant_mapping.iloc[iloc].mea1k_el == stim_mea1k_el:
                 kwargs = {'lw':2, "linestyle":':'}
             else:
                 kwargs = {"lw":.5, 'linestyle':'solid'}
-            col = pad_colors[i] if not np.isin(stim_mea1k_el, implant_mapping.iloc[traces_iloc].mea1k_el) else 'black'
+            col = pad_colors[i] if not stim_pad else 'black'
             implant_mapping.at[implant_mapping.index[iloc], 'color'] = col
+            # print(min(data[iloc]), max(data[iloc]))
             right_ax.plot(-1*data[iloc]*scaler + depth , color=col, **kwargs)
         
         continue
+    # draw rectangels for the ackground
+    [right_ax.add_patch(rect) for rect in bg_rects]
+    
     
     # for trace_i in range(1, len(data)-1):
     #     trace = data[trace_i] * scaler * -1
@@ -104,7 +121,6 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None):
     # # set up y-axis for right plot
     # corr_ax.yaxis.set_ticks_position('right')
     # corr_ax.yaxis.set_label_position('right')
-    # corr_ax.set_ylabel('Depth (um)')
     # corr_ax.set_xlabel('Depth Neighbour Correlation')
     # # make the canvas for the correlation plot transparent
     # corr_ax.set_facecolor('none')
@@ -121,11 +137,17 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None):
     # left_ax.tick_params(axis='y', which='both', left=False, labelleft=False)
     
     left_ax.set_ylim(max_depth, min_depth)    
+    left_ax.set_ylabel('Shank depth (um)')
     left_ax.set_xlim(-4,4)    
+    left_ax.set_xticks([])
+    # set ytick labels fontsize
+    left_ax.tick_params(axis='y', labelsize=8)
+    
+    right_ax.set_xlabel('Sample ID (20,000 samples/s)')
+    corr_ax.xaxis.set_visible(False)
     
     # print(left_ax.get_ylim())
     # print out current ylim
-    print(min_depth, max_depth)
 
 
     # remove spines and add electrode pads

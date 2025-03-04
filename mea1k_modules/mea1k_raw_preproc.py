@@ -63,21 +63,32 @@ def _get_recording_config(path, fname):
     el_xy = mapping[:, 2:4]
     return channels, el_xy
 
-def _ADC2voltage(data, gain, convert2uV_int16, 
-                    subtract_dc_offset):
+def _ADC2voltage(data, gain, subtract_dc_offset):
+    L = Logger()
     resolution = _get_recording_resolution(gain)
-    Logger().logger.debug(f"Converting ADC values to mV ({resolution:.4f}mV/ "
-                          "adc step (1024))...")
+    dtype = np.int16 if gain in (1024,512,112) else np.int64
+    max_ampl_uV = int(resolution*ADC_RESOLUTION*1000)
+    
+    L.logger.debug(f"Converting ADC values to mV ({resolution:.4f}mV/ "
+                   f"adc step ({ADC_RESOLUTION})) -> range ±{max_ampl_uV:,}"
+                   f"uV, casting to {dtype}...")
 
     # Perform in-place operations to save memory
     np.subtract(data, ADC_RESOLUTION / 2, out=data)
     np.multiply(data, resolution, out=data)
-    if convert2uV_int16:
-        np.multiply(data, 1000, out=data)
-        np.rint(data, out=data)
-        assert np.max(data) < 2**15 and np.min(data) > -2**15, "Data is not in int16 range"
-        data = data.astype(np.int16)
+    np.multiply(data, 1000, out=data)
+    np.rint(data, out=data)
+    # check overflow before casting
+    if np.abs(data).max() > max_ampl_uV:
+        L.logger.warning(f"Overflow detected in data, casting to {dtype}...")
+    data = data.astype(dtype)
     
+    if L.logger.level == 10: # DEBUG
+        clipped_traces = np.any(np.abs(data)==max_ampl_uV//2, axis=1)
+        if np.any(clipped_traces):
+            L.logger.warning(f"Clipping detected in {clipped_traces.sum()}/"
+                             f"{clipped_traces.size} traces.")
+
     # if it's passed as a boolean, subtract the first sample from all samples
     if subtract_dc_offset is True:
         data -= data[:,0][:, np.newaxis]
@@ -85,7 +96,7 @@ def _ADC2voltage(data, gain, convert2uV_int16,
     elif isinstance(subtract_dc_offset, np.ndarray):
         data -= subtract_dc_offset
 
-    Logger().logger.debug(f"Done.")
+    L.logger.debug(f"Done.")
     return data
     
 def _get_data_key(rec_file_fmt):
@@ -125,10 +136,10 @@ def read_stim_DAC(path, fname, col_slice=slice(None)):
                                 col_slice=col_slice, dtype=np.int16)
     return dac_data
 
-def read_raw_data(path, fname, convert2uV_int16=False, convert2mV_float16=False, 
+def read_raw_data(path, fname, convert2uV,
                   subtract_dc_offset=False, to_df=False, 
                   row_slice=slice(None), col_slice=slice(None)):
-    dtype = np.float16 if convert2uV_int16 or convert2mV_float16 else np.int16
+    dtype = np.float16 if convert2uV else np.int16
     raw_data = _read_mea1k_file(path, fname, row_slice=row_slice, 
                                 col_slice=col_slice, dtype=dtype)
     
@@ -137,10 +148,9 @@ def read_raw_data(path, fname, convert2uV_int16=False, convert2mV_float16=False,
         raw_data_mapping, _ = _get_recording_config(path, fname)
         raw_data = raw_data[raw_data_mapping.values]
     
-    if convert2uV_int16 or convert2mV_float16:
+    if convert2uV:
         gain = _get_recording_gain(path, fname)
-        raw_data = _ADC2voltage(raw_data, gain, convert2uV_int16=convert2uV_int16, 
-                                subtract_dc_offset=subtract_dc_offset,)
+        raw_data = _ADC2voltage(raw_data, gain, subtract_dc_offset=subtract_dc_offset,)
     elif subtract_dc_offset:
         raw_data -= raw_data[:,0][:, np.newaxis]
     
