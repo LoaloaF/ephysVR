@@ -53,7 +53,7 @@ def make_bonding_config(animal_name):
 
     day = datetime.datetime.now().strftime("%d.%b")
     config_fullfname = os.path.join(nas_dir, "devices", "implant_devices", device_name, 'bonding', 
-                                    f"{animal_name}_{day}_{len(els):4d}ElConfig.cfg")
+                                    f"{animal_name}_{day}_{len(els)}ElConfig.cfg")
     # csv of config
     print(config_fullfname)
     config_mapping = array_config2df(array)
@@ -491,8 +491,7 @@ def main():
     
     seed = 42
     np.random.seed(seed)
-    make_bonding_config(animal_name="rYL010", 
-                        seed=seed)
+    make_bonding_config(animal_name="rYL010")
     
     # extend_config_to_double_pad_stim(device_name=C.DEVICE_NAME_RAT006,
     #                                  config_name="R06_12.Nov_829ElConfig_S46")
