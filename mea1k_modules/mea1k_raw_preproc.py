@@ -9,6 +9,8 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION, device_paths
+import ephys_constants as C
+from mea1k_modules.mea1k_visualizations import adjust_saturation
 from CustomLogger import CustomLogger as Logger
 
 def _get_recording_gain(path, fname):
@@ -173,9 +175,8 @@ def read_raw_data(path, fname, convert2uV,
     return raw_data
 
 def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name, 
-                                    chunk_size_s=60, convert2uV_int16=False, 
-                                    convert2mV_float16=False, subtract_dc_offset=False, 
-                                    exclude_shanks=[]):
+                                    chunk_size_s=60, convert2uV=False,
+                                    subtract_dc_offset=False, exclude_shanks=[]):
     L = Logger()
     
     try:
@@ -205,14 +206,12 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
     
     # calculate the initial DC offset, use for all later chunks
     if subtract_dc_offset:
-        subtract_dc_offset = read_raw_data(path, fname, convert2uV_int16=convert2uV_int16,
-                                           convert2mV_float16=convert2mV_float16,
+        subtract_dc_offset = read_raw_data(path, fname, convert2uV=convert2uV,
                                            col_slice=slice(0,1), row_slice=implant_mapping.index)
     # iterate of time chunks of the data (all channels) and process them
     for i in range(len(chunk_indices)-1):
         col_slice = slice(chunk_indices[i], chunk_indices[i+1])
-        data_chunk = read_raw_data(path, fname, convert2uV_int16=convert2uV_int16,
-                                   convert2mV_float16=convert2mV_float16,
+        data_chunk = read_raw_data(path, fname, convert2uV=convert2uV,
                                    subtract_dc_offset=subtract_dc_offset,
                                    col_slice=col_slice,
                                    row_slice=implant_mapping.index)
@@ -318,8 +317,32 @@ def _get_implant_config_fullfname(implant_name, animal_name, date):
     
     
     
+def write_neuroscope_xml(session_dir, mea1k_rec_fname, animal_name, exclude_shanks):
+    mapping = get_recording_implant_mapping(session_dir, mea1k_rec_fname, animal_name, 
+                                            exclude_shanks=exclude_shanks)
+    mapping.reset_index(inplace=True, drop=True)
+    print(mapping)
+    
+        # convert electrode id to channel id (iloc basically)
+    print(mapping.columns)
+    channel_groups = mapping.sort_values(by=['shank_id', 'depth']).groupby('shank_id').apply(lambda x: x.index)
+    channel_groups = [group.values for group in channel_groups] # unpack
+    print(channel_groups)
     
     
+    # color the channels, left side electrodes are slightly different
+    channel_colors_dict = {}
+    for channel_i, el_row in mapping.iterrows():
+        col = C.SHANK_BASE_COLORS[el_row.shank_id]
+        if el_row.shank_side == 'left':
+            col = adjust_saturation(col, C.METALLIZATION_COLOR_OFFSET)
+        # convert to html color
+        col = '#%02x%02x%02x' % tuple(int(255 * c) for c in col)
+        channel_colors_dict[channel_i] = {'color': col, 'anatomyColor': col, 'spikeColor': col}
+
+    
+    create_neuroscope_xml_from_template('../ephysVR/assets/neuroscope_template.xml',
+                                        f'{session_dir}/nrsc_test.xml', channel_groups, channel_colors_dict)
     
     
 # TODO needs to be updated    
