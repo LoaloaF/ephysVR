@@ -9,12 +9,12 @@ import pandas as pd
 import numpy as np
 
 import ephys_constants as C
-from mea1k_utils import start_saving, stop_saving, try_routing
-from mea1k_utils import attampt_connect_el2stim_unit, create_stim_sine_sequence
-from mea1k_utils import reset_MEA1K, turn_on_stimulation_units, array_config2df, turn_off_stimulation_units
+from mea1k_modules.mea1k_config_utils import start_saving, stop_saving, try_routing
+from mea1k_modules.mea1k_config_utils import attampt_connect_el2stim_unit, create_stim_sine_sequence
+from mea1k_modules.mea1k_config_utils import reset_MEA1K, turn_on_stimulation_units, array_config2df, turn_off_stimulation_units
 
-from mea1k_utils import create_stim_pulse_sequence
-from mea1k_utils import create_stim_onoff_sequence
+from mea1k_modules.mea1k_config_utils import create_stim_pulse_sequence
+from mea1k_modules.mea1k_config_utils import create_stim_onoff_sequence
 
 def process_config(config_fullfname, path, rec_time, post_download_wait_time, s, 
                    stim_seq, mode):
@@ -47,11 +47,12 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
 
 def main():
     # ======== PARAMETERS ========
-    subdir = f"implant_devices/{C.DEVICE_NAME_RAT006}/recordings"
-
-    amplitude = 500
+    subdir = f"well_devices/4983/recordings"
+    nas_dir = C.device_paths()[0]
+    
+    amplitude = 20
     # mode = "voltage"
-    mode = "large_current"
+    mode = "small_current"
     stimpulse = 'sine'
     # stimpulse = 'onoff'
     # stimpulse = 'bursting'
@@ -63,9 +64,9 @@ def main():
     
     post_download_wait_time = .6
     log2file = False
-    rec_time = 1
+    rec_time = 2
     gain = 7
-    configs_basepath = os.path.join(C.NAS_DIR, "implant_devices", C.DEVICE_NAME_RAT006, 
+    configs_basepath = os.path.join(nas_dir, "devices", "well_devices", "4983", 
                                     'bonding', )
     which_configs = "invivo_localstim_configs"
     
@@ -88,11 +89,11 @@ def main():
     # ======== PARAMETERS ========
     
     if log2file:
-        log_fname = os.path.join(C.NAS_DIR, subdir, rec_dir, "log.txt")
+        log_fname = os.path.join(nas_dir, subdir, rec_dir, "log.txt")
         logfile = open(log_fname, "w")
         sys.stdout = logfile
     
-    path = os.path.join(C.NAS_DIR, subdir, rec_dir)
+    path = os.path.join(nas_dir, subdir, rec_dir)
     print(f"Recording path exists: {os.path.exists(path)} - ", path)
     
     s = maxlab.Saving()

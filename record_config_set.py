@@ -8,15 +8,15 @@ import mea1k_modules.mea1k_config_utils as mea1k
 def main():
     # ======== PARAMETERS ========
     nas_dir = device_paths()[0]
-    subdir = "devices/well_devices/4983/recordings"
+    subdir = "devices/headstage_devices/MEA1K07/recordings"
     # subdir = "headstage_devices/MEA1K06/recordings"
-    rec_dir = "all_pad_testrec_VrefFPGAStim_ampl110_rec5"
-    post_download_wait_time = 1.6
-    rec_time = 2
+    rec_dir = "all_pad_testrec_VrefFPGAStim_ampl16_rec2"
+    post_download_wait_time = .6
+    rec_time = .5
     gain = 7
     with_external_sine = True
     external_sine_freq = 1000
-    external_sine_amp_in_bits = 110 # 0.8 mV amplitude
+    external_sine_amp_in_bits = 15 # 10 mV amplitude?
     configs_basepath = os.path.join(nas_dir, "mea1k_configs", '')
     which_configs = "all_parallel"
     # which_configs = "4x4_tile_meshgrid_seed42"

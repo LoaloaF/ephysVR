@@ -41,9 +41,10 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
     all_data = []
     for fname, i in zip(fnames, ids):
         print(f"Config {i} of {len(fnames)}")
-        data = read_raw_data(subdir, fname, convert2mV_float16=True, to_df=True,
+        data = read_raw_data(subdir, fname, convert2uV=True, to_df=True,
                              col_slice=slice(0, n_samples))
-
+        data = data / 1000 # convert to mV
+    
         print("Filtering...")
         mean_ampl = []
         for j,row in enumerate(data.values):
@@ -73,6 +74,11 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     for el_i, el_recs in enumerate(el_recs):
         if el_i not in data.index:
             print("missing", el_i, end=' ')
+            el_recs.set_edgecolor((.8,0,0))
+            continue
+        if data.loc[el_i:el_i].connectivity.isna().any():
+            el_recs.set_edgecolor((.8,0,0))
+            print("NaN", el_i, end=' ')
             continue
         # needed for new local configs that were used for a hort time
         if data.loc[el_i].shape[0] == 2:
@@ -100,12 +106,12 @@ def main():
     L.init_logger(None, None, "DEBUG")
     L.logger.info("Starting connectivity analysis")
     
-    input_ampl_mV = 0.8
-    n_samples = 20_000
+    input_ampl_mV = 10
+    n_samples = 8_000
     
     subdirs = [
         # "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9_25mVext_2_2Shankbatch5_silk/"
-        "devices/well_devices/4983/recordings/all_pad_testrec_VrefFPGAStim_ampl110_rec5",
+        "devices/headstage_devices/MEA1K07/recordings/all_pad_testrec_VrefFPGAStim_ampl16_rec2",
     ]
     
     nas_dir = C.device_paths()[0]
@@ -116,7 +122,7 @@ def main():
             print(f"Error: {os.path.join(subdir)} does not exist.")
             continue
         
-        extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
+        # extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
         vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
     
 if __name__ == "__main__":

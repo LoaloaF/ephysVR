@@ -227,20 +227,35 @@ def main():
     # # align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path)
     # plot_pad_alignment(IMPLANT_DEVICE_NAME)
     
-    # rat 010
-    ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
-    HEADSTAGE_DEVICE_NAME = 'MEA1K03'
-    date = '250205'
-    batch = 5
+    # # rat 010
+    # ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
+    # HEADSTAGE_DEVICE_NAME = 'MEA1K03'
+    # date = '250205'
+    # batch = 5
+    # IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
+    # rec_dir_name = 'bonding2_250205_D9.2_25mVext_2_2Shankbatch5_silk'
+    # split_el_device = True
+    # connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices', 
+    #                                      IMPLANT_DEVICE_NAME, 'recordings', 
+    #                                      rec_dir_name)
+    # align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path,
+    #                  split_el_device)
+    # plot_pad_alignment(IMPLANT_DEVICE_NAME)
+    
+    # test device MEA1K07 1628 chanenls
+    ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
+    HEADSTAGE_DEVICE_NAME = 'MEA1K07'
+    date = '250308'
+    batch = 6
     IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
-    rec_dir_name = 'bonding2_250205_D9.2_25mVext_2_2Shankbatch5_silk'
+    rec_dir_name = 'all_pad_testrec_VrefFPGAStim_ampl16_rec2'
     split_el_device = True
     connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices', 
                                          IMPLANT_DEVICE_NAME, 'recordings', 
                                          rec_dir_name)
     align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path,
                      split_el_device)
-    # plot_pad_alignment(IMPLANT_DEVICE_NAME)
+    plot_pad_alignment(IMPLANT_DEVICE_NAME)
     
 if __name__ == '__main__':
     main()
