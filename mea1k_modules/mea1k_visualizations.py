@@ -4,6 +4,17 @@ import matplotlib.pyplot as plt
 
 import ephys_constants as C
 
+import colorsys
+
+def adjust_saturation(rgb_color, offset):
+    # Convert RGB (0-1 scale) to HSV
+    r, g, b = rgb_color
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+    # Adjust saturation by offset, ensuring it stays within [0, 1]
+    s = max(0.0, min(1.0, s - offset))
+    # Convert back to RGB
+    return colorsys.hsv_to_rgb(h, s, v)
+
 def _n_sequentially_different_colors(n, cmap='tab20'):
     cmap = plt.get_cmap(cmap)
     colors = [list(col) for col in cmap(np.linspace(0, 1, n))]
@@ -205,3 +216,35 @@ def draw_mea1k(bg='black', el_color='#111111'):
     #             bbox_inches='tight', pad_inches=0, )
     return (fig, ax), recs
  
+def viz_mea1k_config(pad_alignment, stim_mea1k_el=None):
+     # darw mewa1k
+    
+    (fig, ax), els = draw_mea1k()
+    
+    pad_circles = []
+    for el_i, el_rec in enumerate(els):
+        if el_i not in pad_alignment.mea1k_el.values:
+            continue # not measured during connectivity analysis
+        el_entry = pad_alignment[pad_alignment['mea1k_el'] == el_i].iloc[0]
+        el_rec.set_alpha(min(1,el_entry.mea1k_connectivity/3))
+        if pd.isna(el_entry.pad_id):
+            continue
+        
+        col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['r', 'g', 'b']].values[0]/255
+        # el_rec.set_facecolor(col)
+
+        whiteness = np.clip(el_entry.mea1k_connectivity*1, 0, 1)
+        el_rec.set_facecolor((whiteness, whiteness, whiteness))
+        
+        if el_i == stim_mea1k_el:
+            el_rec.set_edgecolor("yellow")
+        
+        if (el_entry.connectivity_order == 1) and (el_entry.mea1k_connectivity > .8) and el_entry.notna()["shank_id"]:
+            el_rec.set_alpha(1)
+            el_rec.set_facecolor(col)
+            pad_circles.append(plt.Circle((el_entry.x_aligned, el_entry.y_aligned), 
+                                          el_entry.pad_diameter_um/2 *1.7, color=col, 
+                                          fill=False, linewidth=.8,
+                                          alpha=.5))
+    [ax.add_patch(pc) for pc in pad_circles]
+    plt.show()

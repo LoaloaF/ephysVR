@@ -45539,3 +45539,2202 @@ amplifier_id                                            ...
 906              19715   576.0    0.0       1.0  524.0  ...     99.0       right           37.524780                 1.0    True
 
 [26 rows x 23 columns]
+2025-03-04 21:27:22,933|DEBUG|50935|analyze_invivo_imp|main
+	Starting in vivo impedance analysis
+2025-03-04 21:27:23,036|DEBUG|50935|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:27:27,818|DEBUG|50935|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.78 seconds
+2025-03-04 21:27:27,835|DEBUG|50935|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:27:28,143|DEBUG|50935|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.31 seconds
+2025-03-04 21:27:28,191|DEBUG|50935|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:27:28,218|DEBUG|50935|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:27:28,219|DEBUG|50935|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 352  346  346 ...  126  126  113]
+ [ 220  220  220 ...  352  352  352]
+ [ 378  378  378 ...  453  453  453]
+ ...
+ [ -25  -25  -31 ... -151 -151 -151]
+ [-416 -416 -416 ...   13   13   13]
+ [ 422  416  416 ...  -69  -69  -69]]
+(21, 54400)
+2025-03-04 21:27:28,241|DEBUG|50935|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+18662     39
+14258     45
+18443     63
+18442     95
+17375    115
+18671    587
+14250    625
+18672    631
+14471    663
+14894    671
+14895    685
+16654    719
+14690    753
+17094    775
+16874    791
+14896    863
+23234    871
+19715    906
+24774    943
+dtype: int64
+2025-03-04 21:27:58,541|DEBUG|51097|analyze_invivo_imp|main
+	Starting in vivo impedance analysis
+2025-03-04 21:27:58,632|DEBUG|51097|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:28:02,955|DEBUG|51097|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.32 seconds
+2025-03-04 21:28:02,970|DEBUG|51097|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:28:03,313|DEBUG|51097|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.34 seconds
+2025-03-04 21:28:03,360|DEBUG|51097|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:28:03,391|DEBUG|51097|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:28:03,392|DEBUG|51097|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 352  346  346 ...  126  126  113]
+ [ 220  220  220 ...  352  352  352]
+ [ 378  378  378 ...  453  453  453]
+ ...
+ [ -25  -25  -31 ... -151 -151 -151]
+ [-416 -416 -416 ...   13   13   13]
+ [ 422  416  416 ...  -69  -69  -69]]
+(21, 54400)
+2025-03-04 21:28:03,426|DEBUG|51097|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+18662     39
+14258     45
+18443     63
+18442     95
+17375    115
+18671    587
+14250    625
+18672    631
+14471    663
+14894    671
+14895    685
+16654    719
+14690    753
+17094    775
+16874    791
+14896    863
+23234    871
+19715    906
+24774    943
+dtype: int64
+2025-03-04 21:29:32,845|DEBUG|51371|analyze_invivo_imp|main
+	Starting in vivo impedance analysis
+2025-03-04 21:29:32,945|DEBUG|51371|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:29:37,239|DEBUG|51371|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.29 seconds
+2025-03-04 21:29:37,289|DEBUG|51371|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:29:37,599|DEBUG|51371|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.31 seconds
+2025-03-04 21:29:37,653|DEBUG|51371|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:29:37,685|DEBUG|51371|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:29:37,685|DEBUG|51371|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 352  346  346 ...  126  126  113]
+ [ 220  220  220 ...  352  352  352]
+ [ 378  378  378 ...  453  453  453]
+ ...
+ [ -25  -25  -31 ... -151 -151 -151]
+ [-416 -416 -416 ...   13   13   13]
+ [ 422  416  416 ...  -69  -69  -69]]
+(21, 54400)
+2025-03-04 21:29:37,712|DEBUG|51371|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+18662     39
+14258     45
+18443     63
+18442     95
+17375    115
+18671    587
+14250    625
+18672    631
+14471    663
+14894    671
+14895    685
+16654    719
+14690    753
+17094    775
+16874    791
+14896    863
+23234    871
+19715    906
+24774    943
+dtype: int64
+2025-03-04 21:38:06,166|DEBUG|52618|analyze_invivo_imp|main
+	Starting in vivo impedance analysis
+2025-03-04 21:38:06,294|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:38:10,335|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.04 seconds
+2025-03-04 21:38:10,350|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:38:10,675|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.32 seconds
+2025-03-04 21:38:10,724|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:38:10,754|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:38:10,754|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 352  346  346 ...  126  126  113]
+ [ 220  220  220 ...  352  352  352]
+ [ 378  378  378 ...  453  453  453]
+ ...
+ [ -25  -25  -31 ... -151 -151 -151]
+ [-416 -416 -416 ...   13   13   13]
+ [ 422  416  416 ...  -69  -69  -69]]
+(21, 54400)
+2025-03-04 21:43:39,864|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:43:44,552|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.69 seconds
+2025-03-04 21:43:44,567|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:43:44,908|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.34 seconds
+2025-03-04 21:43:44,975|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:43:45,012|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:43:45,012|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  82   50   76 ...  -38  -38  -38]
+ [ 302  277  302 ...  151  151  151]
+ [  76   63   76 ... -220 -220 -220]
+ ...
+ [ 132  107  138 ...  -13  -13  -19]
+ [-151 -176 -151 ... -151 -151 -151]
+ [  13   -6   13 ... -201 -201 -201]]
+(26, 54400)
+2025-03-04 21:51:50,675|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:51:56,474|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54200,) in 5.80 seconds
+2025-03-04 21:51:56,489|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:51:56,916|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54200) in 0.43 seconds
+2025-03-04 21:51:56,973|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:51:57,012|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:51:57,012|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  -63   -57   -63 ...   126   126   126]
+ [ -208  -208  -208 ...   -63   -63   -63]
+ [  182   182   182 ...   271   271   264]
+ ...
+ [-1189 -1171 -1184 ...   151   164   145]
+ [ -145  -145  -145 ...  -151  -151  -151]
+ [ -170  -170  -170 ...   -88   -88   -88]]
+(26, 54200)
+2025-03-04 21:52:06,545|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:52:11,402|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.86 seconds
+2025-03-04 21:52:11,416|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:52:11,625|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.21 seconds
+2025-03-04 21:52:11,668|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:52:11,711|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:52:11,712|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  208   208   208 ...   220   233   233]
+ [-2360 -2348 -2342 ...  -422  -422  -422]
+ [ 2272  2266  2266 ...   598   598   598]
+ ...
+ [-1920 -1933 -1926 ...  -334  -340  -346]
+ [ -107  -107  -107 ...  -151  -151  -151]
+ [  -25   -25   -25 ...   -31   -31   -31]]
+(33, 54400)
+2025-03-04 21:52:14,676|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:52:19,926|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.25 seconds
+2025-03-04 21:52:19,940|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:52:20,226|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.28 seconds
+2025-03-04 21:52:20,307|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:52:20,359|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:52:20,360|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 189  189  189 ...  956  956  956]
+ [-308 -308 -308 ... -195 -182 -182]
+ [ 529  529  529 ...  371  371  371]
+ ...
+ [-271 -264 -283 ... -252 -264 -252]
+ [-126 -120 -120 ... -151 -151 -151]
+ [   0    6    6 ...  -13  -13  -13]]
+(33, 54400)
+2025-03-04 21:52:26,040|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:52:30,641|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.60 seconds
+2025-03-04 21:52:30,654|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:52:30,872|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.22 seconds
+2025-03-04 21:52:30,919|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:52:30,963|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:52:30,964|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1863 -1926 -1933 ...  -705  -705  -705]
+ [ -164  -176  -201 ...   -76   -76   -76]
+ [  321   315   296 ...   334   334   334]
+ ...
+ [ -246  -214  -226 ...  -246  -233  -246]
+ [ -157  -151  -170 ...   126   126   126]
+ [  -19   -38   -50 ...    -6    -6    -6]]
+(33, 54400)
+2025-03-04 21:53:04,682|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:53:09,937|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.25 seconds
+2025-03-04 21:53:09,951|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:53:10,314|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.36 seconds
+2025-03-04 21:53:10,392|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:53:10,441|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:53:10,441|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  912   912   912 ...   -31   -31   -31]
+ [ -113  -113  -113 ...  -120  -120  -120]
+ [  258   258   258 ...   189   189   189]
+ ...
+ [ -226  -233  -246 ...  -246  -226  -226]
+ [-1341 -1354 -1359 ...  -214  -214  -220]
+ [    0     0     0 ...     0     0     0]]
+(33, 54400)
+2025-03-04 21:53:18,200|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:53:22,955|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.75 seconds
+2025-03-04 21:53:22,969|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:53:23,189|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.22 seconds
+2025-03-04 21:53:23,265|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:53:23,311|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:53:23,311|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -315  -164  -170 ... -1114 -1114 -1114]
+ [ -151  -201  -145 ...  -145  -132  -145]
+ [  126   138   132 ...   478   478   478]
+ ...
+ [ -246  -220  -220 ...  -214  -208  -208]
+ [ -252  -239  -246 ...  -226  -226  -226]
+ [  -19     0    -6 ...     6     6     6]]
+(33, 54400)
+2025-03-04 21:53:27,779|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:53:31,917|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.14 seconds
+2025-03-04 21:53:31,930|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:53:32,269|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.34 seconds
+2025-03-04 21:53:32,320|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:53:32,378|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:53:32,378|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[3216 3216 3160 ...  510  510  510]
+ [ 233  252  214 ... -592 -592 -592]
+ [3042 3002 2940 ...  352  352  352]
+ ...
+ [  50   76   19 ...  -63  -63  -50]
+ [  88   94   82 ...   31   38   31]
+ [-176 -157 -214 ... -208 -208 -208]]
+(43, 54400)
+2025-03-04 21:53:41,481|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:53:46,984|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.50 seconds
+2025-03-04 21:53:46,999|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:53:47,369|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.37 seconds
+2025-03-04 21:53:47,417|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:53:47,474|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:53:47,474|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 403  403  403 ...  359  359  359]
+ [-478 -491 -478 ... -195 -195 -195]
+ [ 315  302  308 ...  328  321  321]
+ ...
+ [ -82  -76  -82 ...  107  120  120]
+ [  25   25   31 ...  176  176  176]
+ [-201 -208 -201 ... -208 -201 -201]]
+(43, 54400)
+2025-03-04 21:54:09,371|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 21:54:14,962|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54200,) in 5.59 seconds
+2025-03-04 21:54:15,004|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 21:54:15,238|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54200) in 0.23 seconds
+2025-03-04 21:54:15,295|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 21:54:15,358|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 21:54:15,359|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  271   271   271 ...   107   107   107]
+ [ -208  -208  -208 ...  -246  -246  -239]
+ [-2292 -2292 -2286 ...  -460  -460  -447]
+ ...
+ [   82    88    76 ...  -239  -226  -239]
+ [-1146 -1158 -1171 ...  -151  -151  -151]
+ [ -182  -189  -182 ...  -201  -201  -201]]
+(46, 54200)
+2025-03-04 22:01:03,862|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:01:08,734|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.87 seconds
+2025-03-04 22:01:08,749|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:01:09,078|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.33 seconds
+2025-03-04 22:01:09,148|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:01:09,210|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:01:09,210|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 101  101  101 ...   82   82   82]
+ [-201 -201 -201 ... -132 -132 -132]
+ [ 226  226  226 ...  786  793  786]
+ ...
+ [-214 -214 -220 ... -189 -176 -189]
+ [-151 -151 -151 ... -145 -138 -145]
+ [-164 -164 -164 ... -195 -195 -195]]
+(43, 54400)
+2025-03-04 22:01:10,356|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:01:15,547|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54200,) in 5.19 seconds
+2025-03-04 22:01:15,562|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:01:15,928|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54200) in 0.37 seconds
+2025-03-04 22:01:15,978|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:01:16,030|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:01:16,031|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 164  170  170 ...  145  145  145]
+ [ -50  -50  -50 ...  -25  -25  -25]
+ [ 762  762  762 ...   -6   -6   -6]
+ ...
+ [ -69  -69  -57 ... -138 -138 -138]
+ [   0    0    0 ...  -76  -76  -69]
+ [ -88  -88  -88 ... -176 -176 -176]]
+(40, 54200)
+2025-03-04 22:01:24,836|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:01:29,430|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.59 seconds
+2025-03-04 22:01:29,444|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:01:29,672|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.23 seconds
+2025-03-04 22:01:29,718|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:01:29,774|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:01:29,775|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  101   101   101 ...     6     6     6]
+ [  -76   -69   -63 ...  -176  -176  -176]
+ [-2286 -2286 -2280 ...  -447  -447  -447]
+ ...
+ [ -101  -101  -113 ...  -126  -113  -126]
+ [  -38   -38   -38 ...   -25   -25   -25]
+ [ -151  -151  -151 ...  -182  -182  -182]]
+(42, 54400)
+2025-03-04 22:01:30,932|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:01:36,075|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.14 seconds
+2025-03-04 22:01:36,120|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:01:36,369|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.25 seconds
+2025-03-04 22:01:36,418|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:01:36,478|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:01:36,478|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  13    6   13 ...   -6   -6  -13]
+ [-189 -182 -182 ... -214 -214 -214]
+ [-315 -315 -315 ...  616  616  616]
+ ...
+ [ -82  -94  -94 ... -113 -120 -113]
+ [  13    6   13 ...    6    6    6]
+ [-164 -164 -164 ... -208 -208 -208]]
+(42, 54400)
+2025-03-04 22:01:41,781|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:01:46,650|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.87 seconds
+2025-03-04 22:01:46,664|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:01:46,889|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.22 seconds
+2025-03-04 22:01:46,940|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:01:46,998|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:01:46,998|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  88   88   88 ...  132  132  132]
+ [-126 -132 -126 ...  -69  -69  -69]
+ [ 566  566  573 ... -736 -749 -736]
+ ...
+ [   6    6    0 ... -120 -107 -120]
+ [ 132  138  138 ...   13   13   13]
+ [1800 1794 1800 ...   25   25   25]]
+(43, 54400)
+2025-03-04 22:01:52,290|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:01:57,499|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54600,) in 5.21 seconds
+2025-03-04 22:01:57,514|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:01:57,787|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54600) in 0.27 seconds
+2025-03-04 22:01:57,875|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:01:57,946|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:01:57,947|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  113   176   120 ...    57    57    57]
+ [ -113  -258  -101 ...  -164  -164  -164]
+ [-1032 -1026 -1026 ...  -875  -888  -875]
+ ...
+ [ -126  -113  -113 ...  -113  -113  -113]
+ [   31    38    38 ...    25    25    25]
+ [   19    25    25 ...  -290  -290  -290]]
+(48, 54600)
+2025-03-04 22:01:59,711|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:02:04,811|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.10 seconds
+2025-03-04 22:02:04,829|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:02:05,152|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.32 seconds
+2025-03-04 22:02:05,221|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:02:05,288|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:02:05,288|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[1964 1957 1957 ...  441  441  441]
+ [  19   19   19 ... -138 -138 -138]
+ [-742 -742 -742 ... -535 -535 -535]
+ ...
+ [ -82  -69  -82 ... -113 -113 -113]
+ [  57   69   69 ...   44   44   44]
+ [-315 -308 -308 ... -346 -346 -346]]
+(46, 54400)
+2025-03-04 22:02:06,639|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:02:11,867|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.23 seconds
+2025-03-04 22:02:11,936|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:02:12,187|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.25 seconds
+2025-03-04 22:02:12,253|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:02:12,314|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:02:12,315|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 101   50    6 ... -837 -837 -837]
+ [-472 -447 -466 ... -308 -308 -308]
+ [  76  107   94 ...  113  113  113]
+ ...
+ [-126 -107 -120 ... -113 -113 -113]
+ [  44   44   44 ...   50   50   50]
+ [-334 -321 -328 ... -290 -290 -290]]
+(45, 54400)
+2025-03-04 22:02:13,348|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:02:18,306|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.96 seconds
+2025-03-04 22:02:18,321|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:02:18,576|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.25 seconds
+2025-03-04 22:02:18,635|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:02:18,695|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:02:18,696|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-780 -780 -780 ... -938 -938 -938]
+ [ 623  623  623 ...   94   94   94]
+ [-497 -497 -497 ... -497 -497 -497]
+ ...
+ [ 201  208  208 ...  170  170  170]
+ [  44   44   44 ...   13   13   13]
+ [-239 -233 -233 ... -264 -264 -264]]
+(44, 54400)
+2025-03-04 22:02:20,088|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:02:25,820|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.73 seconds
+2025-03-04 22:02:25,836|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:02:26,088|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.25 seconds
+2025-03-04 22:02:26,139|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:02:26,202|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:02:26,202|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -926  -926  -919 ...  -856  -856  -856]
+ [-2102 -2116 -2116 ...  -460  -460  -472]
+ [   69    63    69 ...    94    94    94]
+ ...
+ [  182   182   182 ...   170   170   170]
+ [   31    31    31 ...    19    19    19]
+ [ -233  -233  -233 ...  -246  -246  -246]]
+(47, 54400)
+2025-03-04 22:02:33,957|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:02:38,820|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.86 seconds
+2025-03-04 22:02:38,833|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:02:39,061|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.23 seconds
+2025-03-04 22:02:39,117|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:02:39,177|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:02:39,178|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -812  -818  -818 ...  -768  -768  -768]
+ [ -365  -390 -1228 ...  -189  -189  -189]
+ [ -510  -522  -510 ...  -352  -352  -352]
+ ...
+ [  164   164   170 ...   176   176   170]
+ [ -226  -239  -233 ...  -258  -264  -258]
+ [ -233  -246  -233 ...  -226  -226  -226]]
+(45, 54400)
+2025-03-04 22:02:40,673|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:02:45,961|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.29 seconds
+2025-03-04 22:02:46,006|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:02:46,285|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.28 seconds
+2025-03-04 22:02:46,340|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:02:46,401|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:02:46,402|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-762 -762 -762 ... -736 -736 -736]
+ [-157 -170 -182 ... -107 -107 -107]
+ [-283 -290 -290 ... -182 -182 -182]
+ ...
+ [-201 -201 -201 ... -239 -239 -239]
+ [ -50  -50  -63 ... -120 -120 -120]
+ [-220 -220 -226 ... -220 -220 -220]]
+(45, 54400)
+2025-03-04 22:02:47,837|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:02:52,564|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.73 seconds
+2025-03-04 22:02:52,594|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:02:52,829|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.24 seconds
+2025-03-04 22:02:52,879|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:02:52,940|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:02:52,940|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-712 -718 -718 ... -680 -680 -680]
+ [-138 -126 -126 ... -138 -151 -138]
+ [2208 2204 2204 ...  390  390  390]
+ ...
+ [ 176  176  176 ...  164  164  164]
+ [-226 -233 -226 ... -233 -233 -233]
+ [ -94  -94  -88 ...  -88  -88  -88]]
+(45, 54400)
+2025-03-04 22:02:54,286|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:02:59,574|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54200,) in 5.29 seconds
+2025-03-04 22:02:59,591|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:02:59,846|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54200) in 0.25 seconds
+2025-03-04 22:02:59,890|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:02:59,955|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:02:59,955|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-648 -648 -648 ... -630 -630 -630]
+ [ 277  277  277 ...   57   63   57]
+ [-182 -176 -182 ... -201 -201 -201]
+ ...
+ [ 661  655  655 ...  145  145  145]
+ [-220 -220 -220 ... -226 -226 -226]
+ [ -82  -76  -82 ...  -88  -88  -88]]
+(48, 54200)
+2025-03-04 22:03:02,856|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:03:07,654|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54200,) in 4.80 seconds
+2025-03-04 22:03:07,671|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:03:07,930|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54200) in 0.26 seconds
+2025-03-04 22:03:07,978|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:03:08,045|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:03:08,046|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -554  -554  -548 ...  -510  -516  -516]
+ [-2152 -2152 -2152 ...  -396  -384  -396]
+ [   57    57    57 ...    63    63    63]
+ ...
+ [-1599 -1593 -1580 ...   -13   -13   -13]
+ [ -182  -176  -176 ...  -201  -201  -208]
+ [  -31   -31   -31 ...    50    50    44]]
+(50, 54200)
+2025-03-04 22:03:09,886|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:03:14,811|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.93 seconds
+2025-03-04 22:03:14,825|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:03:15,109|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.28 seconds
+2025-03-04 22:03:15,157|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:03:15,227|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:03:15,227|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-2132 -2140 -2126 ...  -548  -548  -548]
+ [ -296  -321  -371 ...  -195  -195  -195]
+ [    0   -25    -6 ...  -113  -113  -113]
+ ...
+ [ -145  -176  -151 ...  -195  -195  -189]
+ [   82    50    69 ...   -44   -44   -44]
+ [    0   -44   -13 ...   -88   -88   -88]]
+(51, 54400)
+2025-03-04 22:03:24,062|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:03:28,666|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54200,) in 4.60 seconds
+2025-03-04 22:03:28,682|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:03:28,964|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54200) in 0.28 seconds
+2025-03-04 22:03:29,015|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:03:29,084|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:03:29,084|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-484 -484 -484 ... -396 -396 -396]
+ [-195 -176 -176 ... -164 -151 -151]
+ [-151 -151 -151 ... -201 -201 -201]
+ ...
+ [-189 -189 -189 ... -208 -208 -208]
+ [ -94  -94  -88 ... -157 -157 -157]
+ [ -57  -57  -57 ...  -44  -44  -44]]
+(51, 54200)
+2025-03-04 22:03:30,783|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:03:35,692|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.91 seconds
+2025-03-04 22:03:35,708|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:03:36,054|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.35 seconds
+2025-03-04 22:03:36,105|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:03:36,197|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:03:36,198|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-371 -371 -371 ... -328 -321 -328]
+ [-151 -138 -138 ... -113 -126 -113]
+ [-201 -201 -201 ... -195 -195 -195]
+ ...
+ [-208 -208 -208 ... -220 -214 -220]
+ [-138 -138 -138 ... -145 -145 -145]
+ [2568 2538 2518 ...  -25  -25  -25]]
+(49, 54400)
+2025-03-04 22:03:37,899|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:03:42,504|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.61 seconds
+2025-03-04 22:03:42,524|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:03:42,844|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.32 seconds
+2025-03-04 22:03:42,892|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:03:42,956|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:03:42,957|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -283  -283  -283 ...  -195  -195  -195]
+ [  -69   -69   -76 ...   -31   -31   -31]
+ [ -157  -157  -157 ...   -69   -63   -69]
+ ...
+ [ -101  -101  -101 ...   290   290   290]
+ [    0     0     6 ...   -38   -44   -44]
+ [-1379 -1372 -1359 ...   -94   -94   -94]]
+(48, 54400)
+2025-03-04 22:05:57,383|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:06:02,354|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.97 seconds
+2025-03-04 22:06:02,368|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:06:02,717|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.35 seconds
+2025-03-04 22:06:02,767|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:06:02,834|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:06:02,834|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -63  -94  -63 ...  -82  -88  -88]
+ [-101 -120 -107 ... -107 -107 -107]
+ [-101 -126 -101 ... -113 -113 -113]
+ ...
+ [ 195  164  201 ... -573 -579 -573]
+ [ -50  -88 -126 ...  -50  -57  -57]
+ [ -31  -82  -31 ...  -82  -82  -82]]
+(49, 54400)
+2025-03-04 22:06:08,683|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:06:13,469|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.79 seconds
+2025-03-04 22:06:13,486|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:06:13,762|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.28 seconds
+2025-03-04 22:06:13,825|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:06:13,898|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:06:13,898|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[2594 2580 2568 ...  258  264  264]
+ [-113 -120 -132 ... -182 -182 -195]
+ [-145 -151 -151 ... -239 -233 -233]
+ ...
+ [-296 -296 -296 ... -352 -352 -352]
+ [-472 -472 -472 ... -283 -283 -283]
+ [ -69  -76  -76 ...  -57  -57  -57]]
+(52, 54400)
+2025-03-04 22:06:16,483|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:06:21,327|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.84 seconds
+2025-03-04 22:06:21,341|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:06:21,592|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.25 seconds
+2025-03-04 22:06:21,657|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:06:21,727|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:06:21,727|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 151  151  151 ...   19   25   19]
+ [-157 -164 -157 ...  598  586  598]
+ [-101 -101 -101 ... -151 -145 -151]
+ ...
+ [-328 -328 -328 ... -321 -321 -321]
+ [-226 -226 -226 ... -189 -182 -189]
+ [ -38  -38  -38 ...  -31  -31  -31]]
+(52, 54400)
+2025-03-04 22:06:27,739|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:06:32,970|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.23 seconds
+2025-03-04 22:06:33,015|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:06:33,358|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.34 seconds
+2025-03-04 22:06:33,408|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:06:33,477|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:06:33,477|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 101    6   44 ...   -6    0    0]
+ [ 447  422  447 ... -756 -742 -742]
+ [-120 -145 -126 ...  -19  -19  -19]
+ ...
+ [-176 -195 -176 ... -145 -138 -138]
+ [ -44  -69  -44 ...  -31  -31  -31]
+ [ 208  176  208 ... -113 -113 -113]]
+(52, 54400)
+2025-03-04 22:06:36,280|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:06:40,734|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54200,) in 4.45 seconds
+2025-03-04 22:06:40,750|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:06:40,971|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54200) in 0.22 seconds
+2025-03-04 22:06:41,017|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:06:41,095|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:06:41,096|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -31  -31  -31 ... -101 -101 -101]
+ [-837 -824 -818 ... -900 -912 -912]
+ [2152 2152 2146 ...  151  151  151]
+ ...
+ [-290 -290 -290 ... -277 -277 -277]
+ [-157 -157 -157 ... -151 -151 -151]
+ [ -44  -44  -44 ...  -44  -44  -44]]
+(58, 54200)
+2025-03-04 22:06:50,306|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:06:55,730|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.42 seconds
+2025-03-04 22:06:55,744|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:06:56,168|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.42 seconds
+2025-03-04 22:06:56,232|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:06:56,310|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:06:56,310|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -76 -101  -76 ... -138 -138 -138]
+ [-812 -831 -806 ... -623 -623 -630]
+ [  69   25   69 ...  -38  -38  -38]
+ ...
+ [-220 -246 -220 ... -258 -258 -258]
+ [-145 -176 -145 ... -138 -138 -138]
+ [ -38  -82  -44 ...  -25  -25  -25]]
+(59, 54400)
+2025-03-04 22:06:58,461|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:07:02,858|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 4.40 seconds
+2025-03-04 22:07:02,870|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:07:03,091|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.22 seconds
+2025-03-04 22:07:03,137|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:07:03,217|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:07:03,217|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-176 -176 -176 ... -113 -113 -120]
+ [ -69  -69  -69 ...  -57  -57  -63]
+ [ 283  283  283 ...  264  264  258]
+ ...
+ [-264 -264 -264 ... -246 -246 -246]
+ [-145 -138 -138 ... -113 -120 -120]
+ [ -25  -25  -25 ...  -25  -25  -25]]
+(58, 54400)
+2025-03-04 22:07:10,529|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-04 22:07:15,673|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.14 seconds
+2025-03-04 22:07:15,689|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-04 22:07:15,922|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.23 seconds
+2025-03-04 22:07:15,968|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-04 22:07:16,047|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-04 22:07:16,048|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-126 -126 -126 ...  -44  -44  -44]
+ [ -63  -63  -57 ...  -38  -38  -31]
+ [ 271  271  271 ...  264  264  264]
+ ...
+ [-101  -94  -94 ... -107 -107 -107]
+ [   0    0    0 ...  -13  -13  -13]
+ [2662 2630 2606 ...  -82  -82  -82]]
+(59, 54400)
+2025-03-05 09:03:22,168|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:03:28,480|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 6.31 seconds
+2025-03-05 09:03:28,519|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:03:28,887|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.37 seconds
+2025-03-05 09:03:28,943|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:03:29,028|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:03:29,029|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -69  -31  -25 ... -189 -189 -189]
+ [ 208  246  208 ...  157  164  157]
+ [2486 2506 2430 ...  510  510  510]
+ ...
+ [ -13   13  -19 ...   19   19   19]
+ [-208 -182 -214 ... -220 -220 -220]
+ [-157 -132 -164 ... -157 -157 -157]]
+(61, 54400)
+2025-03-05 09:03:53,124|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:03:59,574|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 6.45 seconds
+2025-03-05 09:03:59,593|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:04:00,036|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.44 seconds
+2025-03-05 09:04:00,092|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:04:00,175|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:04:00,175|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -164  -164  -164 ...   -44   -44   -44]
+ [ 1775  1781  1781 ...   201   195   195]
+ [  208   214   208 ...   271   271   271]
+ ...
+ [  -94   -88   -88 ...   -94   -94   -94]
+ [ 2392  2378  2360 ...    -6    -6    -6]
+ [-1536 -1517 -1511 ...  -403  -409  -409]]
+(60, 54400)
+2025-03-05 09:04:02,185|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:04:07,748|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54200,) in 5.56 seconds
+2025-03-05 09:04:07,765|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:04:08,045|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54200) in 0.28 seconds
+2025-03-05 09:04:08,105|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:04:08,215|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:04:08,215|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  -44   -38   -38 ...     6     6     6]
+ [  120   120   120 ...    44    44    44]
+ [  277   277   283 ...   271   271   271]
+ ...
+ [  -69   -69   -69 ...  -101  -101  -101]
+ [-1246 -1259 -1271 ...  -302  -302  -302]
+ [ -315  -315  -315 ...  -290  -290  -290]]
+(61, 54200)
+2025-03-05 09:04:09,711|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:04:15,818|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 6.11 seconds
+2025-03-05 09:04:15,836|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:04:16,132|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.30 seconds
+2025-03-05 09:04:16,213|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:04:16,322|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:04:16,323|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -38  -38  -38 ... -214 -214 -214]
+ [ -19  -19  -19 ... -176 -176 -182]
+ [ 214  220  220 ...   76   76   76]
+ ...
+ [ -94  -94  -94 ... -113 -113 -113]
+ [2322 2322 2316 ... -460 -460 -460]
+ [-252 -252 -252 ... -214 -214 -214]]
+(59, 54400)
+2025-03-05 09:04:19,207|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:04:24,922|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.72 seconds
+2025-03-05 09:04:24,963|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:04:25,254|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.29 seconds
+2025-03-05 09:04:25,312|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:04:25,417|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:04:25,417|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ 2378  2374  2374 ...   460   466   466]
+ [-2456 -2450 -2436 ...  -422  -409  -409]
+ [ -138  -138  -138 ...   -69   -69   -69]
+ ...
+ [ 2266  2234  2204 ...  -371  -371  -371]
+ [ 2902  2876  2846 ...   101   101   101]
+ [ -182  -182  -182 ...  -157  -157  -157]]
+(61, 54400)
+2025-03-05 09:04:27,499|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:04:32,929|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.43 seconds
+2025-03-05 09:04:32,947|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:04:33,269|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.32 seconds
+2025-03-05 09:04:33,342|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:04:33,443|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:04:33,443|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-554 -560 -566 ... -926 -926 -926]
+ [ -38  -38  -38 ...   44   44   44]
+ [ 195  195  195 ...  252  246  246]
+ ...
+ [-315 -315 -315 ... -283 -283 -283]
+ [ 132  132  138 ...   94   94   94]
+ [-120 -120 -120 ... -120 -120 -120]]
+(58, 54400)
+2025-03-05 09:04:39,755|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:04:45,345|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (54400,) in 5.59 seconds
+2025-03-05 09:04:45,376|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:04:45,679|DEBUG|52618|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 54400) in 0.30 seconds
+2025-03-05 09:04:45,745|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:04:45,834|DEBUG|52618|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:04:45,835|DEBUG|52618|mea1k_raw_preproc|read_raw_data
+	Data:
+[[ -956  -956  -956 ... -1001 -1001  -994]
+ [    0     0     0 ...  -113  -113  -126]
+ [  214   214   214 ...   164   164   164]
+ ...
+ [-1787 -1787 -1794 ...   -69   -69   -69]
+ [   94    94    94 ...    63    63    63]
+ [  226   220   220 ...  -107  -101  -101]]
+(55, 54400)
+2025-03-05 09:18:35,102|DEBUG|46547|analyze_invivo_imp|main
+	Starting in vivo impedance analysis
+2025-03-05 09:18:35,216|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:18:40,085|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (50200,) in 4.87 seconds
+2025-03-05 09:18:40,107|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:18:40,387|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 50200) in 0.28 seconds
+2025-03-05 09:18:40,459|DEBUG|46547|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:18:40,483|WARNING|46547|mea1k_raw_preproc|_ADC2voltage
+	Clipping detected in 14/21 traces.
+2025-03-05 09:18:40,483|DEBUG|46547|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:18:40,483|DEBUG|46547|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1561 -1844 -1938 ...  -510  -504  -497]
+ [ 2260  2272  2110 ...  1851  1856  1856]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ ...
+ [-3222 -3222 -3222 ...   164   176   176]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ [  208   214   182 ...   -69   -57   -50]]
+(21, 50200)
+2025-03-05 09:18:40,509|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+18662     39
+14258     45
+18443     63
+18442     95
+17375    115
+18671    587
+14250    625
+18672    631
+14471    663
+14894    671
+14895    685
+16654    719
+14690    753
+17094    775
+16874    791
+14896    863
+23234    871
+19715    906
+24774    943
+dtype: int64
+2025-03-05 09:18:40,742|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 09:18:40,751|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Recorded from 21 MEA1K electrodes that were bonded to these shanks:
+	{
+  "1.0": 21,
+  "no_shank_connection": 0
+}
+2025-03-05 09:18:40,768|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping after:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 09:18:44,030|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:18:48,939|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (50400,) in 4.91 seconds
+2025-03-05 09:18:48,960|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:18:49,248|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 50400) in 0.29 seconds
+2025-03-05 09:18:49,315|DEBUG|46547|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:18:49,347|WARNING|46547|mea1k_raw_preproc|_ADC2voltage
+	Clipping detected in 21/26 traces.
+2025-03-05 09:18:49,347|DEBUG|46547|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:18:49,348|DEBUG|46547|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  422   208  -239 ... -1611 -1617 -1605]
+ [ 2858  2864  2826 ...  1114  1107  1127]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ ...
+ [ 2033  1938  1926 ...   302   302   315]
+ [-2378 -2280 -2588 ...   182   170   176]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]]
+(26, 50400)
+2025-03-05 09:18:49,380|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+14496     35
+18662     39
+14258     45
+18443     63
+14714     73
+18678     95
+17375    115
+18679    147
+18460    159
+18442    255
+18671    587
+18672    595
+14250    625
+14895    685
+14896    691
+14894    707
+16654    719
+14690    753
+17094    775
+24774    787
+16874    791
+14471    819
+23234    871
+19715    906
+dtype: int64
+2025-03-05 09:18:49,482|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+35               14496   338.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+73               14714   338.0  ...                 2.0   False
+95               18678   381.0  ...                 3.0   False
+115              17375   376.0  ...                 1.0    True
+147              18679   381.0  ...                 2.0   False
+159              18460   381.0  ...                 1.0    True
+255              18442   377.0  ...                 2.0   False
+587              18671   379.0  ...                 2.0   False
+595              18672   379.0  ...                 3.0   False
+625              14250   332.0  ...                 2.0   False
+685              14895   525.0  ...                 3.0   False
+691              14896   525.0  ...                 2.0   False
+707              14894   525.0  ...                 1.0    True
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+787              24774   570.0  ...                 1.0    True
+791              16874   523.0  ...                 1.0    True
+819              14471   332.0  ...                 3.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+
+[26 rows x 23 columns]
+2025-03-05 09:18:49,483|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Recorded from 26 MEA1K electrodes that were bonded to these shanks:
+	{
+  "1.0": 26,
+  "no_shank_connection": 0
+}
+2025-03-05 09:18:49,498|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping after:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+35               14496   338.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+73               14714   338.0  ...                 2.0   False
+95               18678   381.0  ...                 3.0   False
+115              17375   376.0  ...                 1.0    True
+147              18679   381.0  ...                 2.0   False
+159              18460   381.0  ...                 1.0    True
+255              18442   377.0  ...                 2.0   False
+587              18671   379.0  ...                 2.0   False
+595              18672   379.0  ...                 3.0   False
+625              14250   332.0  ...                 2.0   False
+685              14895   525.0  ...                 3.0   False
+691              14896   525.0  ...                 2.0   False
+707              14894   525.0  ...                 1.0    True
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+787              24774   570.0  ...                 1.0    True
+791              16874   523.0  ...                 1.0    True
+819              14471   332.0  ...                 3.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+
+[26 rows x 23 columns]
+2025-03-05 09:18:52,104|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:18:57,576|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (50400,) in 5.47 seconds
+2025-03-05 09:18:57,591|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:18:57,959|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 50400) in 0.37 seconds
+2025-03-05 09:18:58,010|DEBUG|46547|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:18:58,040|WARNING|46547|mea1k_raw_preproc|_ADC2voltage
+	Clipping detected in 8/26 traces.
+2025-03-05 09:18:58,040|DEBUG|46547|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:18:58,040|DEBUG|46547|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1825 -2656 -3222 ...  -919  -912  -912]
+ [-2492 -2460 -2442 ... -1655 -1655 -1662]
+ [ 1926  1763  1699 ...  3216  3216  3216]
+ ...
+ [ 3216  3216  3216 ... -3222 -3222 -3222]
+ [ -554 -1310 -2033 ...  2668  2676  2682]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]]
+(26, 50400)
+2025-03-05 09:18:58,071|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+14496     35
+18662     39
+14258     45
+18443     63
+14714     73
+18231     79
+18678     95
+17375    115
+18679    147
+18460    159
+18442    255
+18671    587
+18672    595
+14250    625
+14895    685
+14896    691
+14894    707
+16654    719
+14471    753
+17094    775
+24774    787
+16874    791
+14690    831
+23234    871
+19715    906
+dtype: int64
+2025-03-05 09:18:58,159|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+35               14496   338.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+73               14714   338.0  ...                 2.0   False
+79               18231   379.0  ...                 1.0    True
+95               18678   381.0  ...                 3.0   False
+115              17375   376.0  ...                 1.0    True
+147              18679   381.0  ...                 2.0   False
+159              18460   381.0  ...                 1.0    True
+255              18442   377.0  ...                 2.0   False
+587              18671   379.0  ...                 2.0   False
+595              18672   379.0  ...                 3.0   False
+625              14250   332.0  ...                 2.0   False
+685              14895   525.0  ...                 3.0   False
+691              14896   525.0  ...                 2.0   False
+707              14894   525.0  ...                 1.0    True
+719              16654   523.0  ...                 2.0   False
+753              14471   332.0  ...                 3.0   False
+775              17094   523.0  ...                 3.0   False
+787              24774   570.0  ...                 1.0    True
+791              16874   523.0  ...                 1.0    True
+831              14690   332.0  ...                 1.0    True
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+
+[26 rows x 23 columns]
+2025-03-05 09:18:58,160|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Recorded from 26 MEA1K electrodes that were bonded to these shanks:
+	{
+  "1.0": 26,
+  "no_shank_connection": 0
+}
+2025-03-05 09:18:58,176|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping after:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+35               14496   338.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+73               14714   338.0  ...                 2.0   False
+79               18231   379.0  ...                 1.0    True
+95               18678   381.0  ...                 3.0   False
+115              17375   376.0  ...                 1.0    True
+147              18679   381.0  ...                 2.0   False
+159              18460   381.0  ...                 1.0    True
+255              18442   377.0  ...                 2.0   False
+587              18671   379.0  ...                 2.0   False
+595              18672   379.0  ...                 3.0   False
+625              14250   332.0  ...                 2.0   False
+685              14895   525.0  ...                 3.0   False
+691              14896   525.0  ...                 2.0   False
+707              14894   525.0  ...                 1.0    True
+719              16654   523.0  ...                 2.0   False
+753              14471   332.0  ...                 3.0   False
+775              17094   523.0  ...                 3.0   False
+787              24774   570.0  ...                 1.0    True
+791              16874   523.0  ...                 1.0    True
+831              14690   332.0  ...                 1.0    True
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+
+[26 rows x 23 columns]
+2025-03-05 09:20:17,283|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 09:20:22,912|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (50400,) in 5.63 seconds
+2025-03-05 09:20:22,927|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 09:20:23,332|DEBUG|46547|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 50400) in 0.40 seconds
+2025-03-05 09:20:23,387|DEBUG|46547|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 09:20:23,426|WARNING|46547|mea1k_raw_preproc|_ADC2voltage
+	Clipping detected in 23/33 traces.
+2025-03-05 09:20:23,426|DEBUG|46547|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 09:20:23,426|DEBUG|46547|mea1k_raw_preproc|read_raw_data
+	Data:
+[[    0   -94   -82 ...  -579  -586  -573]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ [ 3216  3216  3216 ...   -13   -19   -13]
+ ...
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ [-2272 -2474 -2460 ...  -145  -157  -145]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]]
+(33, 50400)
+2025-03-05 09:20:23,452|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+14502     13
+18231     27
+14496     35
+18662     39
+14258     45
+18443     63
+14714     73
+18688     87
+18678     95
+17375    115
+18679    147
+18687    151
+18460    159
+18468    163
+18442    255
+18671    587
+18672    595
+14250    625
+18414    679
+14895    685
+14896    691
+14894    707
+16654    719
+18415    731
+14690    753
+17094    775
+24774    787
+16874    791
+14471    819
+18634    831
+23234    871
+19715    906
+dtype: int64
+2025-03-05 09:20:23,700|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+13               14502   340.0  ...                 1.0    True
+27               18231   379.0  ...                 1.0    True
+35               14496   338.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+73               14714   338.0  ...                 2.0   False
+87               18688   383.0  ...                 1.0    True
+95               18678   381.0  ...                 3.0   False
+115              17375   376.0  ...                 1.0    True
+147              18679   381.0  ...                 2.0   False
+151              18687   383.0  ...                 2.0   False
+159              18460   381.0  ...                 1.0    True
+163              18468   383.0  ...                 3.0   False
+255              18442   377.0  ...                 2.0   False
+587              18671   379.0  ...                 2.0   False
+595              18672   379.0  ...                 3.0   False
+625              14250   332.0  ...                 2.0   False
+679              18414   521.0  ...                 3.0   False
+685              14895   525.0  ...                 3.0   False
+691              14896   525.0  ...                 2.0   False
+707              14894   525.0  ...                 1.0    True
+719              16654   523.0  ...                 2.0   False
+731              18415   521.0  ...                 1.0    True
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+787              24774   570.0  ...                 1.0    True
+791              16874   523.0  ...                 1.0    True
+819              14471   332.0  ...                 3.0   False
+831              18634   521.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+
+[33 rows x 23 columns]
+2025-03-05 09:20:23,702|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Recorded from 33 MEA1K electrodes that were bonded to these shanks:
+	{
+  "1.0": 33,
+  "no_shank_connection": 0
+}
+2025-03-05 09:20:23,720|DEBUG|46547|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping after:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+13               14502   340.0  ...                 1.0    True
+27               18231   379.0  ...                 1.0    True
+35               14496   338.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+73               14714   338.0  ...                 2.0   False
+87               18688   383.0  ...                 1.0    True
+95               18678   381.0  ...                 3.0   False
+115              17375   376.0  ...                 1.0    True
+147              18679   381.0  ...                 2.0   False
+151              18687   383.0  ...                 2.0   False
+159              18460   381.0  ...                 1.0    True
+163              18468   383.0  ...                 3.0   False
+255              18442   377.0  ...                 2.0   False
+587              18671   379.0  ...                 2.0   False
+595              18672   379.0  ...                 3.0   False
+625              14250   332.0  ...                 2.0   False
+679              18414   521.0  ...                 3.0   False
+685              14895   525.0  ...                 3.0   False
+691              14896   525.0  ...                 2.0   False
+707              14894   525.0  ...                 1.0    True
+719              16654   523.0  ...                 2.0   False
+731              18415   521.0  ...                 1.0    True
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+787              24774   570.0  ...                 1.0    True
+791              16874   523.0  ...                 1.0    True
+819              14471   332.0  ...                 3.0   False
+831              18634   521.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+
+[33 rows x 23 columns]
+2025-03-05 10:27:06,237|DEBUG|58369|analyze_invivo_imp|main
+	Starting in vivo impedance analysis
+2025-03-05 10:27:06,351|DEBUG|58369|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 10:27:11,249|DEBUG|58369|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (50200,) in 4.90 seconds
+2025-03-05 10:27:11,262|DEBUG|58369|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 10:27:11,566|DEBUG|58369|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 50200) in 0.30 seconds
+2025-03-05 10:27:11,616|DEBUG|58369|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 10:27:11,643|WARNING|58369|mea1k_raw_preproc|_ADC2voltage
+	Clipping detected in 14/21 traces.
+2025-03-05 10:27:11,643|DEBUG|58369|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 10:27:11,643|DEBUG|58369|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1561 -1844 -1938 ...  -510  -504  -497]
+ [ 2260  2272  2110 ...  1851  1856  1856]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ ...
+ [-3222 -3222 -3222 ...   164   176   176]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ [  208   214   182 ...   -69   -57   -50]]
+(21, 50200)
+2025-03-05 10:27:11,667|DEBUG|58369|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+18662     39
+14258     45
+18443     63
+18442     95
+17375    115
+18671    587
+14250    625
+18672    631
+14471    663
+14894    671
+14895    685
+16654    719
+14690    753
+17094    775
+16874    791
+14896    863
+23234    871
+19715    906
+24774    943
+dtype: int64
+2025-03-05 10:27:11,853|DEBUG|58369|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 10:27:11,854|DEBUG|58369|mea1k_raw_preproc|get_recording_implant_mapping
+	Recorded from 21 MEA1K electrodes that were bonded to these shanks:
+	{
+  "1.0": 21,
+  "no_shank_connection": 0
+}
+2025-03-05 10:27:11,870|DEBUG|58369|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping after:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 10:28:43,003|DEBUG|58657|analyze_invivo_imp|main
+	Starting in vivo impedance analysis
+2025-03-05 10:28:43,091|DEBUG|58657|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 10:28:47,778|DEBUG|58657|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (50200,) in 4.69 seconds
+2025-03-05 10:28:47,792|DEBUG|58657|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 10:28:48,033|DEBUG|58657|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 50200) in 0.24 seconds
+2025-03-05 10:28:48,080|DEBUG|58657|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 10:28:48,105|WARNING|58657|mea1k_raw_preproc|_ADC2voltage
+	Clipping detected in 14/21 traces.
+2025-03-05 10:28:48,105|DEBUG|58657|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 10:28:48,105|DEBUG|58657|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1561 -1844 -1938 ...  -510  -504  -497]
+ [ 2260  2272  2110 ...  1851  1856  1856]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ ...
+ [-3222 -3222 -3222 ...   164   176   176]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ [  208   214   182 ...   -69   -57   -50]]
+(21, 50200)
+2025-03-05 10:28:48,148|DEBUG|58657|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+18662     39
+14258     45
+18443     63
+18442     95
+17375    115
+18671    587
+14250    625
+18672    631
+14471    663
+14894    671
+14895    685
+16654    719
+14690    753
+17094    775
+16874    791
+14896    863
+23234    871
+19715    906
+24774    943
+dtype: int64
+2025-03-05 10:28:48,440|DEBUG|58657|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 10:28:48,441|DEBUG|58657|mea1k_raw_preproc|get_recording_implant_mapping
+	Recorded from 21 MEA1K electrodes that were bonded to these shanks:
+	{
+  "1.0": 21,
+  "no_shank_connection": 0
+}
+2025-03-05 10:28:48,457|DEBUG|58657|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping after:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 10:29:08,847|DEBUG|58756|analyze_invivo_imp|main
+	Starting in vivo impedance analysis
+2025-03-05 10:29:08,910|DEBUG|58756|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 10:29:13,273|DEBUG|58756|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (50200,) in 4.36 seconds
+2025-03-05 10:29:13,297|DEBUG|58756|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 10:29:13,552|DEBUG|58756|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 50200) in 0.26 seconds
+2025-03-05 10:29:13,605|DEBUG|58756|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 10:29:13,631|WARNING|58756|mea1k_raw_preproc|_ADC2voltage
+	Clipping detected in 14/21 traces.
+2025-03-05 10:29:13,632|DEBUG|58756|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 10:29:13,632|DEBUG|58756|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1561 -1844 -1938 ...  -510  -504  -497]
+ [ 2260  2272  2110 ...  1851  1856  1856]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ ...
+ [-3222 -3222 -3222 ...   164   176   176]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ [  208   214   182 ...   -69   -57   -50]]
+(21, 50200)
+2025-03-05 10:29:13,664|DEBUG|58756|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+18662     39
+14258     45
+18443     63
+18442     95
+17375    115
+18671    587
+14250    625
+18672    631
+14471    663
+14894    671
+14895    685
+16654    719
+14690    753
+17094    775
+16874    791
+14896    863
+23234    871
+19715    906
+24774    943
+dtype: int64
+2025-03-05 10:29:13,867|DEBUG|58756|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 10:29:13,868|DEBUG|58756|mea1k_raw_preproc|get_recording_implant_mapping
+	Recorded from 21 MEA1K electrodes that were bonded to these shanks:
+	{
+  "1.0": 21,
+  "no_shank_connection": 0
+}
+2025-03-05 10:29:13,884|DEBUG|58756|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping after:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 10:29:36,650|DEBUG|58962|analyze_invivo_imp|main
+	Starting in vivo impedance analysis
+2025-03-05 10:29:36,810|DEBUG|58962|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 10:29:42,250|DEBUG|58962|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (50200,) in 5.44 seconds
+2025-03-05 10:29:42,264|DEBUG|58962|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 10:29:42,516|DEBUG|58962|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 50200) in 0.25 seconds
+2025-03-05 10:29:42,571|DEBUG|58962|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 10:29:42,597|WARNING|58962|mea1k_raw_preproc|_ADC2voltage
+	Clipping detected in 14/21 traces.
+2025-03-05 10:29:42,597|DEBUG|58962|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 10:29:42,597|DEBUG|58962|mea1k_raw_preproc|read_raw_data
+	Data:
+[[-1561 -1844 -1938 ...  -510  -504  -497]
+ [ 2260  2272  2110 ...  1851  1856  1856]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ ...
+ [-3222 -3222 -3222 ...   164   176   176]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ [  208   214   182 ...   -69   -57   -50]]
+(21, 50200)
+2025-03-05 10:29:42,623|DEBUG|58962|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+18662     39
+14258     45
+18443     63
+18442     95
+17375    115
+18671    587
+14250    625
+18672    631
+14471    663
+14894    671
+14895    685
+16654    719
+14690    753
+17094    775
+16874    791
+14896    863
+23234    871
+19715    906
+24774    943
+dtype: int64
+2025-03-05 10:29:42,812|DEBUG|58962|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 10:29:42,813|DEBUG|58962|mea1k_raw_preproc|get_recording_implant_mapping
+	Recorded from 21 MEA1K electrodes that were bonded to these shanks:
+	{
+  "1.0": 21,
+  "no_shank_connection": 0
+}
+2025-03-05 10:29:42,826|DEBUG|58962|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping after:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+95               18442   377.0  ...                 2.0   False
+115              17375   376.0  ...                 1.0    True
+587              18671   379.0  ...                 2.0   False
+625              14250   332.0  ...                 2.0   False
+631              18672   379.0  ...                 3.0   False
+663              14471   332.0  ...                 3.0   False
+671              14894   525.0  ...                 1.0    True
+685              14895   525.0  ...                 3.0   False
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+791              16874   523.0  ...                 1.0    True
+863              14896   525.0  ...                 2.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+943              24774   570.0  ...                 1.0    True
+
+[21 rows x 23 columns]
+2025-03-05 10:30:09,241|DEBUG|58962|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.int16'>` with col slice slice(None, None, None), row slice 1024...
+2025-03-05 10:30:17,178|DEBUG|58962|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (50400,) in 7.94 seconds
+2025-03-05 10:30:17,200|DEBUG|58962|mea1k_raw_preproc|_read_mea1k_file
+	Reading MEA1K ephys data (format: legacy) casting to `<class 'numpy.float16'>` with col slice slice(None, None, None), row slice slice(None, None, None)...
+2025-03-05 10:30:17,567|DEBUG|58962|mea1k_raw_preproc|_read_mea1k_file
+	Done. Decompressed (1028, 50400) in 0.37 seconds
+2025-03-05 10:30:17,615|DEBUG|58962|mea1k_raw_preproc|_ADC2voltage
+	Converting ADC values to mV (0.0063mV/ adc step (1024)) -> range ±6,445uV, casting to <class 'numpy.int16'>...
+2025-03-05 10:30:17,645|WARNING|58962|mea1k_raw_preproc|_ADC2voltage
+	Clipping detected in 21/26 traces.
+2025-03-05 10:30:17,645|DEBUG|58962|mea1k_raw_preproc|_ADC2voltage
+	Done.
+2025-03-05 10:30:17,645|DEBUG|58962|mea1k_raw_preproc|read_raw_data
+	Data:
+[[  422   208  -239 ... -1611 -1617 -1605]
+ [ 2858  2864  2826 ...  1114  1107  1127]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]
+ ...
+ [ 2033  1938  1926 ...   302   302   315]
+ [-2378 -2280 -2588 ...   182   170   176]
+ [-3222 -3222 -3222 ... -3222 -3222 -3222]]
+(26, 50400)
+2025-03-05 10:30:17,669|DEBUG|58962|mea1k_raw_preproc|get_recording_implant_mapping
+	Recording config:
+14698     11
+18231     27
+14496     35
+18662     39
+14258     45
+18443     63
+14714     73
+18678     95
+17375    115
+18679    147
+18460    159
+18442    255
+18671    587
+18672    595
+14250    625
+14895    685
+14896    691
+14894    707
+16654    719
+14690    753
+17094    775
+24774    787
+16874    791
+14471    819
+23234    871
+19715    906
+dtype: int64
+2025-03-05 10:30:17,907|DEBUG|58962|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+35               14496   338.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+73               14714   338.0  ...                 2.0   False
+95               18678   381.0  ...                 3.0   False
+115              17375   376.0  ...                 1.0    True
+147              18679   381.0  ...                 2.0   False
+159              18460   381.0  ...                 1.0    True
+255              18442   377.0  ...                 2.0   False
+587              18671   379.0  ...                 2.0   False
+595              18672   379.0  ...                 3.0   False
+625              14250   332.0  ...                 2.0   False
+685              14895   525.0  ...                 3.0   False
+691              14896   525.0  ...                 2.0   False
+707              14894   525.0  ...                 1.0    True
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+787              24774   570.0  ...                 1.0    True
+791              16874   523.0  ...                 1.0    True
+819              14471   332.0  ...                 3.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+
+[26 rows x 23 columns]
+2025-03-05 10:30:17,908|DEBUG|58962|mea1k_raw_preproc|get_recording_implant_mapping
+	Recorded from 26 MEA1K electrodes that were bonded to these shanks:
+	{
+  "1.0": 26,
+  "no_shank_connection": 0
+}
+2025-03-05 10:30:17,924|DEBUG|58962|mea1k_raw_preproc|get_recording_implant_mapping
+	Implant mapping after:
+              mea1k_el  pad_id  ...  connectivity_order  routed
+amplifier_id                    ...                            
+11               14698   334.0  ...                 2.0   False
+27               18231   379.0  ...                 1.0    True
+35               14496   338.0  ...                 1.0    True
+39               18662   377.0  ...                 1.0    True
+45               14258   334.0  ...                 1.0    True
+63               18443   377.0  ...                 3.0   False
+73               14714   338.0  ...                 2.0   False
+95               18678   381.0  ...                 3.0   False
+115              17375   376.0  ...                 1.0    True
+147              18679   381.0  ...                 2.0   False
+159              18460   381.0  ...                 1.0    True
+255              18442   377.0  ...                 2.0   False
+587              18671   379.0  ...                 2.0   False
+595              18672   379.0  ...                 3.0   False
+625              14250   332.0  ...                 2.0   False
+685              14895   525.0  ...                 3.0   False
+691              14896   525.0  ...                 2.0   False
+707              14894   525.0  ...                 1.0    True
+719              16654   523.0  ...                 2.0   False
+753              14690   332.0  ...                 1.0    True
+775              17094   523.0  ...                 3.0   False
+787              24774   570.0  ...                 1.0    True
+791              16874   523.0  ...                 1.0    True
+819              14471   332.0  ...                 3.0   False
+871              23234   572.0  ...                 1.0    True
+906              19715   576.0  ...                 1.0    True
+
+[26 rows x 23 columns]
