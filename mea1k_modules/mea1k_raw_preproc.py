@@ -1,6 +1,7 @@
 import h5py
 import os
 import time
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -176,6 +177,7 @@ def read_raw_data(path, fname, convert2uV,
 
 def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name, 
                                     chunk_size_s=60, convert2uV=False,
+                                    write_neuroscope_xml=False,
                                     subtract_dc_offset=False, exclude_shanks=[]):
     L = Logger()
     
@@ -196,14 +198,21 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
                                                     exclude_shanks=exclude_shanks)
 
     # this can be used to reorder the raw data according to physical layout
-    shank_order = implant_mapping[['shank_id', 'depth']].values.argsort(axis=0)[:, 0]
+    shank_order = implant_mapping.reset_index().sort_values(by=['shank_id', 'depth']).index
     
     # create the output file that we will append to
     out_fullfname = os.path.join(path,f"{session_name}_{len(implant_mapping)}_ephys_traces.dat")
-    open(out_fullfname, 'w').close()
-    # save the mapping file
-    implant_mapping.iloc[shank_order].to_csv(out_fullfname.replace(".dat", "_mapping.csv"))
+    L.logger.debug(f"Creating {out_fullfname}")
+    # open(out_fullfname, 'w').close() # this overwrite, careful
     
+    # save the mapping file reordered to physical layout (shank+depth)
+    implant_mapping.iloc[shank_order].to_csv(out_fullfname.replace(".dat", "_mapping.csv"))
+
+    # option to save the neuroscope xml file
+    if write_neuroscope_xml:
+        _make_neuroscope_xml(implant_mapping.iloc[shank_order], out_fullfname.replace(".dat", ".xml"))
+    return
+
     # calculate the initial DC offset, use for all later chunks
     if subtract_dc_offset:
         subtract_dc_offset = read_raw_data(path, fname, convert2uV=convert2uV,
@@ -216,14 +225,14 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
                                    col_slice=col_slice,
                                    row_slice=implant_mapping.index)
         # reorder to sort by shank and then depth of electrode on that shank
-        data = data_chunk[shank_order]
+        data_chunk = data_chunk[shank_order]
         
-        if i == 0 and L.LOGGING_LEVEL == 'DEBUG':
+        if i == 0 and L.logger.level == 10: # DEBUG
             import matplotlib.pyplot as plt
             # plot traces
             plt.figure()
-            for j,row in enumerate(data):
-                if j<300:
+            for j,row in enumerate(data_chunk):
+                if j>100:
                     continue
                 plt.plot(row[:20_000]+j*1000)
             plt.show()
@@ -317,22 +326,32 @@ def _get_implant_config_fullfname(implant_name, animal_name, date):
     
     
     
-def write_neuroscope_xml(session_dir, mea1k_rec_fname, animal_name, exclude_shanks):
-    mapping = get_recording_implant_mapping(session_dir, mea1k_rec_fname, animal_name, 
-                                            exclude_shanks=exclude_shanks)
-    mapping.reset_index(inplace=True, drop=True)
-    print(mapping)
     
-        # convert electrode id to channel id (iloc basically)
-    print(mapping.columns)
-    channel_groups = mapping.sort_values(by=['shank_id', 'depth']).groupby('shank_id').apply(lambda x: x.index)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+def _make_neuroscope_xml(implant_mapping, out_fullfname):
+    # convert from MEA1K amplifier ID to channel ID (order/index)
+    implant_mapping.reset_index(inplace=True, drop=True)
+
+    channel_groups = implant_mapping.groupby('shank_id').apply(lambda x: x.index)
     channel_groups = [group.values for group in channel_groups] # unpack
-    print(channel_groups)
-    
     
     # color the channels, left side electrodes are slightly different
     channel_colors_dict = {}
-    for channel_i, el_row in mapping.iterrows():
+    for channel_i, el_row in implant_mapping.iterrows():
         col = C.SHANK_BASE_COLORS[el_row.shank_id]
         if el_row.shank_side == 'left':
             col = adjust_saturation(col, C.METALLIZATION_COLOR_OFFSET)
@@ -340,17 +359,11 @@ def write_neuroscope_xml(session_dir, mea1k_rec_fname, animal_name, exclude_shan
         col = '#%02x%02x%02x' % tuple(int(255 * c) for c in col)
         channel_colors_dict[channel_i] = {'color': col, 'anatomyColor': col, 'spikeColor': col}
 
+    xml_templafe_fullfname = os.path.join(device_paths()[2], 'ephysVR', 
+                                          'assets', 'neuroscope_template.xml')
     
-    create_neuroscope_xml_from_template('../ephysVR/assets/neuroscope_template.xml',
-                                        f'{session_dir}/nrsc_test.xml', channel_groups, channel_colors_dict)
-    
-    
-# TODO needs to be updated    
-
-def create_neuroscope_xml_from_template(template_filename, output_filename, 
-                                        channel_groups, channel_colors_dict):
     # Parse the template XML file
-    tree = ET.parse(template_filename)
+    tree = ET.parse(xml_templafe_fullfname)
     root = tree.getroot()
     
     # Locate relevant elements to insert channel groups and channels
@@ -397,8 +410,74 @@ def create_neuroscope_xml_from_template(template_filename, output_filename,
     xml_str = ET.tostring(root, encoding='utf-8')
     pretty_xml = minidom.parseString(xml_str).toprettyxml(indent=" ")
     
-    with open(output_filename, "w") as f:
+    print(out_fullfname)
+    with open(out_fullfname, "w") as f:
         f.write(pretty_xml)
+        
+def _get_channel_skip_info_from_xml(xml_fullfname):
+    tree = ET.parse(xml_fullfname)
+    root = tree.getroot()
+    
+    # Locate the channel groups element
+    channel_groups_elem = root.find(".//anatomicalDescription/channelGroups")
+    
+    # Extract skip information for each channel
+    kept_channels = []
+    skipped_channels = []
+    for group in channel_groups_elem.findall('group'):
+        for channel_elem in group.findall('channel'):
+            channel_detail = {
+                'channel': int(channel_elem.text),
+                'skip': channel_elem.get('skip', '0')  # Default to '0' if 'skip' attribute is not present
+            }
+            if channel_detail['skip'] == '0':
+                kept_channels.append(int(channel_elem.text))
+            else:
+                skipped_channels.append(int(channel_elem.text))
+    return kept_channels, skipped_channels
+
+def replace_neuroscope_xml(session_dir, animal_name):
+    nas_dir = device_paths()[0]
+    implant_name = animal_name2implant_device(animal_name)
+    new_xml_path = os.path.join(nas_dir, 'devices', 'implant_devices', implant_name,
+                                'bonding',)
+    xml_fnames = [f for f in os.listdir(new_xml_path)
+                  if f.startswith(animal_name) and f.endswith('.xml')]
+    if len(xml_fnames) != 1:
+        Logger().logger.error(f"Multiple or no xml files found for {animal_name}: {xml_fnames}")
+        raise FileNotFoundError()
+    
+    dat_fname = [f for f in os.listdir(session_dir) if f.endswith('.dat')][0]
+    out_xml_fname = dat_fname.replace(".dat", ".xml")
+    # check if the xml file already exists, rename it to not overwrite
+    if os.path.exists(os.path.join(session_dir, out_xml_fname)):
+        Logger().logger.debug(f"XML file already exists: {out_xml_fname}")
+        os.rename(os.path.join(session_dir, out_xml_fname),
+                  os.path.join(session_dir, 'depr_xml.xml'))
+    
+    # copy the manually edited xml file to the session directory
+    Logger().logger.debug(f"Copying {xml_fnames[0]} to {session_dir}")
+    shutil.copyfile(os.path.join(new_xml_path, xml_fnames[0]),
+                    os.path.join(session_dir, out_xml_fname))
+    shutil.copyfile(os.path.join(new_xml_path, xml_fnames[0].replace(".xml", ".nrs")),
+                    os.path.join(session_dir, out_xml_fname.replace(".xml", ".nrs")),)
+
+    # update the mapping witha new column with manual curation
+                                  
+    kept, skipped = _get_channel_skip_info_from_xml(os.path.join(session_dir, out_xml_fname))
+    implant_mapping = pd.read_csv(os.path.join(session_dir, dat_fname.replace(".dat", "_mapping.csv")))
+    implant_mapping['curated_trace'] = True
+    implant_mapping.loc[skipped, 'curated_trace'] = False
+    implant_mapping.to_csv(os.path.join(session_dir, dat_fname.replace(".dat", "_mapping.csv")))
+    Logger().logger.debug(f"Updated implant_mapping.csv with manual curation column from xml")
+    
+    
+
+
+
+
+
+
 
 def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
     data = read_raw_data(subdir, fname, convert2vol=True,  convert2uVInt=True,
@@ -440,37 +519,32 @@ def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
         f.write("% Recording contact pad size (height x width in micrometers)\n")
         f.write(f"pad = [{pad_size} {pad_size}];\n\n")
 
+# # TODO DEPRECATED FUNCTIONS
 
+# def get_implant_mapping_depr(nas_dir, device_name):
+#     fullfname = os.path.join(nas_dir, 'implant_devices', device_name, 
+#                             #  'bonding_electrode_map.csv')
+#                              f'bonding_electrode_map_46pad4shank.csv')
+#     bonding_electrode_map = pd.read_csv(fullfname, index_col=0)
+#     return bonding_electrode_map
 
-
-
-
-# TODO DEPRECATED FUNCTIONS
-
-def get_implant_mapping_depr(nas_dir, device_name):
-    fullfname = os.path.join(nas_dir, 'implant_devices', device_name, 
-                            #  'bonding_electrode_map.csv')
-                             f'bonding_electrode_map_46pad4shank.csv')
-    bonding_electrode_map = pd.read_csv(fullfname, index_col=0)
-    return bonding_electrode_map
-
-def assign_mapping_to_data_depr(data, implant_mapping, 
-                                shank_depth_side_multiindex=True):
-    # mask to the electrodes in the data (routed in rec config)
-    implant_mapping = implant_mapping[np.isin(implant_mapping.mea1k_el, data.index)]
-    if implant_mapping.pad_id.isna().any():
-        print(f"Warning: {implant_mapping.pad_id.isna().sum()} recorded electrodes were not below a pad")
+# def assign_mapping_to_data_depr(data, implant_mapping, 
+#                                 shank_depth_side_multiindex=True):
+#     # mask to the electrodes in the data (routed in rec config)
+#     implant_mapping = implant_mapping[np.isin(implant_mapping.mea1k_el, data.index)]
+#     if implant_mapping.pad_id.isna().any():
+#         print(f"Warning: {implant_mapping.pad_id.isna().sum()} recorded electrodes were not below a pad")
     
-    # include only the electrodes that are routed to a shank
-    implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
-    # sort the electrodes by shank and depth
-    cols = ['shank_id', 'depth', 'shank_side', 'mea1k_el']
-    implant_mapping = implant_mapping.sort_values(cols).reset_index(drop=True)
-    # reindex the data according to shank and depth
-    data = data.loc[implant_mapping.mea1k_el]
-    if shank_depth_side_multiindex:
-        levels = implant_mapping[cols]
-        levels = pd.concat([levels, pd.Series(range(levels.shape[0]),name='channel')], axis=1)
-        data.index = pd.MultiIndex.from_frame(levels)
-    implant_mapping.index.name = 'channel'
-    return data, implant_mapping
+#     # include only the electrodes that are routed to a shank
+#     implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
+#     # sort the electrodes by shank and depth
+#     cols = ['shank_id', 'depth', 'shank_side', 'mea1k_el']
+#     implant_mapping = implant_mapping.sort_values(cols).reset_index(drop=True)
+#     # reindex the data according to shank and depth
+#     data = data.loc[implant_mapping.mea1k_el]
+#     if shank_depth_side_multiindex:
+#         levels = implant_mapping[cols]
+#         levels = pd.concat([levels, pd.Series(range(levels.shape[0]),name='channel')], axis=1)
+#         data.index = pd.MultiIndex.from_frame(levels)
+#     implant_mapping.index.name = 'channel'
+#     return data, implant_mapping
