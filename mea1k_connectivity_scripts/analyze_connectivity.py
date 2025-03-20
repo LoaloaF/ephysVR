@@ -111,7 +111,7 @@ def main():
     
     subdirs = [
         # "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9_25mVext_2_2Shankbatch5_silk/"
-        "devices/headstage_devices/MEA1K07/recordings/all_pad_testrec_VrefFPGAStim_ampl16_rec2",
+        "devices/headstage_devices/MEA1K07/recordings/all_pad_testrec_VrefFPGAStim_ampl16_rec3_noGND_7GUI",
     ]
     
     nas_dir = C.device_paths()[0]
@@ -122,7 +122,7 @@ def main():
             print(f"Error: {os.path.join(subdir)} does not exist.")
             continue
         
-        # extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
+        extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
         vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
     
 if __name__ == "__main__":

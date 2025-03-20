@@ -22,6 +22,7 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
     array.load_config(config_fullfname)
     
     config_map = pd.read_csv(config_fullfname.replace(".cfg", ".csv"))
+    # copy to output dir
     for stim_el in config_map.electrode[config_map.stim].tolist():
         success, stim_units = attampt_connect_el2stim_unit(stim_el, array, with_download=False)
         print(success) # turn on ?
@@ -39,18 +40,22 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
     stim_seq.send()
     time.sleep(rec_time)
     # stimulation
-    # turn_off_stimulation_units(stim_units)
+    # turn off
+    turn_off_stimulation_units(stim_units)
     array.download()
     time.sleep(.1)
     array.close()
     stop_saving(s)
+    config_map.to_csv(os.path.join(path, os.path.basename(config_fullfname).replace(".cfg", ".csv")))
+    
 
 def main():
     # ======== PARAMETERS ========
-    subdir = f"well_devices/4983/recordings"
+    # subdir = f"well_devices/4983/recordings"
+    subdir = f"devices/implant_devices/250308_MEA1K07_H1628pad1shankB6/recordings"
     nas_dir = C.device_paths()[0]
     
-    amplitude = 20
+    amplitude = 10
     # mode = "voltage"
     mode = "small_current"
     stimpulse = 'sine'
@@ -59,16 +64,16 @@ def main():
     # rec_time = .1
     # stimpulse = 'sine'
     
-    t = datetime.datetime.now().strftime("%H:%M:%S")
-    rec_dir = f"{t}_invivo_localstim_{mode=}_{stimpulse=}2_{amplitude=}"
+    t = datetime.datetime.now().strftime("%H.%M.%S")
+    rec_dir = f"{t}_noSilk_tapwater_GND_REF_cable_imp8_localstim_{mode=}_{stimpulse=}2_{amplitude=}"
     
-    post_download_wait_time = .6
+    post_download_wait_time = 1
     log2file = False
-    rec_time = 2
+    rec_time = 1
     gain = 7
-    configs_basepath = os.path.join(nas_dir, "devices", "well_devices", "4983", 
+    configs_basepath = os.path.join(nas_dir, "devices", "implant_devices", "250308_MEA1K07_H1628pad1shankB6", 
                                     'bonding', )
-    which_configs = "invivo_localstim_configs"
+    which_configs = "imp_rec_configs2"
     
     # stim
     if stimpulse == 'sine':
@@ -101,6 +106,7 @@ def main():
     # turn_off_stimulation_units(list(range(32)))
     
     fnames = glob(os.path.join(configs_basepath, which_configs, "*.cfg"))
+    print(f"Found {len(fnames)} configs in {configs_basepath}/{which_configs}")
     for i, config_fullfname in enumerate(sorted(fnames)):
         print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}", flush=True)
         process_config(config_fullfname, path, rec_time, post_download_wait_time, 

@@ -10,7 +10,7 @@ def main():
     nas_dir = device_paths()[0]
     subdir = "devices/headstage_devices/MEA1K07/recordings"
     # subdir = "headstage_devices/MEA1K06/recordings"
-    rec_dir = "all_pad_testrec_VrefFPGAStim_ampl16_rec2"
+    rec_dir = "all_pad_testrec_VrefFPGAStim_ampl16_rec3_noGND_7GUI"
     post_download_wait_time = .6
     rec_time = .5
     gain = 7
