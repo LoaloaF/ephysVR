@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import ephys_constants as C
 
 import colorsys
+import matplotlib.colorbar as mcolorbar
 
 def adjust_saturation(rgb_color, offset):
     # Convert RGB (0-1 scale) to HSV
@@ -20,7 +21,7 @@ def _n_sequentially_different_colors(n, cmap='tab20'):
     colors = [list(col) for col in cmap(np.linspace(0, 1, n))]
     return colors
 
-def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None):
+def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVrange=6438):
     implant_mapping.reset_index(drop=True, inplace=True)
     # print(data)
     # print(implant_mapping)
@@ -75,11 +76,11 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None):
         traces_iloc = np.where(implant_mapping.pad_id == pad_id)[0]
         stim_pad = np.isin(stim_mea1k_el, implant_mapping.iloc[traces_iloc].mea1k_el)
         
-        min_potential = depth -scaler*6438/2
-        max_potential = depth +scaler*6438/2
-        right_ax.text(data.shape[1], max_potential, f"0 mV", va='center', ha='left', fontsize=7)
-        right_ax.text(data.shape[1], min_potential, f"6.4 mV", va='center', ha='left', fontsize=7)
-        bg_rects.append(plt.Rectangle((0, min_potential), data.shape[1], scaler*6438,
+        min_potential = depth -scaler*uVrange/2
+        max_potential = depth +scaler*uVrange/2
+        right_ax.text(data.shape[1], max_potential, f"{-uVrange/1000/2:.1f} mV", va='center', ha='left', fontsize=7)
+        right_ax.text(data.shape[1], min_potential, f"{uVrange/1000/2:.1f} mV", va='center', ha='left', fontsize=7)
+        bg_rects.append(plt.Rectangle((0, min_potential), data.shape[1], scaler*uVrange,
                                       facecolor='black', alpha=.03 if not stim_pad else .15))
         
         for iloc in traces_iloc:
@@ -185,18 +186,17 @@ def draw_mea1k(bg='black', el_color='#111111'):
     if el_color == 'hsv':
         cmap = plt.get_cmap('hsv', 26400)
         colors = [list(col) for col in cmap(np.linspace(0, 1, 26400))]
+    elif isinstance(el_color, list):
+        colors = el_color
     else:
         colors = [el_color]*26400
-    
+
     i = 0
     recs = []
     # mea1k_yx = []
-    C.MEA1K_EL_2D_TABLE_PIXEL
     for y in np.arange(0+17.5/4, 2100, 17.5):
         for x in np.arange(0+17.5/4, 3850, 17.5):
-            recs.append(plt.Rectangle((x, y), 9, 
-                                      C.MEA1K_EL_HEIGHT_MICROMETER, 
-                                      facecolor=colors[i], 
+            recs.append(plt.Rectangle((x, y), 9, 9, facecolor=colors[i], 
                                       edgecolor='none', alpha=.7))
             # mea1k_yx.append((x+4.5,y+4.5))
             i += 1
@@ -215,7 +215,49 @@ def draw_mea1k(bg='black', el_color='#111111'):
     # plt.savefig(f"./el_pads_v3.png", dpi=300, transparent=True if bg=='transparent' else False, 
     #             bbox_inches='tight', pad_inches=0, )
     return (fig, ax), recs
- 
+
+def draw_mea1K_colorbar(cmap, norm, lbl, orientation='vertical'):
+    if orientation == 'vertical':
+        cbar_fig, cbar_ax = plt.subplots(figsize=(1.4, 2100/300))
+        cbar_fig.subplots_adjust(top=1, bottom=0, right=1, left=0)
+        cbar_fig.subplots_adjust(right=0.25, top=0.98, bottom=0.02)
+    elif orientation == 'horizontal':
+        cbar_fig, cbar_ax = plt.subplots(figsize=(2100/300, 1.4))
+        # cbar_fig.subplots_adjust(top=1, bottom=0, right=1, left=0)
+        cbar_fig.subplots_adjust(top=.95, bottom=.5)
+    else:
+        raise ValueError("Orientation must be either 'vertical' or 'horizontal'")
+    
+    cbar = mcolorbar.ColorbarBase(cbar_ax, cmap=cmap, norm=norm, orientation=orientation)
+    cbar.set_label(lbl)
+    return cbar_fig, cbar
+
+def draw_interconnect_pads(mapping, edgecolor='pad_id', pad_alpha=.6, 
+                           pad_scalar=1.5, draw_on_ax=None):
+    pad_circles, texts = [], []
+    for pad_id in sorted(mapping.pad_id.dropna().unique()):
+        pad_entry = mapping[mapping['pad_id'] == pad_id].iloc[0]
+        
+        if edgecolor == 'pad_id':
+            col = pad_entry[['r', 'g', 'b']].values/255
+        elif edgecolor=="metal":
+            col = 'purple' if pad_entry.metal == 2 else 'green'
+        elif isinstance(edgecolor, dict):
+            col = edgecolor.get(int(pad_id), [.3,.3,.3])
+        else:
+            col = edgecolor
+        
+        pad_circles.append(plt.Circle((pad_entry.x_aligned, pad_entry.y_aligned), 
+                                       pad_entry.pad_diameter_um/2 *pad_scalar, 
+                                       color=col,
+                                       fill=False, linewidth=2,
+                                       alpha=pad_alpha))
+        plt.text(pad_entry.x_aligned, pad_entry.y_aligned, f"{int(pad_id)}",
+                                fontsize=3, ha='center', va='center', color='white')
+    if draw_on_ax is not None:
+        [draw_on_ax.add_patch(pc) for pc in pad_circles]
+    return pad_circles
+
 def viz_mea1k_config(pad_alignment, stim_mea1k_el=None):
      # darw mewa1k
     

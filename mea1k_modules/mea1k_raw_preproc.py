@@ -69,7 +69,7 @@ def _get_recording_config(path, fname):
 def _ADC2voltage(data, gain, subtract_dc_offset):
     L = Logger()
     resolution = _get_recording_resolution(gain)
-    dtype = np.int16 if gain in (1024,512,112) else np.int64
+    dtype = np.int16 if gain in (1024.0,512.0,112.0) else np.int32
     max_ampl_uV = int(resolution*ADC_RESOLUTION*1000)
     
     L.logger.debug(f"Converting ADC values to mV ({resolution:.4f}mV/ "
@@ -142,7 +142,13 @@ def read_stim_DAC(path, fname, col_slice=slice(None)):
 def read_raw_data(path, fname, convert2uV,
                   subtract_dc_offset=False, to_df=False, 
                   row_slice=slice(None), col_slice=slice(None)):
-    dtype = np.float16 if convert2uV else np.int16
+    
+    dtype = np.int16 # base case, no conversion of ADC values
+    if convert2uV:
+        dtype = np.float16 # uV of max ±28mV for gain=112, or smaller for higher gains
+        gain = _get_recording_gain(path, fname)
+        if gain in (1.0, 7.0):
+            dtype = np.float32 # uV get ±400 mV for gain=7.0, prevent overflow
     raw_data = _read_mea1k_file(path, fname, row_slice=row_slice, 
                                 col_slice=col_slice, dtype=dtype)
     
@@ -253,7 +259,7 @@ def get_recording_implant_mapping(path, mea1k_rec_fname, animal_name=None,
     L.logger.debug(f"Recording config:\n{rec_config}")
     
     # infer what implant was used, either from animal or through name itself
-    implant_mapping = _get_raw_implant_mapping(animal_name=animal_name,
+    implant_mapping = get_raw_implant_mapping(animal_name=animal_name,
                                                implant_name=implant_name)
     # get the general mapping from NAS, then reindex this table to fit the recording
     implant_mapping = implant_mapping.set_index('mea1k_el').reindex(rec_mea1k_els)
@@ -286,7 +292,7 @@ def get_recording_implant_mapping(path, mea1k_rec_fname, animal_name=None,
     Logger().logger.debug(f"Implant mapping after:\n{implant_mapping}")
     return implant_mapping
     
-def _get_raw_implant_mapping(implant_name=None, animal_name=None):
+def get_raw_implant_mapping(implant_name=None, animal_name=None):
     nas_dir = device_paths()[0]
     if animal_name is not None:
         implant_name = animal_name2implant_device(animal_name)
@@ -482,7 +488,7 @@ def replace_neuroscope_xml(session_dir, animal_name):
 def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
     data = read_raw_data(subdir, fname, convert2vol=True,  convert2uVInt=True,
                          col_slice=slice(0, 1000), subtract_dc_offset=True)
-    implant_mapping = _get_raw_implant_mapping(C.NAS_DIR, C.DEVICE_NAME)
+    implant_mapping = get_raw_implant_mapping(C.NAS_DIR, C.DEVICE_NAME)
     data, implant_mapping = assign_mapping_to_data(data, implant_mapping)
     
     # subset shanks
