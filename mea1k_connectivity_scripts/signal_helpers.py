@@ -63,11 +63,6 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
         signal_1khz = bandpass_filter(signal, sampling_rate, min_band, max_band)
     
     mean_ampl, _ = extract_average_amplitude(signal_1khz)
-    if mean_ampl > 1e3:
-        print(mean_ampl)
-        print("Mean amplitude is too high")
-        debug = True
-        return np.nan, np.nan
     if debug:
         fig, ax = plt.subplots(3, 1, figsize=(12, 6))
         fig.subplots_adjust( hspace=.5)
