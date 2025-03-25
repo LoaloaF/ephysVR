@@ -171,7 +171,7 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVran
     plt.show()
     
 
-def draw_mea1k(bg='black', el_color='#111111'):
+def draw_mea1k(bg='black', el_color='#111111', mapping=None, cmap_scaler=1):
     fig, ax = plt.subplots(figsize=(3850/300, 2100/300), facecolor='none')
     fig.subplots_adjust(top=1, bottom=0, right=1, left=0)
     # fig.patch.set_facecolor('black')
@@ -198,6 +198,10 @@ def draw_mea1k(bg='black', el_color='#111111'):
         for x in np.arange(0+17.5/4, 3850, 17.5):
             recs.append(plt.Rectangle((x, y), 9, 9, facecolor=colors[i], 
                                       edgecolor='none', alpha=.7))
+            if mapping is not None:
+                # change color to connectivity
+                whiteness = np.clip(mapping.loc[i].mea1k_connectivity*cmap_scaler, 0, 1)
+                recs[-1].set_facecolor((whiteness, whiteness, whiteness))
             # mea1k_yx.append((x+4.5,y+4.5))
             i += 1
     # plt.scatter(*zip(*mea1k_yx), c='red', s=10)
