@@ -30,10 +30,10 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
     array.download()
     fname = os.path.basename(config_fullfname).replace(".cfg", "")
     start_saving(s, dir_name=path, fname=fname)
-    time.sleep(post_download_wait_time/2)
+    time.sleep(post_download_wait_time/3)
     
     turn_on_stimulation_units(stim_units, mode=mode)
-    time.sleep(post_download_wait_time/2)
+    time.sleep((post_download_wait_time/3) *2)
     
     print(f"\nStimulating ~ ~ ~ ~ ~ ~ ~ ~ "
           f"on {stim_units} ")
@@ -43,7 +43,7 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
     # turn off
     turn_off_stimulation_units(stim_units)
     array.download()
-    time.sleep(.1)
+    time.sleep(.5)
     array.close()
     stop_saving(s)
     config_map.to_csv(os.path.join(path, os.path.basename(config_fullfname).replace(".cfg", ".csv")))
@@ -51,8 +51,10 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
 
 def main():
     # ======== PARAMETERS ========
+    # implant_name = "250205_MEA1K03_H1278pad4shankB5" # animal 10
+    implant_name = "241211_MEA1K06_H1278pad4shankB5" # animal 11
     # subdir = f"well_devices/4983/recordings"
-    subdir = f"devices/implant_devices/250308_MEA1K07_H1628pad1shankB6/recordings"
+    subdir = f"devices/implant_devices/{implant_name}/recordings"
     nas_dir = C.device_paths()[0]
     
     amplitude = 10
@@ -64,16 +66,16 @@ def main():
     # rec_time = .1
     # stimpulse = 'sine'
     
-    t = datetime.datetime.now().strftime("%H.%M.%S")
-    rec_dir = f"{t}_noSilk_tapwater_GND_REF_cable_imp8_localstim_{mode=}_{stimpulse=}2_{amplitude=}"
+    t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+    rec_dir = f"{t}_invivo_imp_{mode=}_{stimpulse=}_{amplitude=}"
     
     post_download_wait_time = 1
     log2file = False
-    rec_time = 1
-    gain = 7
-    configs_basepath = os.path.join(nas_dir, "devices", "implant_devices", "250308_MEA1K07_H1628pad1shankB6", 
+    rec_time = .6
+    gain = 112
+    configs_basepath = os.path.join(nas_dir, "devices", "implant_devices", implant_name, 
                                     'bonding', )
-    which_configs = "imp_rec_configs2"
+    which_configs = "imp_rec_configs"
     
     # stim
     if stimpulse == 'sine':
