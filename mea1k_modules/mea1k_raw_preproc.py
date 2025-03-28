@@ -22,6 +22,9 @@ def _get_recording_gain(path, fname):
     elif fmt in ('routed', 'all_channels'):
         with h5py.File(os.path.join(path, fname), 'r') as file:
             gain = file['data_store/data0000/settings/gain'][:][0].item()
+    if C.MEA_OVERRIDE_GAIN is not None:
+        Logger().logger.debug(f"Overriding gain with {C.MEA_OVERRIDE_GAIN}")
+        gain = C.MEA_OVERRIDE_GAIN
     return gain
 
 def _get_recording_resolution(gain):
@@ -122,7 +125,8 @@ def _read_mea1k_file(path, fname, dtype=np.float16, row_slice=slice(None),
                     col_slice=slice(None)):
     rec_file_fmt = _get_recording_version(path, fname)
     data_key = _get_data_key(rec_file_fmt)
-    Logger().logger.debug(f"Reading MEA1K ephys data (format: {rec_file_fmt}) "
+    gain = _get_recording_gain(path, fname)
+    Logger().logger.debug(f"Reading MEA1K ephys data (format: {rec_file_fmt}, gain={gain}) "
                           f"casting to `{dtype}` with col slice {col_slice}, "
                           f"row slice {row_slice}...")
 
@@ -184,6 +188,8 @@ def read_raw_data(path, fname, convert2uV,
 def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name, 
                                     chunk_size_s=60, convert2uV=False,
                                     write_neuroscope_xml=False,
+                                    replace_with_curated_xml=False,
+                                    write_probe_file=True,
                                     subtract_dc_offset=False, exclude_shanks=[]):
     L = Logger()
     
@@ -209,20 +215,45 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
     # create the output file that we will append to
     out_fullfname = os.path.join(path,f"{session_name}_{len(implant_mapping)}_ephys_traces.dat")
     L.logger.debug(f"Creating {out_fullfname}")
-    # open(out_fullfname, 'w').close() # this overwrite, careful
+    if os.path.exists(out_fullfname) and os.path.getsize(out_fullfname) and L.logger.level == 10:
+        resp = input(f"File {out_fullfname} already exists. Overwrite? (y/n): ")
+        if resp.lower() != 'y':
+            return
+    open(out_fullfname, 'w').close() # this overwrite, careful
     
     # save the mapping file reordered to physical layout (shank+depth)
-    implant_mapping.iloc[shank_order].to_csv(out_fullfname.replace(".dat", "_mapping.csv"))
-
-    # option to save the neuroscope xml file
+    save_implant_mapping = implant_mapping.copy().iloc[shank_order]
+    # and add manually selected traces in neuroscope
+    save_implant_mapping['curated_trace'] = True
+    if (curated_anim_xml_fullfname := _get_curated_animal_xml_fullfname(animal_name)) is not None:
+        if str(len(save_implant_mapping)) not in curated_anim_xml_fullfname:
+            raise ValueError(f"Curated XML file {curated_anim_xml_fullfname} "
+                             f"does not match the number of electrodes in the "
+                             f"implant mapping: {len(save_implant_mapping)}")
+        _, skipped_channels = _get_channel_skip_info_from_xml(curated_anim_xml_fullfname)
+        save_implant_mapping.iloc[skipped_channels, -1] = False
+    save_implant_mapping.to_csv(out_fullfname.replace(".dat", "_mapping.csv"))
+    
+    # option to save the original neuroscope xml file
     if write_neuroscope_xml:
         _make_neuroscope_xml(implant_mapping.iloc[shank_order], out_fullfname.replace(".dat", ".xml"))
-    return
+    
+    # option to replace the original xml with the curated one
+    if replace_with_curated_xml:
+        replace_neuroscope_xml(path, animal_name)
+    
+    if write_probe_file:
+        # use the implant mapping with curated_traces column and physical layout
+        _write_prb_file(save_implant_mapping, out_fullfname.replace(".dat", ".prb"))        
+    
+    # return
+    # exit()
 
     # calculate the initial DC offset, use for all later chunks
     if subtract_dc_offset:
         subtract_dc_offset = read_raw_data(path, fname, convert2uV=convert2uV,
                                            col_slice=slice(0,1), row_slice=implant_mapping.index)
+    
     # iterate of time chunks of the data (all channels) and process them
     for i in range(len(chunk_indices)-1):
         col_slice = slice(chunk_indices[i], chunk_indices[i+1])
@@ -416,6 +447,7 @@ def _make_neuroscope_xml(implant_mapping, out_fullfname):
     xml_str = ET.tostring(root, encoding='utf-8')
     pretty_xml = minidom.parseString(xml_str).toprettyxml(indent=" ")
     
+    Logger().logger.debug(f"Writing neuroscope xml file {out_fullfname}")
     print(out_fullfname)
     with open(out_fullfname, "w") as f:
         f.write(pretty_xml)
@@ -443,18 +475,10 @@ def _get_channel_skip_info_from_xml(xml_fullfname):
     return kept_channels, skipped_channels
 
 def replace_neuroscope_xml(session_dir, animal_name):
-    nas_dir = device_paths()[0]
-    implant_name = animal_name2implant_device(animal_name)
-    new_xml_path = os.path.join(nas_dir, 'devices', 'implant_devices', implant_name,
-                                'bonding',)
-    xml_fnames = [f for f in os.listdir(new_xml_path)
-                  if f.startswith(animal_name) and f.endswith('.xml')]
-    if len(xml_fnames) != 1:
-        Logger().logger.error(f"Multiple or no xml files found for {animal_name}: {xml_fnames}")
-        raise FileNotFoundError()
-    
+    src_xml_fullfname = _get_curated_animal_xml_fullfname(animal_name)
     dat_fname = [f for f in os.listdir(session_dir) if f.endswith('.dat')][0]
     out_xml_fname = dat_fname.replace(".dat", ".xml")
+    
     # check if the xml file already exists, rename it to not overwrite
     if os.path.exists(os.path.join(session_dir, out_xml_fname)):
         Logger().logger.debug(f"XML file already exists: {out_xml_fname}")
@@ -462,51 +486,42 @@ def replace_neuroscope_xml(session_dir, animal_name):
                   os.path.join(session_dir, 'depr_xml.xml'))
     
     # copy the manually edited xml file to the session directory
-    Logger().logger.debug(f"Copying {xml_fnames[0]} to {session_dir}")
-    shutil.copyfile(os.path.join(new_xml_path, xml_fnames[0]),
+    Logger().logger.debug(f"Copying {os.path.basename(src_xml_fullfname)} to {session_dir}")
+    shutil.copyfile(src_xml_fullfname,
                     os.path.join(session_dir, out_xml_fname))
-    shutil.copyfile(os.path.join(new_xml_path, xml_fnames[0].replace(".xml", ".nrs")),
+    shutil.copyfile(src_xml_fullfname.replace(".xml", ".nrs"),
                     os.path.join(session_dir, out_xml_fname.replace(".xml", ".nrs")),)
-
-    # update the mapping witha new column with manual curation
-                                  
-    kept, skipped = _get_channel_skip_info_from_xml(os.path.join(session_dir, out_xml_fname))
-    implant_mapping = pd.read_csv(os.path.join(session_dir, dat_fname.replace(".dat", "_mapping.csv")))
-    implant_mapping['curated_trace'] = True
-    implant_mapping.loc[skipped, 'curated_trace'] = False
-    implant_mapping.to_csv(os.path.join(session_dir, dat_fname.replace(".dat", "_mapping.csv")))
-    Logger().logger.debug(f"Updated implant_mapping.csv with manual curation column from xml")
     
     
+def _get_curated_animal_xml_fullfname(animal_name):
+    nas_dir = device_paths()[0]
+    implant_name = animal_name2implant_device(animal_name)
+    bonding_path = os.path.join(nas_dir, 'devices', 'implant_devices', implant_name,
+                                'bonding',)
+    xml_fnames = [f for f in os.listdir(bonding_path)
+                  if f.startswith(animal_name) and f.endswith('.xml')]
+    if len(xml_fnames) != 1:
+        Logger().logger.error(f"Multiple or no curated xml files found for {animal_name}: {xml_fnames}")
+        return None
+    Logger().logger.debug(f"Curated xml file found for {animal_name}: {xml_fnames}")
+    return os.path.join(bonding_path, xml_fnames[0])
 
-
-
-
-
-
-
-def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
-    data = read_raw_data(subdir, fname, convert2vol=True,  convert2uVInt=True,
-                         col_slice=slice(0, 1000), subtract_dc_offset=True)
-    implant_mapping = get_raw_implant_mapping(C.NAS_DIR, C.DEVICE_NAME)
-    data, implant_mapping = assign_mapping_to_data(data, implant_mapping)
-    
-    # subset shanks
-    implant_mapping = implant_mapping[implant_mapping.shank_id.isin(shanks)]
-    print(implant_mapping)
-    
-    channels = implant_mapping.index +1
+def _write_prb_file(implant_mapping, output_fullfname, pad_size=11):
+    Logger().logger.debug(f"Writing probe file {os.path.basename(output_fullfname)}")
+    channels = np.arange(1, implant_mapping.shape[0]+1)
     shanks = implant_mapping.shank_id.astype(int)
     
     # Use `x` and `depth` to populate geometry based on actual positions
     geometry = np.zeros((implant_mapping.shape[0], 2))
     geometry[:, 0] = shanks*1000  # x coo constant for each shank
     geometry[:, 1] = implant_mapping.depth # y coo
-
+    
     # Write to MATLAB-readable probe file format
-    fullfname = os.path.join(subdir, f"ephys_{data.shape[0]}_ss.prb")
-    print(fullfname)
-    with open(fullfname, "w") as f:
+    
+    with open(output_fullfname, "w") as f:
+        f.write("% Probe file for MEA1K recording\n")
+        f.write(f"nChans = {len(channels)};\n\n")
+        
         f.write("% Order of the probe sites in the recording file\n")
         f.write(f"channels = {list(channels)};\n\n")
         
@@ -519,11 +534,78 @@ def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
         f.write("% Shank information\n")
         f.write(f"shank = {list(shanks)};\n\n")
         
-        # f.write("% Reference sites to exclude\n")
-        # f.write(f"ref_sites = {ref_sites};\n\n")
+        f.write("% Reference sites to exclude\n")
+        f.write(f"ref_sites = {channels[~implant_mapping.curated_trace]};\n\n")
         
         f.write("% Recording contact pad size (height x width in micrometers)\n")
         f.write(f"pad = [{pad_size} {pad_size}];\n\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def write_probe_file(subdir, fname, pad_size=11, shanks=[1.,2.]):
+#     data = read_raw_data(subdir, fname, convert2vol=True,  convert2uVInt=True,
+#                          col_slice=slice(0, 1000), subtract_dc_offset=True)
+#     implant_mapping = get_raw_implant_mapping(C.NAS_DIR, C.DEVICE_NAME)
+#     data, implant_mapping = assign_mapping_to_data(data, implant_mapping)
+    
+#     # subset shanks
+#     implant_mapping = implant_mapping[implant_mapping.shank_id.isin(shanks)]
+#     print(implant_mapping)
+    
+#     channels = implant_mapping.index +1
+#     shanks = implant_mapping.shank_id.astype(int)
+    
+#     # Use `x` and `depth` to populate geometry based on actual positions
+#     geometry = np.zeros((implant_mapping.shape[0], 2))
+#     geometry[:, 0] = shanks*1000  # x coo constant for each shank
+#     geometry[:, 1] = implant_mapping.depth # y coo
+
+#     # Write to MATLAB-readable probe file format
+#     fullfname = os.path.join(subdir, f"ephys_{data.shape[0]}_ss.prb")
+#     print(fullfname)
+#     with open(fullfname, "w") as f:
+#         f.write("% Order of the probe sites in the recording file\n")
+#         f.write(f"channels = {list(channels)};\n\n")
+        
+#         f.write("% Site location in micrometers (x and y)\n")
+#         f.write("geometry = [\n")
+#         for row in geometry:
+#             f.write(f"    {row[0]}, {row[1]};\n")
+#         f.write("];\n\n")
+        
+#         f.write("% Shank information\n")
+#         f.write(f"shank = {list(shanks)};\n\n")
+        
+#         # f.write("% Reference sites to exclude\n")
+#         # f.write(f"ref_sites = {ref_sites};\n\n")
+        
+#         f.write("% Recording contact pad size (height x width in micrometers)\n")
+#         f.write(f"pad = [{pad_size} {pad_size}];\n\n")
 
 # # TODO DEPRECATED FUNCTIONS
 
