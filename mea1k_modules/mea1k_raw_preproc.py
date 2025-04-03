@@ -340,7 +340,7 @@ def animal_name2implant_device(animal_name):
     mapping = pd.read_csv(fullfname, index_col=0, header=0)
     Logger().logger.debug(f"Animal->Implant map:\n{mapping}")
     if animal_name in mapping.index:
-        return mapping.loc[animal_name].item()
+        return mapping.loc[animal_name, "implant_name"]
     else:
         raise ValueError(f"No implant name found for `{animal_name}` Add to the "
                          f"mapping manually: {fullfname}")
@@ -448,7 +448,6 @@ def _make_neuroscope_xml(implant_mapping, out_fullfname):
     pretty_xml = minidom.parseString(xml_str).toprettyxml(indent=" ")
     
     Logger().logger.debug(f"Writing neuroscope xml file {out_fullfname}")
-    print(out_fullfname)
     with open(out_fullfname, "w") as f:
         f.write(pretty_xml)
         
@@ -501,7 +500,7 @@ def _get_curated_animal_xml_fullfname(animal_name):
     xml_fnames = [f for f in os.listdir(bonding_path)
                   if f.startswith(animal_name) and f.endswith('.xml')]
     if len(xml_fnames) != 1:
-        Logger().logger.error(f"Multiple or no curated xml files found for {animal_name}: {xml_fnames}")
+        Logger().logger.warning(f"Multiple or no curated xml files found for {animal_name}: {xml_fnames}")
         return None
     Logger().logger.debug(f"Curated xml file found for {animal_name}: {xml_fnames}")
     return os.path.join(bonding_path, xml_fnames[0])

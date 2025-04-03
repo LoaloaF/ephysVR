@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt
 from scipy.signal import hilbert
 
+from scipy.fft import fft
+
+
 def bandpass_filter(signal, sampling_rate, lowcut, highcut, order=4):
     nyquist = 0.5 * sampling_rate  # Nyquist frequency
     low = lowcut / nyquist
@@ -117,3 +120,72 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
         return np.nan, np.nan
         
     return power_1KHz, mean_ampl
+
+
+def calculate_phase_shift(data, dac, sampling_rate=20000, freq=1000, debug=False):
+    """
+    Calculate the phase shift of each row in `data` with respect to the DAC signal.
+
+    Parameters:
+        data (ndarray): 2D array where each row is a signal.
+        dac (ndarray): 1D array representing the DAC signal.
+        sampling_rate (int): Sampling rate of the signals in Hz.
+        freq (float): Frequency of the sinusoid in Hz (e.g., 1 kHz).
+        debug (bool): If True, plot the calculation process for debugging.
+
+    Returns:
+        phase_shifts (ndarray): 1D array of phase shifts for each row in `data`.
+    """
+    n_samples = data.shape[1]
+    t = np.arange(n_samples) / sampling_rate  # Time vector
+
+    # Generate a reference sinusoid at the target frequency
+    reference_sinusoid = np.sin(2 * np.pi * freq * t)
+
+    # FFT of the DAC signal
+    dac_fft = fft(dac)
+    dac_freq_idx = int(freq * n_samples / sampling_rate)
+    dac_phase = np.angle(dac_fft[dac_freq_idx])
+
+    if debug:
+        plt.figure(figsize=(12, 6))
+        plt.subplot(2, 1, 1)
+        plt.title("DAC Signal and Reference Sinusoid")
+        plt.plot(t, dac, label="DAC Signal")
+        plt.plot(t, reference_sinusoid, label="Reference Sinusoid", linestyle="dashed")
+        plt.legend()
+        plt.xlabel("Time (s)")
+        plt.ylabel("Amplitude")
+
+        plt.subplot(2, 1, 2)
+        plt.title("FFT of DAC Signal")
+        plt.plot(np.fft.fftfreq(n_samples, 1 / sampling_rate), np.abs(dac_fft))
+        plt.axvline(freq, color="red", linestyle="dashed", label="1 kHz Component")
+        plt.legend()
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Magnitude")
+        plt.tight_layout()
+        plt.show()
+
+    # Calculate phase shifts for each row in data
+    phase_shifts = []
+    for i, row in enumerate(data):
+        row_fft = fft(row)
+        row_phase = np.angle(row_fft[dac_freq_idx])
+        phase_shift = row_phase - dac_phase
+        # Normalize phase shift to [-π, π]
+        phase_shift = (phase_shift + np.pi) % (2 * np.pi) - np.pi
+        print(phase_shift)
+        phase_shifts.append(phase_shift)
+
+        if debug :  # Plot the first 5 rows for debugging
+            plt.figure(figsize=(12, 4))
+            plt.title(f"Row {i} Signal and Phase Shift")
+            plt.plot(t, row, label="Row Signal")
+            plt.plot(t, dac, label="DAC Signal", linestyle="dashed")
+            plt.legend()
+            plt.xlabel("Time (s)")
+            plt.ylabel("Amplitude")
+            plt.show()
+
+    return np.array(phase_shifts)
