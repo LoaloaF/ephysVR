@@ -74,8 +74,8 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
         t = np.arange(len(signal))/sampling_rate *1000
         ax[0].plot(t, signal, color='blue', alpha=.8, label='Signal')
         ax[0].set_xlabel('Time [ms]')
-        ax[0].set_yticks(np.array((-10,0,10))/50)
-        ax[0].set_ylabel(f'Δ Potential\nfrom {m:.0f} mV')
+        ax[0].set_yticks([-10000, -1000, 0, 1000, 10000])
+        ax[0].set_ylabel(f'Δ Potential\nfrom {m:.0f} uV')
         ax[0].grid(True)
         [ax[0].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
         ax[0].legend()
@@ -87,7 +87,7 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
         ax[1].set_xlabel('Frequency (Hz)')
         ax[1].set_ylabel('Power')
         ax[1].set_xlim(0, 1500)
-        ax[1].set_ylim(0, 1e5//2)
+        # ax[1].set_ylim(0, 1e5//2)
         ax[1].grid(True)
         [ax[1].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
         ax[1].legend()
@@ -96,11 +96,11 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
         ax[2].plot(t, signal_1khz, color='blue', alpha=.5,
                    label='1KHz Bandpass Filtered Signal')
         ax[2].plot([t[0]-20,t[-1]+20], [mean_ampl,mean_ampl], color='k', 
-                   linestyle='dashed', label=f'Average Amplitude: {mean_ampl:.3f} mV')
+                   linestyle='dashed', label=f'Average Amplitude: {mean_ampl:.3f} uV')
         ax[2].set_xlabel('Time [ms]')
         ax[2].set_ylabel('Amplitude')
-        ax[2].set_ylabel(f'Δ Potential\nfrom {m:.3f} mV')
-        ax[2].set_yticks(np.array((-10,0,10))/50)
+        ax[2].set_ylabel(f'Δ Potential\nfrom {m:.3f} uV')
+        ax[2].set_yticks(ax[0].get_yticks())
         ax[2].grid(True)
         ax[2].sharex(ax[0])
         [ax[2].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]

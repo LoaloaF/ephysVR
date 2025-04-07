@@ -61,7 +61,7 @@ def extract_impedance(subdir, implant_name, current_ampl_nA, debug=False):
         dac = read_stim_DAC(subdir, fname)
         # stim_sample_ids = np.where(dac != 512)[0]
         # shortcut, since we know the stim samples are between 20500 and 29500
-        # stim_sample_ids = (20500, 29500)
+        stim_sample_ids = (20500, 29500)
         data = read_raw_data(subdir, fname, convert2uV=True,
                             subtract_dc_offset=False, 
                             col_slice=slice(None, None))
@@ -69,22 +69,22 @@ def extract_impedance(subdir, implant_name, current_ampl_nA, debug=False):
         # )
         
         # Calculate phase shifts
-        phase_shifts = calculate_phase_shift(data[:, 20500:29500], dac[20500:29500]* -1, 
-                                             sampling_rate=C.SAMPLING_RATE, 
-                                             freq=1000, debug=debug)
+        # phase_shifts = calculate_phase_shift(data[:, 20500:29500], dac[20500:29500]* -1, 
+        #                                      sampling_rate=C.SAMPLING_RATE, 
+        #                                      freq=1000, debug=debug)
     
         mean_ampl = []
         for j,row in enumerate(data):
-            _, m_ampl = estimate_frequency_power(row.astype(float), 
-                                                    sampling_rate=C.SAMPLING_RATE, 
-                                                    debug=False, 
-                                                    min_band=960, max_band=1040)
+            _, m_ampl = estimate_frequency_power(row[stim_sample_ids[0]:stim_sample_ids[1]].astype(float), 
+                                                 sampling_rate=C.SAMPLING_RATE, 
+                                                 debug=debug, 
+                                                 min_band=960, max_band=1040)
             if stimulated.stim[j]:
                 pass
             mean_ampl.append(m_ampl)
         mean_ampl = np.array(mean_ampl)
         
-        stimulated['phse_shift'] = phase_shifts
+        # stimulated['phse_shift'] = phase_shifts
         stimulated['imp_voltage_uV'] = mean_ampl
         stimulated['imp_kOhm'] = (mean_ampl / (current_ampl_nA * 1e-3)) / 1e3 #* stimulated.stim.astype(int)
         stimulated['imp_stim_ratio'] = mean_ampl/ mean_ampl[stimulated.stim].item()
@@ -123,130 +123,151 @@ def vis_impedance(subdir, implant_name):
     all_els_imp_data = pd.read_csv(os.path.join(subdir, "processed", "extracted_imp_voltages.csv"))
     all_els_imp_data = all_els_imp_data.drop(columns=['Unnamed: 0']).set_index('electrode', drop=True)
     implant_mapping = get_raw_implant_mapping(implant_name=implant_name).set_index("mea1k_el", drop=True)
-    # print(all_els_imp_data)
-    # print(implant_mapping)
     
     # merge metadata with impedance data
     all_els_imp_data = pd.merge(all_els_imp_data.drop(columns=['depth', 'pad_id']), 
                                implant_mapping, how='left', left_index=True, right_index=True)
-    imp_data = all_els_imp_data[all_els_imp_data.stim_unit.notna()]
     # electrode index is not unique, keep as column (called mea1k_el)
     all_els_imp_data.reset_index(inplace=True, drop=True)
-    print(all_els_imp_data)
-
-
-    draw_interconnect_imp = True
     
+    # subset to only the stimulated els
+    stim_el_imp_data = all_els_imp_data[all_els_imp_data.stim_unit.notna()].copy().reset_index(drop=True)
+
+    # aggreate over Mea1k electrodes to form pad data
     all_pads_imp_data = all_els_imp_data.groupby(['config', 'pad_id']).agg(
-        {'imp_kOhm': 'mean', 
+        {'imp_kOhm': ['mean', 'std'],      # Mean and variance of impedance
          'stim_unit': 'max',
          'phse_shift': 'mean',
          'imp_stim_ratio': 'mean',         # Mean stimulation ratio
          'imp_voltage_uV': 'mean',         # Mean voltage
-         'depth': 'first',                  # Mean depth
+         'depth': 'first',                 # Mean depth
          'shank': 'first',                 # First shank
          'shank_id': 'first',              # First shank ID
          'metal': 'first',                 # First metal type
          'el_pair': 'first',               # First electrode pair
          'shank_side': 'first',            # First shank side
-         'r': 'first',                      # Mean red color value
-         'g': 'first',                      # Mean green color value
-         'b': 'first',                      # Mean blue color value
-         'a': 'first',                      # Mean alpha value
+         'r': 'first',                     # Mean red color value
+         'g': 'first',                     # Mean green color value
+         'b': 'first',                     # Mean blue color value
+         'a': 'first',                     # Mean alpha value
          'mea1k_connectivity': 'mean',     # Mean connectivity
          })
+    # variance across els within pad
+    all_pads_imp_data[('imp_kOhm_std', '_')] = all_pads_imp_data[('imp_kOhm', 'std')]
+    all_pads_imp_data.columns = all_pads_imp_data.columns.droplevel(1)
     
-    print(all_pads_imp_data)
-    
-    # restore  imp values, masked out during processing...
-    all_pads_imp_data.loc[:,'imp_kOhm'] = (all_pads_imp_data.loc[:, ['imp_kOhm', 'imp_stim_ratio']].groupby(level='config').apply(
-        lambda x: x.imp_kOhm.max() * x.imp_stim_ratio).values)
-    print(all_pads_imp_data)
-    
-    
-    
-    # create 2 new columns
-    # pad_mapping = mapping.set_index('pad_id', drop=True)
-    # # drop duplicate index
-    # pad_mapping = pad_mapping[~pad_mapping.index.duplicated(keep='first')]
-    # data.loc[:,'metal'] = mapping.reindex(data.pad_id).loc[:, 'metal'].values
-    # data.loc[:,'el_pair'] = mapping.reindex(data.pad_id).loc[:, 'el_pair'].values
-    # imp = np.clip(data.imp_kOhm.values, 0, 6.5*1e5)
-    # # Use the hsv colormap
-    
-    
-    # TODO log scale colors
-    
-    print(all_pads_imp_data[all_pads_imp_data.stim_unit.notna()])
-    print(imp_data.imp_kOhm)
-    
+    # impedance color 
     cmap = plt.get_cmap('plasma')
     norm = plt.Normalize(vmin=0, vmax=6.5*1e2)
-    imp_colors = cmap(norm(all_pads_imp_data[all_pads_imp_data.stim_unit.notna()].imp_kOhm.values))
-    imp_colors = cmap(norm(all_pads_imp_data[all_pads_imp_data.stim_unit.notna()].imp_kOhm.values))
-    imp_colors = {pad_id: imp_colors[i][:3] for i, pad_id in enumerate(imp_data.pad_id.values)}
+    stim_el_imp_data['imp_color'] = stim_el_imp_data.apply(
+        lambda x: cmap(norm(x.imp_kOhm))[:3], axis=1).values
 
+    # stim unit color
+    cmap = plt.get_cmap('tab20')
+    norm = plt.Normalize(vmin=0, vmax=32)
+    shuffle_remapping = np.random.permutation(32)
+    shuffle_remapping = {old:new for old, new in zip(np.arange(32), shuffle_remapping)}
+    stim_el_imp_data['stimunit_color'] = stim_el_imp_data.apply(
+            lambda x: cmap(norm(shuffle_remapping[x.stim_unit]))[:3], axis=1).values
     
     
+    draw_interconnect_imp = False
     if draw_interconnect_imp:
         (fig, ax), el_rects = draw_mea1k(mapping=implant_mapping)
-        draw_interconnect_pads(implant_mapping, edgecolor=imp_colors, draw_on_ax=ax, pad_alpha=.6)
+        imp_color_dict = {r.pad_id: r.imp_color for _, r in stim_el_imp_data.iterrows()}
+        draw_interconnect_pads(implant_mapping, edgecolor=imp_color_dict, 
+                               draw_on_ax=ax, pad_alpha=.6)
         draw_mea1K_colorbar(cmap, norm, 'Impedance [kOhm]', orientation='vertical')
-        # draw_interconnect_pads(implant_mapping, draw_on_ax=ax, pad_alpha=.6)
         plt.savefig(os.path.join(subdir, "processed", "impedance.png"))
 
     
+    
+    stim_el_imp_data = stim_el_imp_data.sort_values(['stim_unit', 'imp_kOhm'])
+    
+    # Reorder that data by the highest average impedance per stim unit
+    stimunit_imp = stim_el_imp_data.groupby('stim_unit').agg({'imp_kOhm': 'mean'}).sort_values(by='imp_kOhm', ascending=False)
+    stimunit_rank = stimunit_imp.reset_index().reset_index().set_index('stim_unit')['index']
+    stim_el_imp_data['stim_unit_rank'] = stim_el_imp_data['stim_unit'].map(stimunit_rank)
+    reorder = stim_el_imp_data.sort_values(by=['stim_unit_rank', 'imp_kOhm']).index
+    # reorder
+    stim_el_imp_data = stim_el_imp_data.loc[reorder]
+    print("Post reorder stim unit impedance data")
+    print(stim_el_imp_data)
+    
+
+    draw_stim_unit_ordered_imp = True
+    draw_pad_id_ordered_imp = False
+    if draw_stim_unit_ordered_imp or draw_pad_id_ordered_imp:
+        
+        
+        fig = plt.figure(figsize=(14, 6))
+        plt.xlabel("Pad ID on MEA1K  |  Polyimide el. ID in brain")
+        plt.ylabel("Impedance [kOhm]")
+        
+        plt.yscale('log')
+        # ax.set_ylim(10, 1e4)
+        
+        
+        if draw_pad_id_ordered_imp:
+            plt.title("Impedance by Stim Unit, pad order")
+            plt.scatter(stim_el_imp_data.pad_id, stim_el_imp_data.imp_kOhm,
+                        color=stim_el_imp_data.stimunit_color, marker='o', s=40, alpha=.3)
+        
+        elif draw_stim_unit_ordered_imp:            
+            plt.title("Impedance by Stim Unit, stim-unit order")
+            plt.scatter(np.arange(len(stim_el_imp_data)), 
+                        stim_el_imp_data.imp_kOhm,
+                        color=stim_el_imp_data.stimunit_color, marker='o', s=40, alpha=.3)
+            
+            # draw stim unit boundaries
+            for i, stim_unit in enumerate(stim_el_imp_data.stim_unit.unique()):
+                plt.axvline(np.where(stim_el_imp_data.stim_unit[reorder] == stim_unit)[0][0], color='k', 
+                            linestyle='dashed', alpha=.4)
+                plt.text(np.where(stim_el_imp_data.stim_unit[reorder] == stim_unit)[0][0], 1e4, 
+                        f"Stim Unit: {int(stim_unit):2d}", color=cmap(norm(shuffle_remapping[stim_unit])),
+                        rotation=90, fontsize=11, ha='left', va='top')
+            
+        
+            
+            
+        
+        
     plt.show()
     exit()
     
     
-
-
-
-    cmap = plt.get_cmap('tab20')
-    norm = plt.Normalize(vmin=0, vmax=32)
-    shuffle_remapping = np.random.permutation(32)
-    # shuffle_remapping = {old:new for old, new in zip(data.stim_unit, shuffle_remapping)}
-    shuffle_remapping = {old:new for old, new in zip(np.arange(32), shuffle_remapping)}
-    print(shuffle_remapping)
-    # shuffle_idx = [shuffle_remapping[stim_unit] for stim_unit in data.stim_unit
-    #                if stim_unit in shuffle_remapping]
-    stimunit_color = {pad_id: cmap(norm(shuffle_remapping[stim_unit])) 
-                      for pad_id, stim_unit in zip(data.pad_id, data.stim_unit)}
     
     
+    # # scatter plot
+    # data = data.reset_index(drop=True)
     
-    
-    # scatter plot
-    data = data.reset_index(drop=True)
-    
-    # reorder = data.sort_values(by=['shank', 'depth']).index
-    reorder = data.sort_values(by=['stim_unit', 'imp_kOhm']).index
-    # rank what stim_unit has highest impedance
-    stim_order = data.groupby('stim_unit').agg({'imp_kOhm': 'mean'}).sort_values(by='imp_kOhm', ascending=False)
-    print(stim_order)
-    print(data)
-    
-    
-    # Map stim_unit to its rank based on stim_order
-    stim_unit_rank = stim_order.reset_index().reset_index().set_index('stim_unit')['index']
-    data['stim_unit_rank'] = data['stim_unit'].map(stim_unit_rank)
-
-    # Sort data by stim_unit_rank and imp_kOhm
-    reorder = data.sort_values(by=['stim_unit_rank', 'imp_kOhm']).index
+    # # reorder = data.sort_values(by=['shank', 'depth']).index
+    # reorder = data.sort_values(by=['stim_unit', 'imp_kOhm']).index
+    # # rank what stim_unit has highest impedance
+    # stim_order = data.groupby('stim_unit').agg({'imp_kOhm': 'mean'}).sort_values(by='imp_kOhm', ascending=False)
+    # print(stim_order)
     # print(data)
-    # exit()
     
-    # draw_interconnect_pads(mapping, draw_on_ax=ax, pad_alpha=.6, edgecolor=stimunit_color)
+    
+    # # Map stim_unit to its rank based on stim_order
+    # stim_unit_rank = stim_order.reset_index().reset_index().set_index('stim_unit')['index']
+    # data['stim_unit_rank'] = data['stim_unit'].map(stim_unit_rank)
+
+    # # Sort data by stim_unit_rank and imp_kOhm
+    # reorder = data.sort_values(by=['stim_unit_rank', 'imp_kOhm']).index
+    # # print(data)
+    # # exit()
+    
+    # # draw_interconnect_pads(mapping, draw_on_ax=ax, pad_alpha=.6, edgecolor=stimunit_color)
     
 
-    plt.figure()
-    metal_col = ['green' if m==1 else 'purple' for m in data.iloc[reorder].metal.values]
-    plt.scatter(np.arange(len(imp)), imp[reorder], 
-                # color=metal_col, marker='o', s=100, alpha=.3)
-                color='k', marker='_', s=100, alpha=.8)
-                # color=np.array(list(stimunit_color.values()))[reorder])
-    print(data.stim_unit[reorder])
+    # plt.figure()
+    # metal_col = ['green' if m==1 else 'purple' for m in data.iloc[reorder].metal.values]
+    # plt.scatter(np.arange(len(imp)), imp[reorder], 
+    #             # color=metal_col, marker='o', s=100, alpha=.3)
+    #             color='k', marker='_', s=100, alpha=.8)
+    #             # color=np.array(list(stimunit_color.values()))[reorder])
+    # print(data.stim_unit[reorder])
     
     print(imp[reorder])
     j = 0
