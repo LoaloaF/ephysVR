@@ -84,7 +84,7 @@ def extract_impedance(subdir, implant_name, current_ampl_nA, debug=False):
             mean_ampl.append(m_ampl)
         mean_ampl = np.array(mean_ampl)
         
-        # stimulated['phse_shift'] = phase_shifts
+        stimulated['phse_shift'] = phase_shifts
         stimulated['imp_voltage_uV'] = mean_ampl
         stimulated['imp_kOhm'] = (mean_ampl / (current_ampl_nA * 1e-3)) / 1e3 #* stimulated.stim.astype(int)
         stimulated['imp_stim_ratio'] = mean_ampl/ mean_ampl[stimulated.stim].item()
