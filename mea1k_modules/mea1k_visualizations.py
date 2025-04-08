@@ -207,7 +207,6 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVran
     [spine.set_visible(False) for spine in left_ax.spines.values()]
     [spine.set_visible(False) for spine in corr_ax.spines.values()]
 
-    plt.show()
     
 
 def draw_mea1k(bg='black', el_color='#111111', mapping=None, cmap_scaler=1):
@@ -334,5 +333,7 @@ def viz_mea1k_config(pad_alignment, stim_mea1k_el=None, col_scaler=1):
                                           el_entry.pad_diameter_um/2 *1.7, color=col, 
                                           fill=False, linewidth=.8,
                                           alpha=.5))
+            ax.text(el_entry.x_aligned, el_entry.y_aligned, f"{int(el_entry.pad_id)}",
+                                fontsize=7, ha='center', va='center', color='white')
+            
     [ax.add_patch(pc) for pc in pad_circles]
-    plt.show()
