@@ -587,8 +587,6 @@ def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
             line = f"siteLoc = {geometry_str};\n"
         elif var_name == 'siteMap':
             line = f"siteMap = {list(channels)};\n"
-        elif var_name == 'nSitesExcl':
-            line = f"nSitesExcl = {len(excl_chnls)};\n"
         elif var_name == 'ignoreChans':
             line = f"ignoreChans = {excl_chnls};\n"
             
