@@ -592,9 +592,8 @@ def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
         
         prm_filecontent.append(line)
     prm_filecontent = "".join(prm_filecontent)
-    print(prm_filecontent)
-    # with open(out_fullfname, 'w') as f:
-    #     f.write(prm_filecontent)
+    with open(out_fullfname, 'w') as f:
+        f.write(prm_filecontent)
 
 
 
