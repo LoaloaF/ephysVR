@@ -557,7 +557,7 @@ def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
                    updated_prms={}, pad_size=11, shank_subset=None):
     L = Logger()
     
-    channels = list(implant_mapping.index +1)
+    channels = implant_mapping.index +1
     shanks = list(implant_mapping.shank_id.astype(int))
     geometry = np.zeros((implant_mapping.shape[0], 2))
     geometry[:, 0] = implant_mapping.shank_id.astype(int)*1000  # x coo constant for each shank
@@ -586,7 +586,7 @@ def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
         elif var_name == 'siteLoc':
             line = f"siteLoc = {geometry_str};\n"
         elif var_name == 'siteMap':
-            line = f"siteMap = {channels};\n"
+            line = f"siteMap = {list(channels)};\n"
         elif var_name == 'nSitesExcl':
             line = f"nSitesExcl = {len(excl_chnls)};\n"
         elif var_name == 'ignoreChans':
