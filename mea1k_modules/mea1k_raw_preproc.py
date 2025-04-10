@@ -520,11 +520,9 @@ def _write_prb_file(implant_mapping, output_fullfname, pad_size=11, shank_subset
     
     # excl
     excl_chnls = channels[~implant_mapping.curated_trace]
-    print(excl_chnls)
     if shank_subset is not None:
         excl_chnls_shank = channels[~implant_mapping.shank_id.isin(shank_subset)]
         excl_chnls = np.unique(np.concatenate((excl_chnls, excl_chnls_shank)))
-        print(excl_chnls)
 
     # Use `x` and `depth` to populate geometry based on actual positions
     geometry = np.zeros((implant_mapping.shape[0], 2))
@@ -559,34 +557,43 @@ def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
                    updated_prms={}, pad_size=11, shank_subset=None):
     L = Logger()
     
+    channels = list(implant_mapping.index +1)
+    shanks = list(implant_mapping.shank_id.astype(int))
     geometry = np.zeros((implant_mapping.shape[0], 2))
     geometry[:, 0] = implant_mapping.shank_id.astype(int)*1000  # x coo constant for each shank
     geometry[:, 1] = implant_mapping.depth # y coo
     geometry_str =  "[" + "".join([f"{row[0]},{row[1]}; " for row in geometry]) + "]"
-    channels = implant_mapping.index +1
     
+    # excl
+    excl_chnls = channels[~implant_mapping.curated_trace]
+    if shank_subset is not None:
+        excl_chnls_shank = channels[~implant_mapping.shank_id.isin(shank_subset)]
+        excl_chnls = list(np.unique(np.concatenate((excl_chnls, excl_chnls_shank))))
+        
     # read as text file row by row
     with open(template_prm_fullfname, 'r') as f:
         lines = f.readlines()
-
     prm_filecontent = []    
     for line in lines:
         var_name = line.split('=')[0].strip()
         
-        if var_name == 'probePad':
+        if var_name == 'nChans':
+            line = f"nChans = {len(channels)};\n"
+        elif var_name == 'probePad':
             line = f"probePad = [{pad_size} {pad_size}];\n"
         elif var_name == 'shankMap':
-            line = f"shankMap = {list(implant_mapping.shank_id.astype(int))};\n"
+            line = f"shankMap = {shanks};\n"
         elif var_name == 'siteLoc':
             line = f"siteLoc = {geometry_str};\n"
         elif var_name == 'siteMap':
-            line = f"siteMap = {list(channels)};\n"
-            
-            # exlc?
-            # nChans = 431            
+            line = f"siteMap = {channels};\n"
+        elif var_name == 'nSitesExcl':
+            line = f"nSitesExcl = {len(excl_chnls)};\n"
+        elif var_name == 'ignoreChans':
+            line = f"ignoreChans = {excl_chnls};\n"
             
         if var_name in updated_prms:
-            # replace the line with the new value
+            # replace the line with the new value through input
             L.logger.debug(f"Updating {var_name} line to {updated_prms[var_name]}")
             line = f"{var_name} = {updated_prms[var_name]}\n"
         
