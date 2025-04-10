@@ -555,7 +555,44 @@ def _write_prb_file(implant_mapping, output_fullfname, pad_size=11, shank_subset
         f.write("% Recording contact pad size (height x width in micrometers)\n")
         f.write(f"pad = [{pad_size} {pad_size}];\n\n")
 
+def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
+                   updated_prms={}, pad_size=11, shank_subset=None):
+    L = Logger()
+    
+    geometry = np.zeros((implant_mapping.shape[0], 2))
+    geometry[:, 0] = implant_mapping.shank_id.astype(int)*1000  # x coo constant for each shank
+    geometry[:, 1] = implant_mapping.depth # y coo
+    geometry_str =  "[" + "".join([f"{row[0]},{row[1]}; " for row in geometry]) + "]"
+    channels = implant_mapping.index +1
+    
+    # read as text file row by row
+    with open(template_prm_fullfname, 'r') as f:
+        lines = f.readlines()
 
+    prm_filecontent = []    
+    for line in lines:
+        var_name = line.split('=')[0].strip()
+        
+        if var_name == 'probePad':
+            line = f"probePad = [{pad_size} {pad_size}];\n"
+        elif var_name == 'shankMap':
+            line = f"shankMap = {list(implant_mapping.shank_id.astype(int))};\n"
+        elif var_name == 'siteLoc':
+            line = f"siteLoc = {geometry_str};\n"
+        elif var_name == 'siteMap':
+            line = f"siteMap = {list(channels)};\n"
+            
+            # exlc?
+            
+        if var_name in updated_prms:
+            # replace the line with the new value
+            L.logger.debug(f"Updating {var_name} line to {updated_prms[var_name]}")
+            lines[lines.index(line)] = f"{var_name} = {updated_prms[var_name]}\n"
+        
+        prm_filecontent.append(line)
+    prm_filecontent = "".join(prm_filecontent)
+    with open(out_fullfname, 'w') as f:
+        f.write(prm_filecontent)
 
 
 
