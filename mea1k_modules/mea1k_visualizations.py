@@ -274,7 +274,7 @@ def draw_mea1K_colorbar(cmap, norm, lbl, orientation='vertical'):
     cbar.set_label(lbl)
     return cbar_fig, cbar
 
-def draw_interconnect_pads(mapping, edgecolor='pad_id', pad_alpha=.6, 
+def draw_interconnect_pads(mapping, edgecolor='pad_id', pad_alpha=.6, add_pad_label=True,
                            pad_scalar=1.5, draw_on_ax=None, skip_not_connected=True):
     pad_circles, texts = [], []
     for pad_id in sorted(mapping.pad_id.dropna().unique()):
@@ -297,8 +297,9 @@ def draw_interconnect_pads(mapping, edgecolor='pad_id', pad_alpha=.6,
                                        color=col,
                                        fill=True, linewidth=2,
                                        alpha=pad_alpha))
-        draw_on_ax.text(pad_entry.x_aligned, pad_entry.y_aligned, f"{int(pad_id)}",
-                                fontsize=7, ha='center', va='center', color='white')
+        if add_pad_label:
+            draw_on_ax.text(pad_entry.x_aligned, pad_entry.y_aligned, f"{int(pad_id)}",
+                                    fontsize=7, ha='center', va='center', color='white')
     if draw_on_ax is not None:
         [draw_on_ax.add_patch(pc) for pc in pad_circles]
     return pad_circles

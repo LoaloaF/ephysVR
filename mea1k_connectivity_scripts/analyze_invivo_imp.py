@@ -45,15 +45,15 @@ def save_output(subdir, data, fname):
     print("Saving to: ", os.path.join(fullpath, fname))
     data.to_csv(os.path.join(fullpath, fname))
 
-def extract_impedance(subdir, implant_name, current_ampl_nA, debug=False):
+def extract_impedance(subdir, implant_name, current_ampl_nA, debug=False, deepdebug=False):
     L = Logger()
     fnames, ids = get_hdf5_fnames_from_dir(subdir)
     aggr_imp_data = []
     for fname, i in zip(fnames, ids):
         L.logger.info(f"Config {i},{fname} of {len(fnames)}")
         
-        # if int(i[-4:]) != 1200:
-        #     continue
+        if int(i[-4:]) <5:
+            continue
         # get the config information about this configuration
         stimulated = pd.read_csv(os.path.join(subdir, fname.replace(".raw.h5", ".csv")))
 
@@ -71,13 +71,13 @@ def extract_impedance(subdir, implant_name, current_ampl_nA, debug=False):
         # Calculate phase shifts
         phase_shifts = calculate_phase_shift(data[:, 20500:29500], dac[20500:29500]* -1, 
                                              sampling_rate=C.SAMPLING_RATE, 
-                                             freq=1000, debug=debug)
+                                             freq=1000, debug=deepdebug)
     
         mean_ampl = []
         for j,row in enumerate(data):
             _, m_ampl = estimate_frequency_power(row[stim_sample_ids[0]:stim_sample_ids[1]].astype(float), 
                                                  sampling_rate=C.SAMPLING_RATE, 
-                                                 debug=debug, 
+                                                 debug=deepdebug, 
                                                  min_band=960, max_band=1040)
             if stimulated.stim[j]:
                 pass
@@ -98,11 +98,12 @@ def extract_impedance(subdir, implant_name, current_ampl_nA, debug=False):
         if debug:
             mapping = get_recording_implant_mapping(subdir, fname, implant_name=implant_name,
                                                     drop_non_bonded=False)
-            data = data[mapping.shank_id == 1]
-            mapping = mapping[mapping.shank_id == 1]
+            data = data[mapping.shank_id == 1] # or 1 
+            mapping = mapping[mapping.shank_id == 1] # or 1
             viz_mea1k_config(mapping, stim_mea1k_el=stimulated.electrode[stimulated.stim].item(),
                              col_scaler=.6)
-            vis_shank_traces(data-data[:,0:1], mapping, stim_mea1k_el=stimulated.electrode[stimulated.stim].item(), 
+            # skip the first 100 samples
+            vis_shank_traces(data[:, 200:]-data[:,0:1], mapping, stim_mea1k_el=stimulated.electrode[stimulated.stim].item(), 
                              scaler=1/3_000, uVrange=470_000, stimulated=stimulated)
             
             plt.figure(figsize=(18, 8))
@@ -138,19 +139,15 @@ def vis_impedance(subdir, implant_name):
     all_els_imp_data = pd.read_csv(os.path.join(subdir, "processed", "extracted_imp_voltages.csv"))
     all_els_imp_data = all_els_imp_data.drop(columns=['Unnamed: 0']).set_index('electrode', drop=True)
     
-    implant_mapping = get_raw_implant_mapping(implant_name="250308_MEA1K07_H1628pad1shankB6")
-    # viz_mea1k_config(implant_mapping)
-    # plt.show()
+    # for a normal recorindg, implant name will get the correct mapping
+    implant_mapping = get_raw_implant_mapping(implant_name=implant_name).set_index("mea1k_el", drop=True)
+    # replacement if there is no real mapping, use the single shank config mapping, even if in a differnt folder 
+    # implant_mapping = get_raw_implant_mapping(implant_name="250308_MEA1K07_H1628pad1shankB6").set_index("mea1k_el", drop=True)
 
-    implant_mapping = implant_mapping.set_index("mea1k_el", drop=True)
-    # implant_mapping = get_raw_implant_mapping(implant_name=implant_name).set_index("mea1k_el", drop=True)
-    # merge metadata with impedance data
-    # all_els_imp_data = pd.merge(all_els_imp_data.drop(columns=['depth', 'pad_id']), 
-    # print(all_els_imp_data)
-    all_els_imp_data = pd.merge(all_els_imp_data.drop(columns=['pad_id']),  
+    dupl_columns = all_els_imp_data.columns.intersection(implant_mapping.columns)
+    all_els_imp_data = pd.merge(all_els_imp_data.drop(columns=dupl_columns),  
                                implant_mapping, how='left', left_index=True, right_index=True)
-    # print(all_els_imp_data)
-    # exit()
+
     # electrode index is not unique, keep as column (called mea1k_el)
     all_els_imp_data.reset_index(inplace=True, drop=True)
     
@@ -202,7 +199,7 @@ def vis_impedance(subdir, implant_name):
         (fig, ax), el_rects = draw_mea1k(mapping=implant_mapping)
         imp_color_dict = {r.pad_id: r.imp_color for _, r in stim_el_imp_data.iterrows()}
         draw_interconnect_pads(implant_mapping, edgecolor=imp_color_dict, 
-                               draw_on_ax=ax, pad_alpha=.7)
+                               draw_on_ax=ax, pad_alpha=0, add_pad_label=False)
         draw_mea1K_colorbar(cmap_plasma, norm_imp_col, 'Impedance [kOhm]', orientation='vertical')
         plt.savefig(os.path.join(subdir, "processed", "imp_interconnect.png"))
         
@@ -210,7 +207,7 @@ def vis_impedance(subdir, implant_name):
         (fig, ax), el_rects = draw_mea1k(mapping=implant_mapping)
         stim_unit_color_dict = {r.pad_id: r.stimunit_color for _, r in stim_el_imp_data.iterrows()}
         draw_interconnect_pads(implant_mapping, edgecolor=stim_unit_color_dict, 
-                               draw_on_ax=ax, pad_alpha=.7)
+                               draw_on_ax=ax, pad_alpha=.7, add_pad_label=True)
         draw_mea1K_colorbar(cmap_tab, norm_stim_col, 'Stim Unit', orientation='vertical')
         plt.savefig(os.path.join(subdir, "processed", "stimunit_interconnect.png"))
         
@@ -227,7 +224,8 @@ def vis_impedance(subdir, implant_name):
     # reorder
     stim_el_imp_data = stim_el_imp_data.loc[reorder]
     print("Post reorder stim unit impedance data")
-    print(stim_el_imp_data)
+    print(stim_el_imp_data.stim_unit)
+    print(list(stim_el_imp_data.stim_unit.unique()))
     
 
     draw_pad_id_ordered_imp = True
@@ -269,10 +267,12 @@ def vis_impedance(subdir, implant_name):
         plt.tight_layout()
         plt.savefig(os.path.join(subdir, "processed", "pad_ordered_imp.png"))
         
-        
+
+    # exclude not routed pads
+    # stim_el_imp_data = stim_el_imp_data[stim_el_imp_data.shank_id.notna()]
+    # reorder again back to pad order
+    # stim_el_imp_data = stim_el_imp_data.sort_values(['pad_id', 'stim_unit'])
     
-    
-        
        
     draw_stim_pad_var = True     
     if draw_stim_pad_var:
@@ -287,6 +287,7 @@ def vis_impedance(subdir, implant_name):
         draw_bounary_lines(stim_el_imp_data, cmap_tab, norm_stim_col)
         ticks = []
         for i, row in stim_el_imp_data.reset_index().iterrows():
+            print(i, end='...')
             # slice to the config where the el was stimulued, get other pad data
             all_els_dat = all_els_imp_data[all_els_imp_data.config == row.config]
             ticks.append(row.pad_id)
@@ -313,7 +314,7 @@ def vis_impedance(subdir, implant_name):
             config_pad_imp_std.drop(row.pad_id, inplace=True)
             config_pad_imp_mean.drop(row.pad_id, inplace=True)
             
-            # draw stimulated pad average over mea1k els
+            # # draw stimulated pad average over mea1k els
             # plt.scatter([i], config_stim_pad_mean, color=row.stimunit_color,
             #             marker='o', s=25, alpha=.7)
             # plt.errorbar([i], config_stim_pad_mean, yerr=config_stim_pad_std,
@@ -323,13 +324,15 @@ def vis_impedance(subdir, implant_name):
             low_imp_mask = config_pad_imp_mean.imp_kOhm.values/config_stim_pad_mean > 0.2
             config_pad_imp_mean = config_pad_imp_mean[low_imp_mask]
             config_pad_imp_std = config_pad_imp_std[low_imp_mask]
-            el_pair_color = ['green' if row.el_pair == el_pair else 'k' for el_pair in config_pad_imp_mean.el_pair]
-            el_pair_marker = ['*' if row.el_pair == el_pair else 'o' for el_pair in config_pad_imp_mean.el_pair]
+            # green, * replacement 
+            el_pair_color = ['blue' if row.el_pair == el_pair else 'red' for el_pair in config_pad_imp_mean.el_pair]
+            el_pair_marker = ['*' if row.el_pair == el_pair else 'x' for el_pair in config_pad_imp_mean.el_pair]
 
-            # # Loop through each pad and plot individually
-            # for j, (mean, color, marker) in enumerate(zip(config_pad_imp_mean.imp_kOhm, el_pair_color, el_pair_marker)):
-            #     plt.scatter([i], [mean], color=color, alpha=0.7, s=25, marker=marker)
-            # plt.errorbar([i]*len(config_pad_imp_mean), config_pad_imp_mean.imp_kOhm.values.flatten(), yerr=config_pad_imp_std.values.flatten(), color='gray', alpha=.3)
+            # Loop through each pad and plot individually
+            for j, (mean, color, marker) in enumerate(zip(config_pad_imp_mean.imp_kOhm, el_pair_color, el_pair_marker)):
+                plt.scatter([i], [mean], color='k', alpha=0.7, s=25, marker='o')
+                # plt.scatter([i], [mean], color=color, alpha=0.7, s=25, marker=marker)
+            plt.errorbar([i]*len(config_pad_imp_mean), config_pad_imp_mean.imp_kOhm.values.flatten(), yerr=config_pad_imp_std.values.flatten(), color='gray', alpha=.3)
             
             # onlly stimulated mea1k el
             plt.scatter([i], [row.imp_kOhm],
@@ -338,111 +341,6 @@ def vis_impedance(subdir, implant_name):
         plt.xticks(np.arange(len(ticks)), ticks, rotation=90, fontsize=7)
         
     plt.tight_layout()
-    plt.show()
-    exit()
-    
-    
-    
-    
-    # # scatter plot
-    # data = data.reset_index(drop=True)
-    
-    # # reorder = data.sort_values(by=['shank', 'depth']).index
-    # reorder = data.sort_values(by=['stim_unit', 'imp_kOhm']).index
-    # # rank what stim_unit has highest impedance
-    # stim_order = data.groupby('stim_unit').agg({'imp_kOhm': 'mean'}).sort_values(by='imp_kOhm', ascending=False)
-    # print(stim_order)
-    # print(data)
-    
-    
-    # # Map stim_unit to its rank based on stim_order
-    # stim_unit_rank = stim_order.reset_index().reset_index().set_index('stim_unit')['index']
-    # data['stim_unit_rank'] = data['stim_unit'].map(stim_unit_rank)
-
-    # # Sort data by stim_unit_rank and imp_kOhm
-    # reorder = data.sort_values(by=['stim_unit_rank', 'imp_kOhm']).index
-    # # print(data)
-    # # exit()
-    
-    # # draw_interconnect_pads(mapping, draw_on_ax=ax, pad_alpha=.6, edgecolor=stimunit_color)
-    
-
-    # plt.figure()
-    # metal_col = ['green' if m==1 else 'purple' for m in data.iloc[reorder].metal.values]
-    # plt.scatter(np.arange(len(imp)), imp[reorder], 
-    #             # color=metal_col, marker='o', s=100, alpha=.3)
-    #             color='k', marker='_', s=100, alpha=.8)
-    #             # color=np.array(list(stimunit_color.values()))[reorder])
-    # print(data.stim_unit[reorder])
-    
-    print(imp[reorder])
-    j = 0
-    for _, dat in data.iloc[reorder].iterrows():
-        # print(dat)
-        stim_on_fiber = dat.el_pair
-    
-        other_pads = all_data[(all_data.config == dat.config)]
-        # print(other_pads.iloc[:3].T)
-        
-        pad_averages = other_pads.loc[:,['shank', 'depth', "imp_stim_ratio", 'pad_id']].groupby('pad_id').mean()
-        pad_averages = pad_averages[pad_averages.imp_stim_ratio>.1]
-        
-        stim_pad_id = other_pads.pad_id[other_pads.stim].item()
-        
-        # pop out the stim pad
-        stim_pad_data = pad_averages.loc[stim_pad_id]
-        plt.scatter(j, stim_pad_data.imp_stim_ratio*imp[reorder][j],
-                    color='k', marker='o', s=20, alpha=.3)
-        
-        print()
-        pad_averages.drop(stim_pad_id, inplace=True)
-        
-        other_pads = pad_averages.index
-        # print(stim_on_fiber)
-        other_pads_elpair = mapping[mapping.pad_id.isin(other_pads)].loc[:, ['pad_id', 'el_pair']].set_index('pad_id', drop=True).drop_duplicates()
-        print(other_pads_elpair, stim_on_fiber)
-        
-        el_pair_color = ['green' if stim_on_fiber == el_pair else 'k' for el_pair in other_pads_elpair.el_pair]
-        
-        
-        
-        
-        # print(pad_averages[pad_averages.el_pair == stim_pad_data.el_pair])
-        # print(pad_averages)
-        
-        plt.scatter([j]*len(pad_averages), pad_averages.imp_stim_ratio.values*imp[reorder][j],
-                    color=el_pair_color, marker='o', s=100, alpha=.4)
-        j += 1
-        # print(pad_averages)
-        # print(pad_averages.iloc[:3].T)
-        
-        # exit()
-    
-    # slice to always the first unqiue stim unit
-    unique_stim_units = data.stim_unit.unique()
-    for i, stim_unit in enumerate(unique_stim_units):
-        plt.axvline(np.where(data.stim_unit[reorder] == stim_unit)[0][0], color='k', 
-                    linestyle='dashed', alpha=.4)
-        # label
-        plt.text(np.where(data.stim_unit[reorder] == stim_unit)[0][0], 1e4, 
-                 f"Stim Unit: {int(stim_unit):2d}", color=cmap(norm(shuffle_remapping[stim_unit])),
-                 rotation=90, fontsize=11, ha='left', va='top')
-        
-    plt.yscale('log')
-    plt.ylim(10, 1e4)
-    # log scale y
-    plt.ylabel("Impedance [kOhm]")
-    plt.xlabel("Pad ID on MEA1K  |  Polyimide el. ID in brain")
-    plt.xticks(np.arange(len(imp))[::5], (data.pad_id[reorder][::5]).astype(int), rotation=90, fontsize=5)
-    plt.title("Order Impedance by Stim Unit")
-    
-    # plt.ylim(0, 2500)
-    # vertical line at 0, 125, 1628/2+125, 1628/2+125+125
-    # plt.axvline(0, color='k', linestyle='dashed')
-    # plt.axvline(106, color='k', linestyle='dashed')
-    # plt.axvline(814, color='k', linestyle='dashed')
-    # plt.axvline(920, color='k', linestyle='dashed')
-    #save
     
 def compare_impedance(subdirs, implant_name):
     for subdir in subdirs:
@@ -462,45 +360,52 @@ def main():
     nas_dir = C.device_paths()[0]
     
     # fix seed
-    np.random.seed(0)
+    np.random.seed(42)
     
     # implant_name = "241016_MEA1K03_H1278pad4shankB5"
     # implant_name = "4983"
-    implant_name = "250308_MEA1K07_H1628pad1shankB6"
+    # implant_name = "250308_MEA1K07_H1628pad1shankB6"
     # implant_name = "241211_MEA1K06_H1278pad4shankB5"
-    # implant_name = "250205_MEA1K03_H1278pad4shankB5"
+    implant_name = "250205_MEA1K03_H1278pad4shankB5"
     current_ampl_nA = 20 
     
     subdirs = [
-        # f"devices/implant_devices/{implant_name}/recordings/2025-03-25_15.32.21_invivo_imp_mode='small_current'_stimpulse='sine'_amplitude=10",
+        f"devices/implant_devices/{implant_name}/recordings/2025-03-25_15.32.21_invivo_imp_mode='small_current'_stimpulse='sine'_amplitude=10",
         
         # 1 shank device
         # well device (just using shank1 configs)
         # f"devices/well_devices/{4983}/recordings/11.17.35_singleshankConfigs_test_mode='small_current'_stimpulse='sine'2_amplitude=10",
         # last in nitro imp measurement
-        f"devices/implant_devices/{implant_name}/recordings/13.36.27_Ringer_postwelldevice_mode='small_current'_stimpulse='sine'2_amplitude=10",
+        # f"devices/implant_devices/{implant_name}/recordings/13.36.27_Ringer_postwelldevice_mode='small_current'_stimpulse='sine'2_amplitude=10",
         # after el removal
         # f"devices/implant_devices/{implant_name}/recordings/13.37.39_Ringer_postElectrRemoved_GNDREF_mode='small_current'_stimpulse='sine'2_amplitude=10",
-        
-        
-        
     ]
+    
+    
     # el_config_S1D1650.raw.h5
-    extract_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name, 
-                      current_ampl_nA=current_ampl_nA, debug=False)
+    # extract_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name, 
+    #                   current_ampl_nA=current_ampl_nA, debug=True)
     # print(os.path.join(nas_dir, subdirs[0]))
-    # vis_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name)
+    vis_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name)
     # compare_impedance([os.path.join(nas_dir, subdir) for subdir in subdirs], implant_name=implant_name)
+
     plt.show()
-    
-    
-    # subdir = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/RUN_rYL006/rYL006_P1100/2025-01-27_13-39_rYL006_P1100_LinearTrackStop_73min"
-    # data = read_raw_data(subdir, "ephys_output.raw.h5", convert2mV_float16=True, col_slice=slice(20_000, 30_000), to_df=True, subtract_dc_offset=True)
-    # mapping = get_recording_implant_mapping(subdir, "ephys_output.raw.h5", animal_name="rYL006", exclude_shanks=[2,3,4])
-    # mapping = mapping[mapping.depth < 2000]
-    # mapping = mapping[mapping.shank_side == 'left']
-    # data = data.loc[mapping.mea1k_el]
-    # vis_shank_traces(data.values, mapping, scaler=180)
     
 if __name__ == "__main__":
     main()
+    
+# # quick comparison of stim unit ordering between chips
+# # with electrode mea1k7
+# mea1k7_with_els =     [7.0, 1.0, 4.0, 6.0, 9.0, 8.0, 23.0, 3.0, 0.0, 29.0, 19.0, 5.0, 2.0, 16.0, 28.0, 21.0, 10.0, 22.0, 13.0, 26.0, 30.0, 20.0, 17.0, 27.0, 24.0, 18.0, 12.0, 25.0, 11.0, 14.0, 15.0, 31.0]
+# # post el removal mea1k7, but ligquid dried up half way    
+# mea1k7_post_removal = [4.0, 6.0, 7.0, 1.0, 2.0, 9.0, 16.0, 0.0, 19.0, 3.0, 29.0, 23.0, 8.0, 5.0, 22.0, 21.0, 17.0, 10.0, 28.0, 26.0, 13.0, 30.0, 20.0, 18.0, 27.0, 24.0, 12.0, 25.0, 11.0, 14.0, 15.0, 31.0]
+# # well device
+# well_device = [26.0, 2.0, 20.0, 0.0, 17.0, 6.0, 21.0, 8.0, 19.0, 27.0, 25.0, 18.0, 24.0, 7.0, 4.0, 23.0, 22.0, 16.0, 1.0, 11.0, 10.0, 9.0, 3.0, 5.0, 29.0, 12.0, 28.0, 13.0, 15.0, 14.0, 31.0, 30.0]
+# # mea1k03 animal10
+# mea1k03_animal10 = [3.0, 22.0, 25.0, 23.0, 17.0, 6.0, 21.0, 10.0, 19.0, 7.0, 9.0, 24.0, 0.0, 8.0, 11.0, 20.0, 1.0, 26.0, 4.0, 2.0, 27.0, 16.0, 12.0, 5.0, 18.0, 15.0, 13.0, 28.0, 31.0, 14.0, 30.0, 29.0]
+
+# plt.plot(mea1k7_post_removal, color='red', alpha=.5)
+# plt.plot(mea1k7_with_els, color='red', alpha=.9)
+# plt.plot(well_device)
+# plt.plot(mea1k03_animal10)
+# plt.show()

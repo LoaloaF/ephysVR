@@ -139,7 +139,7 @@ def _read_mea1k_file(path, fname, dtype=np.float16, row_slice=slice(None),
     return raw_data
 
 def read_stim_DAC(path, fname, col_slice=slice(None)):
-    dac_data = _read_mea1k_file(path, fname, row_slice=1024, 
+    dac_data = _read_mea1k_file(path, fname, row_slice=1023, 
                                 col_slice=col_slice, dtype=np.int16)
     return dac_data
 
