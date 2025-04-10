@@ -583,16 +583,18 @@ def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
             line = f"siteMap = {list(channels)};\n"
             
             # exlc?
+            # nChans = 431            
             
         if var_name in updated_prms:
             # replace the line with the new value
             L.logger.debug(f"Updating {var_name} line to {updated_prms[var_name]}")
-            lines[lines.index(line)] = f"{var_name} = {updated_prms[var_name]}\n"
+            line = f"{var_name} = {updated_prms[var_name]}\n"
         
         prm_filecontent.append(line)
     prm_filecontent = "".join(prm_filecontent)
-    with open(out_fullfname, 'w') as f:
-        f.write(prm_filecontent)
+    print(prm_filecontent)
+    # with open(out_fullfname, 'w') as f:
+    #     f.write(prm_filecontent)
 
 
 
