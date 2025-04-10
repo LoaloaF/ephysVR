@@ -225,13 +225,13 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
     save_implant_mapping = implant_mapping.copy().iloc[shank_order]
     # and add manually selected traces in neuroscope
     save_implant_mapping['curated_trace'] = True
-    # if (curated_anim_xml_fullfname := _get_curated_animal_xml_fullfname(animal_name)) is not None:
-    #     if str(len(save_implant_mapping)) not in curated_anim_xml_fullfname:
-    #         raise ValueError(f"Curated XML file {curated_anim_xml_fullfname} "
-    #                          f"does not match the number of electrodes in the "
-    #                          f"implant mapping: {len(save_implant_mapping)}")
-    #     _, skipped_channels = _get_channel_skip_info_from_xml(curated_anim_xml_fullfname)
-    #     save_implant_mapping.iloc[skipped_channels, -1] = False
+    if (curated_anim_xml_fullfname := _get_curated_animal_xml_fullfname(animal_name)) is not None:
+        if str(len(save_implant_mapping)) not in curated_anim_xml_fullfname:
+            raise ValueError(f"Curated XML file {curated_anim_xml_fullfname} "
+                             f"does not match the number of electrodes in the "
+                             f"implant mapping: {len(save_implant_mapping)}")
+        _, skipped_channels = _get_channel_skip_info_from_xml(curated_anim_xml_fullfname)
+        save_implant_mapping.iloc[skipped_channels, -1] = False
     save_implant_mapping.to_csv(out_fullfname.replace(".dat", "_mapping.csv"))
     
     # option to save the original neuroscope xml file
@@ -265,11 +265,11 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
         # reorder to sort by shank and then depth of electrode on that shank
         data_chunk = data_chunk[shank_order]
         
-        # artifical fix:  reindex 391 config to 431, copy over mapping manually from a 431 session
-        alt_implant_mapping = pd.read_csv(os.path.join(path, '..', '2024-11-20_17-46_rYL006_P1100_LinearTrackStop_22min', "2024-11-20_17-46_rYL006_P1100_LinearTrackStop_22min_431_ephys_traces_mapping.csv"), index_col=0)
-        df_data_chunk = pd.DataFrame(data_chunk, index=implant_mapping.iloc[shank_order].pad_id.values)
-        df_data_chunk = df_data_chunk.reindex(alt_implant_mapping.pad_id.values)
-        data_chunk = df_data_chunk.values.astype(np.int16)
+        # artifical fix:   §reindex 391 config to 431, copy over mapping manually from a 431 session
+        # alt_implant_mapping = pd.read_csv(os.path.join(path, '..', '2024-11-20_17-46_rYL006_P1100_LinearTrackStop_22min', "2024-11-20_17-46_rYL006_P1100_LinearTrackStop_22min_431_ephys_traces_mapping.csv"), index_col=0)
+        # df_data_chunk = pd.DataFrame(data_chunk, index=implant_mapping.iloc[shank_order].pad_id.values)
+        # df_data_chunk = df_data_chunk.reindex(alt_implant_mapping.pad_id.values)
+        # data_chunk = df_data_chunk.values.astype(np.int16)
         
         if i == 0 and L.logger.level == 10: # DEBUG
             import matplotlib.pyplot as plt
