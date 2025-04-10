@@ -232,7 +232,7 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
                              f"implant mapping: {len(save_implant_mapping)}")
         _, skipped_channels = _get_channel_skip_info_from_xml(curated_anim_xml_fullfname)
         save_implant_mapping.iloc[skipped_channels, -1] = False
-    save_implant_mapping.to_csv(out_fullfname.replace(".dat", "_mapping.csv"))
+    save_implant_mapping.to_csv(out_fullfname.replace(".dat", "_mapping.csv"), index=False)
     
     # option to save the original neuroscope xml file
     if write_neuroscope_xml:
@@ -513,11 +513,19 @@ def _get_curated_animal_xml_fullfname(animal_name):
     Logger().logger.debug(f"Curated xml file found for {animal_name}: {xml_fnames}")
     return os.path.join(bonding_path, xml_fnames[0])
 
-def _write_prb_file(implant_mapping, output_fullfname, pad_size=11):
+def _write_prb_file(implant_mapping, output_fullfname, pad_size=11, shank_subset=None):
     Logger().logger.debug(f"Writing probe file {os.path.basename(output_fullfname)}")
     channels = np.arange(1, implant_mapping.shape[0]+1)
     shanks = implant_mapping.shank_id.astype(int)
     
+    # excl
+    excl_chnls = channels[~implant_mapping.curated_trace]
+    print(excl_chnls)
+    if shank_subset is not None:
+        excl_chnls_shank = channels[~implant_mapping.shank_id.isin(shank_subset)]
+        excl_chnls = np.unique(np.concatenate((excl_chnls, excl_chnls_shank)))
+        print(excl_chnls)
+
     # Use `x` and `depth` to populate geometry based on actual positions
     geometry = np.zeros((implant_mapping.shape[0], 2))
     geometry[:, 0] = shanks*1000  # x coo constant for each shank
@@ -542,7 +550,7 @@ def _write_prb_file(implant_mapping, output_fullfname, pad_size=11):
         f.write(f"shank = {list(shanks)};\n\n")
         
         f.write("% Reference sites to exclude\n")
-        f.write(f"ref_sites = {channels[~implant_mapping.curated_trace]};\n\n")
+        f.write(f"ref_sites = {excl_chnls};\n\n")
         
         f.write("% Recording contact pad size (height x width in micrometers)\n")
         f.write(f"pad = [{pad_size} {pad_size}];\n\n")
