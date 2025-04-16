@@ -344,7 +344,7 @@ def get_raw_implant_mapping(implant_name=None, animal_name=None):
 
 def animal_name2implant_device(animal_name):
     nas_dir = device_paths()[0]
-    fullfname = os.path.join(nas_dir, 'devices', 'implant_to_animal_map.csv')
+    fullfname = os.path.join(nas_dir, 'devices', 'animal_meta_info.csv')
     mapping = pd.read_csv(fullfname, index_col=0, header=0)
     Logger().logger.debug(f"Animal->Implant map:\n{mapping}")
     if animal_name in mapping.index:

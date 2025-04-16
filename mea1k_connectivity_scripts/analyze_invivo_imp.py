@@ -364,17 +364,17 @@ def main():
     
     # implant_name = "241016_MEA1K03_H1278pad4shankB5"
     # implant_name = "4983"
-    # implant_name = "250308_MEA1K07_H1628pad1shankB6"
+    implant_name = "250308_MEA1K07_H1628pad1shankB6"
     # implant_name = "241211_MEA1K06_H1278pad4shankB5"
-    implant_name = "250205_MEA1K03_H1278pad4shankB5"
+    # implant_name = "250205_MEA1K03_H1278pad4shankB5"
     current_ampl_nA = 20 
     
     subdirs = [
-        f"devices/implant_devices/{implant_name}/recordings/2025-03-25_15.32.21_invivo_imp_mode='small_current'_stimpulse='sine'_amplitude=10",
+        # f"devices/implant_devices/{implant_name}/recordings/2025-03-25_15.32.21_invivo_imp_mode='small_current'_stimpulse='sine'_amplitude=10",
         
         # 1 shank device
         # well device (just using shank1 configs)
-        # f"devices/well_devices/{4983}/recordings/11.17.35_singleshankConfigs_test_mode='small_current'_stimpulse='sine'2_amplitude=10",
+        f"devices/well_devices/{4983}/recordings/11.17.35_singleshankConfigs_test_mode='small_current'_stimpulse='sine'2_amplitude=10",
         # last in nitro imp measurement
         # f"devices/implant_devices/{implant_name}/recordings/13.36.27_Ringer_postwelldevice_mode='small_current'_stimpulse='sine'2_amplitude=10",
         # after el removal
@@ -383,10 +383,10 @@ def main():
     
     
     # el_config_S1D1650.raw.h5
-    # extract_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name, 
-    #                   current_ampl_nA=current_ampl_nA, debug=True)
+    extract_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name, 
+                      current_ampl_nA=current_ampl_nA, debug=True)
     # print(os.path.join(nas_dir, subdirs[0]))
-    vis_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name)
+    # vis_impedance(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name)
     # compare_impedance([os.path.join(nas_dir, subdir) for subdir in subdirs], implant_name=implant_name)
 
     plt.show()
