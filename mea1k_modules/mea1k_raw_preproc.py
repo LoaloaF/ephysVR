@@ -558,17 +558,17 @@ def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
     L = Logger()
     
     channels = implant_mapping.index +1
-    shanks = list(implant_mapping.shank_id.astype(int))
+    shanks = implant_mapping.shank_id.astype(int)
     geometry = np.zeros((implant_mapping.shape[0], 2))
     geometry[:, 0] = implant_mapping.shank_id.astype(int)*1000  # x coo constant for each shank
     geometry[:, 1] = implant_mapping.depth # y coo
     geometry_str =  "[" + "".join([f"{row[0]},{row[1]}; " for row in geometry]) + "]"
     
     # excl
-    excl_chnls = channels[~implant_mapping.curated_trace]
+    excl_chnls = channels[~implant_mapping.curated_trace].values
     if shank_subset is not None:
         excl_chnls_shank = channels[~implant_mapping.shank_id.isin(shank_subset)]
-        excl_chnls = list(np.unique(np.concatenate((excl_chnls, excl_chnls_shank))))
+        excl_chnls = np.unique(np.concatenate((excl_chnls, excl_chnls_shank)))
         
     # read as text file row by row
     with open(template_prm_fullfname, 'r') as f:
@@ -582,13 +582,13 @@ def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
         elif var_name == 'probePad':
             line = f"probePad = [{pad_size} {pad_size}];\n"
         elif var_name == 'shankMap':
-            line = f"shankMap = {shanks};\n"
+            line = f"shankMap = {list(shanks)};\n"
         elif var_name == 'siteLoc':
             line = f"siteLoc = {geometry_str};\n"
         elif var_name == 'siteMap':
             line = f"siteMap = {list(channels)};\n"
         elif var_name == 'ignoreChans':
-            line = f"ignoreChans = {excl_chnls};\n"
+            line = f"ignoreChans = {excl_chnls.tolist()};\n"
             
         if var_name in updated_prms:
             # replace the line with the new value through input
