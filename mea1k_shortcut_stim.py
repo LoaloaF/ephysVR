@@ -25,15 +25,20 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
     # copy to output dir
     for stim_el in config_map.electrode[config_map.stim].tolist():
         success, stim_units = attampt_connect_el2stim_unit(stim_el, array, with_download=False)
-        print(success) # turn on ?
+        print(f"{stim_units=}") # turn on
+        
+        # adjust DAC sine wave with offset 
+        stim_seq = create_stim_sine_sequence(dac_id=0, amplitude=10, f=1000, ncycles=400, 
+                                             nreps=1, adjust_offset_for_stimunit=stim_units[0])
+        time.sleep(.2)
         
     array.download()
     fname = os.path.basename(config_fullfname).replace(".cfg", "")
     start_saving(s, dir_name=path, fname=fname)
-    time.sleep(post_download_wait_time/2)
+    time.sleep(post_download_wait_time/1/3)
     
     turn_on_stimulation_units(stim_units, mode=mode)
-    time.sleep(post_download_wait_time/2)
+    time.sleep(post_download_wait_time* 2/3)
     
     print(f"\nStimulating ~ ~ ~ ~ ~ ~ ~ ~ "
           f"on {stim_units} ")
@@ -46,13 +51,17 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
     time.sleep(.1)
     array.close()
     stop_saving(s)
+
+    offset_map = {0: 0, 1: 0, 2: 427, 3: 0, 4: 492, 5: 0, 6: 347, 7: 703, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 895, 14: 0, 15: 0, 16: 959, 17: 634, 18: 0, 19: 0, 20: 325, 21: 1023, 22: 1023, 23: 255, 24: 0, 25: 1023, 26: 1023, 27: 630, 28: 1023, 29: 245, 30: 0, 31: 895}
+    config_map['stim_unit_offset'] = offset_map[stim_units[0]]
+    print(config_map)
     config_map.to_csv(os.path.join(path, os.path.basename(config_fullfname).replace(".cfg", ".csv")))
     
 
 def main():
     # ======== PARAMETERS ========
-    # subdir = f"well_devices/4983/recordings"
-    subdir = f"devices/implant_devices/250308_MEA1K07_H1628pad1shankB6/recordings"
+    subdir = f"devices/well_devices/4983/recordings"
+    # subdir = f"devices/implant_devices/250308_MEA1K07_H1628pad1shankB6/recordings"
     nas_dir = C.device_paths()[0]
     
     amplitude = 10
@@ -64,8 +73,8 @@ def main():
     # rec_time = .1
     # stimpulse = 'sine'
     
-    t = datetime.datetime.now().strftime("%H.%M.%S")
-    rec_dir = f"{t}_noSilk_tapwater_GND_REF_cable_imp8_localstim_{mode=}_{stimpulse=}2_{amplitude=}"
+    t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M")
+    rec_dir = f"{t}_offsetStimUnit_{mode=}_{stimpulse=}2_{amplitude=}"
     
     post_download_wait_time = 1
     log2file = False
@@ -110,7 +119,7 @@ def main():
     for i, config_fullfname in enumerate(sorted(fnames)):
         print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}", flush=True)
         process_config(config_fullfname, path, rec_time, post_download_wait_time, 
-                       s, stim_seq, mode=mode)
+                       s, stim_seq=None, mode=mode)
         # if i>3:
         #     break
     if log2file:

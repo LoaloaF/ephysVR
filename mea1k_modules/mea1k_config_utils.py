@@ -21,7 +21,7 @@ def get_maxlab_saving():
     return maxlab.Saving()
 
 def start_saving(s, dir_name, fname, channels=list(range(1024))):
-    s.set_legacy_format(True)
+    # s.set_legacy_format(True)
     s.open_directory(dir_name)
     s.start_file(fname)
     s.group_delete_all()
@@ -151,11 +151,17 @@ def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[], with_download
     return success, used_up_stim_units
 
 def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, 
-                              nreps=1, voltage_conversion=False):
+                              nreps=1, voltage_conversion=False, adjust_offset_for_stimunit=None):
     if voltage_conversion:
         daq_lsb = float(maxlab.query_DAC_lsb_mV())
         print(f"DAQ LSB: {daq_lsb}")
         amplitude = int(amplitude / daq_lsb)
+        
+    offset = 0
+    if adjust_offset_for_stimunit is not None:
+        # manually measured for device 4983:
+        offset_map = {0: 0, 1: 0, 2: 427, 3: 0, 4: 492, 5: 0, 6: 347, 7: 703, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 895, 14: 0, 15: 0, 16: 959, 17: 634, 18: 0, 19: 0, 20: 325, 21: 1023, 22: 1023, 23: 255, 24: 0, 25: 1023, 26: 1023, 27: 630, 28: 1023, 29: 245, 30: 0, 31: 895}
+        offset = offset_map[adjust_offset_for_stimunit]
     
     seq = maxlab.Sequence()
     # Create a time array, 50 us * 20kHz = 1000 samples, 1 khz exmaple
@@ -165,7 +171,7 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100,
     for i in range(nreps):
         for j in range(ncycles):
             for ampl in sine_wave:
-                seq.append(maxlab.chip.DAC(dac_id, ampl))
+                seq.append(maxlab.chip.DAC(dac_id, np.clip(ampl+offset, 0, 1023)))
                 seq.append(maxlab.system.DelaySamples(1))
     return seq
 

@@ -122,7 +122,7 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
                 break
         L.logger.info(f"Successfully routed pad {pad_id}\n\n")
         stim_unit = array.query_stimulation_at_electrode(stim_el)
-        return array, stim_el, stim_unit, pad_subset[pad_subset.mea1k_el.isin(els_to_route)]
+        return array, stim_el, stim_unit 
     
     L = Logger()
     
@@ -144,7 +144,7 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
     n_fails = 0
     for pad_id in implant_mapping.pad_id.unique():
         
-        array, stim_el, stim_unit, el_info = find_pad_stim_routing(implant_mapping, pad_id)
+        array, stim_el, stim_unit = find_pad_stim_routing(implant_mapping, pad_id)
         if array is None:
             n_fails += 1
             continue
@@ -589,7 +589,7 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
     
 def main():
     L = Logger()
-    L.init_logger("pad_routing2", "./", "INFO")
+    L.init_logger("pad_routing2", "./", "DEBUG")
     
     seed = 42
     # np.random.seed(seed)
