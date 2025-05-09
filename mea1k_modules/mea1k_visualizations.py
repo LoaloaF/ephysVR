@@ -21,7 +21,7 @@ def _n_sequentially_different_colors(n, cmap='tab20'):
     colors = [list(col) for col in cmap(np.linspace(0, 1, n))]
     return colors
 
-def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVrange=6438):
+def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVrange=6438, stimulated=None):
     implant_mapping.reset_index(drop=True, inplace=True)
     # print(data)
     # print(implant_mapping)
@@ -48,6 +48,7 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVran
     bg_rects = []
     
     # iterate over all pads in the shank/ polyimide electrodes    
+    trace_endpoints = {}
     for i, pad_id in enumerate(implant_mapping.pad_id.unique()):
     # for i, row in implant_mapping.iterrows():
         # pad_id = row.pad_id
@@ -78,8 +79,8 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVran
         
         min_potential = depth -scaler*uVrange/2
         max_potential = depth +scaler*uVrange/2
-        right_ax.text(data.shape[1], max_potential, f"{-uVrange/1000/2:.1f} mV", va='center', ha='left', fontsize=7)
-        right_ax.text(data.shape[1], min_potential, f"{uVrange/1000/2:.1f} mV", va='center', ha='left', fontsize=7)
+        # right_ax.text(data.shape[1], max_potential, f"{-uVrange/1000/2:.1f} mV", va='center', ha='left', fontsize=7)
+        # right_ax.text(data.shape[1], min_potential, f"{uVrange/1000/2:.1f} mV", va='center', ha='left', fontsize=7)
         bg_rects.append(plt.Rectangle((0, min_potential), data.shape[1], scaler*uVrange,
                                       facecolor='black', alpha=.03 if not stim_pad else .15))
         
@@ -91,7 +92,9 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVran
             col = pad_colors[i] if not stim_pad else 'black'
             implant_mapping.at[implant_mapping.index[iloc], 'color'] = col
             # print(min(data[iloc]), max(data[iloc]))
-            right_ax.plot(-1*data[iloc]*scaler + depth , color=col, **kwargs)
+            transformed_trace = -1*data[iloc]*scaler + depth
+            right_ax.plot(transformed_trace, color=col, **kwargs)
+            trace_endpoints[implant_mapping.iloc[iloc].mea1k_el] = transformed_trace[-1]
         
         continue
     # draw rectangels for the ackground
@@ -156,7 +159,43 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVran
     left_ax.tick_params(axis='y', labelsize=8)
     
     right_ax.set_xlabel('Sample ID (20,000 samples/s)')
-    corr_ax.xaxis.set_visible(False)
+    
+    print(trace_endpoints)
+    print()
+    print()
+    print()
+    if stimulated is not None:
+        # print(implant_mapping)
+        stimulated = stimulated.set_index("electrode").reindex(implant_mapping.mea1k_el)
+        # print(stimulated)
+        for i, (mea1k_el, imp_info) in enumerate(stimulated.iterrows()):
+            # print(mea1k_el, imp_info)
+            # if pd.isna(imp_info.stim):
+            #     continue
+            stim_unit = imp_info.stim_unit
+            if pd.isna(stim_unit):
+                corr_ax.text(-.3, trace_endpoints[mea1k_el], 
+                              f"{imp_info.imp_stim_ratio:.1f}", va='center', ha='left', fontsize=7,)
+            else:
+                corr_ax.text(-.3, trace_endpoints[mea1k_el], 
+                              f"{imp_info.imp_kOhm:.1f} kOhm, StimUnit:{int(stim_unit)}", va='center', ha='left',fontsize=12,)
+                fig.suptitle(f"Pad ID: {imp_info.pad_id}")
+            
+            
+            
+        # corr_ax.xaxis.set_visible(False)
+        # fullfname = "/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/devices/implant_devices/250205_MEA1K03_H1278pad4shankB5/recordings/2025-03-25_15.32.21_invivo_imp_mode='small_current'_stimpulse='sine'_amplitude=10/processed/extracted_imp_voltages.csv"
+        # impdata = pd.read_csv(fullfname)
+        # impdata = impdata[impdata.stim_unit.notna()]
+        # impdata.sort_values(by='pad_id', inplace=True)
+        
+        # corr_ax.barh(width=impdata.imp_kOhm.values, y=impdata.depth.values, height=25)
+        # set x aaxis to log scale
+        # corr_ax.set_xscale('log')
+    
+    
+    
+    # exit()
     
     # print(left_ax.get_ylim())
     # print out current ylim
@@ -168,10 +207,9 @@ def vis_shank_traces(data, implant_mapping, scaler=80, stim_mea1k_el=None, uVran
     [spine.set_visible(False) for spine in left_ax.spines.values()]
     [spine.set_visible(False) for spine in corr_ax.spines.values()]
 
-    plt.show()
     
 
-def draw_mea1k(bg='black', el_color='#111111'):
+def draw_mea1k(bg='black', el_color='#111111', mapping=None, cmap_scaler=1):
     fig, ax = plt.subplots(figsize=(3850/300, 2100/300), facecolor='none')
     fig.subplots_adjust(top=1, bottom=0, right=1, left=0)
     # fig.patch.set_facecolor('black')
@@ -198,6 +236,10 @@ def draw_mea1k(bg='black', el_color='#111111'):
         for x in np.arange(0+17.5/4, 3850, 17.5):
             recs.append(plt.Rectangle((x, y), 9, 9, facecolor=colors[i], 
                                       edgecolor='none', alpha=.7))
+            if mapping is not None:
+                # change color to connectivity
+                whiteness = np.clip(mapping.loc[i].mea1k_connectivity*cmap_scaler, 0, 1)
+                recs[-1].set_facecolor((whiteness, whiteness, whiteness))
             # mea1k_yx.append((x+4.5,y+4.5))
             i += 1
     # plt.scatter(*zip(*mea1k_yx), c='red', s=10)
@@ -232,11 +274,11 @@ def draw_mea1K_colorbar(cmap, norm, lbl, orientation='vertical'):
     cbar.set_label(lbl)
     return cbar_fig, cbar
 
-def draw_interconnect_pads(mapping, edgecolor='pad_id', pad_alpha=.6, 
-                           pad_scalar=1.5, draw_on_ax=None):
+def draw_interconnect_pads(mapping, edgecolor='pad_id', pad_alpha=.6, add_pad_label=True,
+                           pad_scalar=1.5, draw_on_ax=None, skip_not_connected=True):
     pad_circles, texts = [], []
     for pad_id in sorted(mapping.pad_id.dropna().unique()):
-        pad_entry = mapping[mapping['pad_id'] == pad_id].iloc[0]
+        pad_entry = mapping[mapping['pad_id'] == pad_id].sort_values('connectivity_order').iloc[0]
         
         if edgecolor == 'pad_id':
             col = pad_entry[['r', 'g', 'b']].values/255
@@ -246,19 +288,23 @@ def draw_interconnect_pads(mapping, edgecolor='pad_id', pad_alpha=.6,
             col = edgecolor.get(int(pad_id), [.3,.3,.3])
         else:
             col = edgecolor
+            
+        if skip_not_connected and pad_entry.mea1k_connectivity < .8:
+            continue
         
         pad_circles.append(plt.Circle((pad_entry.x_aligned, pad_entry.y_aligned), 
                                        pad_entry.pad_diameter_um/2 *pad_scalar, 
                                        color=col,
-                                       fill=False, linewidth=2,
+                                       fill=True, linewidth=2,
                                        alpha=pad_alpha))
-        plt.text(pad_entry.x_aligned, pad_entry.y_aligned, f"{int(pad_id)}",
-                                fontsize=3, ha='center', va='center', color='white')
+        if add_pad_label:
+            draw_on_ax.text(pad_entry.x_aligned, pad_entry.y_aligned, f"{int(pad_id)}",
+                                    fontsize=7, ha='center', va='center', color='white')
     if draw_on_ax is not None:
         [draw_on_ax.add_patch(pc) for pc in pad_circles]
     return pad_circles
 
-def viz_mea1k_config(pad_alignment, stim_mea1k_el=None):
+def viz_mea1k_config(pad_alignment, stim_mea1k_el=None, col_scaler=1):
      # darw mewa1k
     
     (fig, ax), els = draw_mea1k()
@@ -268,25 +314,27 @@ def viz_mea1k_config(pad_alignment, stim_mea1k_el=None):
         if el_i not in pad_alignment.mea1k_el.values:
             continue # not measured during connectivity analysis
         el_entry = pad_alignment[pad_alignment['mea1k_el'] == el_i].iloc[0]
-        el_rec.set_alpha(min(1,el_entry.mea1k_connectivity/3))
+        el_rec.set_alpha(1)
         if pd.isna(el_entry.pad_id):
             continue
         
         col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['r', 'g', 'b']].values[0]/255
         # el_rec.set_facecolor(col)
 
-        whiteness = np.clip(el_entry.mea1k_connectivity*1, 0, 1)
+        whiteness = np.clip(el_entry.mea1k_connectivity*col_scaler, 0, 1)
         el_rec.set_facecolor((whiteness, whiteness, whiteness))
         
         if el_i == stim_mea1k_el:
             el_rec.set_edgecolor("yellow")
         
         if (el_entry.connectivity_order == 1) and (el_entry.mea1k_connectivity > .8) and el_entry.notna()["shank_id"]:
-            el_rec.set_alpha(1)
+            # el_rec.set_alpha(1)
             el_rec.set_facecolor(col)
             pad_circles.append(plt.Circle((el_entry.x_aligned, el_entry.y_aligned), 
                                           el_entry.pad_diameter_um/2 *1.7, color=col, 
                                           fill=False, linewidth=.8,
                                           alpha=.5))
+            ax.text(el_entry.x_aligned, el_entry.y_aligned, f"{int(el_entry.pad_id)}",
+                                fontsize=7, ha='center', va='center', color='white')
+            
     [ax.add_patch(pc) for pc in pad_circles]
-    plt.show()
