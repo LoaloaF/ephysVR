@@ -20,8 +20,9 @@ def get_maxlab_array():
 def get_maxlab_saving():
     return maxlab.Saving()
 
-def start_saving(s, dir_name, fname, channels=list(range(1024))):
-    # s.set_legacy_format(True)
+def start_saving(s, dir_name, fname, channels=list(range(1024)), legacy_mode=False):
+    if legacy_mode:
+        s.set_legacy_format(legacy_mode)
     s.open_directory(dir_name)
     s.start_file(fname)
     s.group_delete_all()
@@ -30,10 +31,11 @@ def start_saving(s, dir_name, fname, channels=list(range(1024))):
     s.start_recording([0])
 
 def stop_saving(s):
-    print("Stopping recording...")
+    print("Stopping recording...", end='', flush=True)
     s.stop_recording()
     s.stop_file()
     s.group_delete_all()
+    print("Recording stopped.")
     
 def array_config2df(array):
     rows = [(m.channel, m.electrode, m.x, m.y) for m in array.get_config().mappings]
@@ -118,10 +120,11 @@ def turn_off_stimulation_units(stim_units):
         maxlab.send(stim)
     print("Done.")
 
-def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[], with_download=False):
+def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[], 
+                                 with_download=False, allow_multiple_connections=False):
     config_before = array_config2df(array)
 
-    used_up_stim_units = []
+    # used_up_stim_units = []
     array.connect_electrode_to_stimulation(el)
     stim_unit = array.query_stimulation_at_electrode(el)
     success = False
@@ -147,6 +150,10 @@ def attampt_connect_el2stim_unit(el, array, used_up_stim_units=[], with_download
         if len(used_up_stim_units) == 32:
             print("Used up all 32 stim units.")
             success = False
+    elif int(stim_unit) in used_up_stim_units and not allow_multiple_connections:
+        readoutchannel = maxlab.chip.StimulationUnit(stim_unit).get_readout_channel()             
+        print(f"Warning - Stim unit {stim_unit} already used. Connected to amplifier {readoutchannel}.")
+        success = False
     
     return success, used_up_stim_units
 
