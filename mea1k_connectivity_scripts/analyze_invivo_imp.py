@@ -52,6 +52,7 @@ def extract_impedance(subdir, implant_name, current_ampl_nA, debug=False, deepde
     for fname, i in zip(fnames, ids):
         L.logger.info(f"Config {i},{fname} of {len(fnames)}")
         
+        print(i, int(i[-4:]))
         if int(i[-4:]) <5:
             continue
         # get the config information about this configuration
@@ -125,13 +126,14 @@ def extract_impedance(subdir, implant_name, current_ampl_nA, debug=False, deepde
 
     
 def vis_impedance(subdir, implant_name):
-    def draw_bounary_lines(stim_el_imp_data, cmap, norm):
+    def draw_bounary_lines(stim_el_imp_data, cmap, norm, offset_map=None):
         # draw stim unit boundaries
         for i, stim_unit in enumerate(stim_el_imp_data.stim_unit.unique()):
             plt.axvline(np.where(stim_el_imp_data.stim_unit == stim_unit)[0][0], color='k', 
                         linestyle='dashed', alpha=.4)
+            offset = ", Offset:"+str(offset_map[stim_unit]) if offset_map is not None else ""
             plt.text(np.where(stim_el_imp_data.stim_unit == stim_unit)[0][0]+5, 1e4, 
-                    f"Stim Unit: {int(stim_unit):2d}", color=cmap(norm(shuffle_remapping[stim_unit])),
+                    f"Stim Unit: {int(stim_unit):2d}{offset}", color=cmap(norm(shuffle_remapping[stim_unit])),
                     rotation=90, fontsize=11, ha='left', va='top')
                     
                     
@@ -153,6 +155,11 @@ def vis_impedance(subdir, implant_name):
     
     # subset to only the stimulated els
     stim_el_imp_data = all_els_imp_data[all_els_imp_data.stim_unit.notna()].copy().reset_index(drop=True)
+    if "stim_unit_offset" in stim_el_imp_data.columns:
+        stimu_offset = stim_el_imp_data[['stim_unit', 'stim_unit_offset']].drop_duplicates().set_index('stim_unit', drop=True).iloc[:, 0]
+    else:
+        stimu_offset = None
+    print(stimu_offset)
 
     # aggreate over Mea1k electrodes to form pad data
     all_pads_imp_data = all_els_imp_data.groupby(['config', 'pad_id']).agg(
@@ -284,7 +291,7 @@ def vis_impedance(subdir, implant_name):
         plt.yscale('log')
         plt.axhspan(200, 400, color='gray', alpha=.06, zorder=0)
         
-        draw_bounary_lines(stim_el_imp_data, cmap_tab, norm_stim_col)
+        draw_bounary_lines(stim_el_imp_data, cmap_tab, norm_stim_col, offset_map=stimu_offset)
         ticks = []
         for i, row in stim_el_imp_data.reset_index().iterrows():
             print(i, end='...')
@@ -374,11 +381,15 @@ def main():
         
         # 1 shank device
         # well device (just using shank1 configs)
-        f"devices/well_devices/{4983}/recordings/11.17.35_singleshankConfigs_test_mode='small_current'_stimpulse='sine'2_amplitude=10",
+        # f"devices/well_devices/{4983}/recordings/11.17.35_singleshankConfigs_test_mode='small_current'_stimpulse='sine'2_amplitude=10",
         # last in nitro imp measurement
         # f"devices/implant_devices/{implant_name}/recordings/13.36.27_Ringer_postwelldevice_mode='small_current'_stimpulse='sine'2_amplitude=10",
         # after el removal
         # f"devices/implant_devices/{implant_name}/recordings/13.37.39_Ringer_postElectrRemoved_GNDREF_mode='small_current'_stimpulse='sine'2_amplitude=10",
+        
+        f"devices/well_devices/{4983}/recordings/2025-04-15_17.29_offsetStimUnit_mode='small_current'_stimpulse='sine'2_amplitude=10",
+
+        
     ]
     
     
