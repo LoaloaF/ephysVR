@@ -268,7 +268,7 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
                              f"implant mapping: {len(save_implant_mapping)}")
         _, skipped_channels = _get_channel_skip_info_from_xml(curated_anim_xml_fullfname)
         save_implant_mapping.iloc[skipped_channels, -1] = False
-    save_implant_mapping.to_csv(out_fullfname.replace(".dat", "_mapping.csv"), index=False)
+    save_implant_mapping.reset_index().to_csv(out_fullfname.replace(".dat", "_mapping.csv"), index=False)
     
     # option to save the original neuroscope xml file
     if write_neuroscope_xml:
@@ -280,8 +280,12 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
     
     if write_probe_file:
         # use the implant mapping with curated_traces column and physical layout
-        _write_prb_file(save_implant_mapping, out_fullfname.replace(".dat", ".prb"))        
-    
+        updated_prms = {"rawRecordings": "\'"+ os.path.basename(out_fullfname) +"\';"}
+        write_prm_file(save_implant_mapping.reset_index(),
+                       out_fullfname.replace(".dat", ".prm"),
+                       updated_prms=updated_prms,
+                       shank_subset=implant_mapping.shank_id.unique())
+
     # return
 
     # calculate the initial DC offset, use for all later chunks
