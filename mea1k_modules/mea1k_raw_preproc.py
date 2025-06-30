@@ -6,6 +6,7 @@ import shutil
 import numpy as np
 import pandas as pd
 
+import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
@@ -22,6 +23,8 @@ def _get_recording_gain(path, fname):
     elif fmt in ('routed', 'all_channels'):
         with h5py.File(os.path.join(path, fname), 'r') as file:
             gain = file['data_store/data0000/settings/gain'][:][0].item()
+    elif fmt == 'logger':
+        gain = C.MEA_LOGGER_DEFAULT_GAIN
     if C.MEA_OVERRIDE_GAIN is not None:
         Logger().logger.debug(f"Overriding gain with {C.MEA_OVERRIDE_GAIN}")
         gain = C.MEA_OVERRIDE_GAIN
@@ -38,6 +41,8 @@ def _get_recording_version(path, fname):
             fmt = 'routed'
         elif 'data_store/data0000/groups/all_channels/raw' in file:
             fmt = 'all_channels'
+        elif 'MEA1k_raw':
+            fmt = 'logger'
     return fmt
 
     
@@ -47,12 +52,18 @@ def _get_recording_version(path, fname):
 
 def _get_recording_config(path, fname):
     rec_file_fmt = _get_recording_version(path, fname)
-    if rec_file_fmt == 'legacy':
-        mapping_key = 'mapping'
-    elif rec_file_fmt in ('routed', 'all_channels'):
-        mapping_key = 'data_store/data0000/settings/mapping'
-    with h5py.File(os.path.join(path, fname), 'r') as file:
-        mapping = np.array([list(m) for m in np.array(file[mapping_key])])
+    if rec_file_fmt in ('legacy', 'routed', 'all_channels'):
+        if rec_file_fmt == 'legacy':
+            mapping_key = 'mapping'
+        elif rec_file_fmt in ('routed', 'all_channels'):
+            mapping_key = 'data_store/data0000/settings/mapping'
+        with h5py.File(os.path.join(path, fname), 'r') as file:
+            mapping = np.array([list(m) for m in np.array(file[mapping_key])])
+    
+    elif rec_file_fmt == 'logger':
+        Logger().logger.warning("Logger doesn't save mapping, inferring default mapping...")
+        mapping = np.array([])
+        
     if mapping.shape[0] == 0:
         Logger().logger.warning("Mapping is empty in h5, inferring mapping from path...")
         
@@ -100,7 +111,7 @@ def _ADC2voltage(data, gain, subtract_dc_offset):
         data -= data[:,0][:, np.newaxis]
     # one can pass a specific array to subtract the DC offset (when using chunks)
     elif isinstance(subtract_dc_offset, np.ndarray):
-        data -= subtract_dc_offset
+        data -= subtract_dc_offset.astype(dtype)[:, np.newaxis]
 
     L.logger.debug(f"Done.")
     return data
@@ -112,7 +123,31 @@ def _get_data_key(rec_file_fmt):
         data_key = 'data_store/data0000/groups/routed/raw'
     elif rec_file_fmt == 'all_channels':
         data_key = 'data_store/data0000/groups/all_channels/raw'
+    elif rec_file_fmt == 'logger':
+        data_key = 'MEA1K_raw'
     return data_key
+
+def _get_frame_nos_key(rec_file_fmt):
+    if rec_file_fmt == 'legacy':
+        data_key = None
+    elif rec_file_fmt == 'routed':
+        data_key = 'data_store/data0000/groups/routed/frame_nos'
+    elif rec_file_fmt == 'all_channels':
+        data_key = 'data_store/data0000/groups/all_channels/frame_nos'
+    elif rec_file_fmt == 'logger':
+        data_key = 'SampleCounter'
+        data_key = 'FrameCounter'
+    return data_key
+
+def _get_frame_nos(path, fname):
+    rec_file_fmt = _get_recording_version(path, fname)
+    data_key = _get_frame_nos_key(rec_file_fmt)
+    if data_key is None:
+        Logger().logger.warning("No frame numbers found in legacy recording format.")
+        return np.arange(0, _get_recording_shape(path, fname)[1])
+    with h5py.File(os.path.join(path, fname), 'r') as file:
+        frame_nos = np.array(file[data_key])
+    return frame_nos
 
 def _get_recording_shape(path, fname):
     rec_file_fmt = _get_recording_version(path, fname)
@@ -147,7 +182,7 @@ def read_raw_data(path, fname, convert2uV,
                   subtract_dc_offset=False, to_df=False, 
                   row_slice=slice(None), col_slice=slice(None)):
     
-    dtype = np.int16 # base case, no conversion of ADC values
+    dtype = np.int16 # base case, no conversion of ADC values, except logger (is uint16)
     if convert2uV:
         dtype = np.float16 # uV of max ±28mV for gain=112, or smaller for higher gains
         gain = _get_recording_gain(path, fname)
@@ -164,6 +199,7 @@ def read_raw_data(path, fname, convert2uV,
     if convert2uV:
         gain = _get_recording_gain(path, fname)
         raw_data = _ADC2voltage(raw_data, gain, subtract_dc_offset=subtract_dc_offset,)
+    # in convert2uV dc is already subtracted, case below only for raw ADC values, always first column
     elif subtract_dc_offset:
         raw_data -= raw_data[:,0][:, np.newaxis]
     
@@ -247,13 +283,14 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
         _write_prb_file(save_implant_mapping, out_fullfname.replace(".dat", ".prb"))        
     
     # return
-    # exit()
 
     # calculate the initial DC offset, use for all later chunks
     if subtract_dc_offset:
+        col_slice = slice(0, rec_length, 100_000) # average over every 5 seconds
         subtract_dc_offset = read_raw_data(path, fname, convert2uV=convert2uV,
-                                           col_slice=slice(0,1), row_slice=implant_mapping.index)
-    
+                                           col_slice=col_slice, row_slice=implant_mapping.index)
+        subtract_dc_offset = np.median(subtract_dc_offset, axis=1)
+
     # iterate of time chunks of the data (all channels) and process them
     for i in range(len(chunk_indices)-1):
         col_slice = slice(chunk_indices[i], chunk_indices[i+1])
@@ -265,14 +302,7 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
         # reorder to sort by shank and then depth of electrode on that shank
         data_chunk = data_chunk[shank_order]
         
-        # artifical fix:   §reindex 391 config to 431, copy over mapping manually from a 431 session
-        # alt_implant_mapping = pd.read_csv(os.path.join(path, '..', '2024-11-20_17-46_rYL006_P1100_LinearTrackStop_22min', "2024-11-20_17-46_rYL006_P1100_LinearTrackStop_22min_431_ephys_traces_mapping.csv"), index_col=0)
-        # df_data_chunk = pd.DataFrame(data_chunk, index=implant_mapping.iloc[shank_order].pad_id.values)
-        # df_data_chunk = df_data_chunk.reindex(alt_implant_mapping.pad_id.values)
-        # data_chunk = df_data_chunk.values.astype(np.int16)
-        
         if i == 0 and L.logger.level == 10: # DEBUG
-            import matplotlib.pyplot as plt
             # plot traces
             plt.figure()
             for j,row in enumerate(data_chunk):
@@ -286,7 +316,6 @@ def mea1k_raw2decompressed_dat_file(path, fname, session_name, animal_name,
             L.logger.debug(f"Writing {data_chunk.shape} chunk {i+1}/{len(chunk_indices)-1} to file...")
             data_chunk.flatten(order="F").tofile(f)
             L.spacer("debug")
-            
             
 def get_recording_implant_mapping(path, mea1k_rec_fname, animal_name=None,
                                   implant_name=None, exclude_shanks=None, 
@@ -553,7 +582,7 @@ def _write_prb_file(implant_mapping, output_fullfname, pad_size=11, shank_subset
         f.write("% Recording contact pad size (height x width in micrometers)\n")
         f.write(f"pad = [{pad_size} {pad_size}];\n\n")
 
-def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
+def write_prm_file(implant_mapping, out_fullfname, template_prm_fullfname=None, 
                    updated_prms={}, pad_size=11, shank_subset=None):
     L = Logger()
     
@@ -569,6 +598,11 @@ def write_prm_file(implant_mapping, template_prm_fullfname, out_fullfname,
     if shank_subset is not None:
         excl_chnls_shank = channels[~implant_mapping.shank_id.isin(shank_subset)]
         excl_chnls = np.unique(np.concatenate((excl_chnls, excl_chnls_shank)))
+    
+    if template_prm_fullfname is None:
+        # use the default template
+        template_prm_fullfname = os.path.join(device_paths()[2], 'ephysVR', 
+                                              'assets', 'concat_template.prm')
         
     # read as text file row by row
     with open(template_prm_fullfname, 'r') as f:

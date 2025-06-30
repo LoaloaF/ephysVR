@@ -16,7 +16,8 @@ DEVICE_NAME_RAT006 = '241016_MEA1K03_H1278pad4shankB5'
 DEVICE_NAME_RAT011 = '241211_MEA1K06_H1278pad4shankB5'
 SEED = 43
 
-MEA_OVERRIDE_GAIN = 7
+MEA_LOGGER_DEFAULT_GAIN = 512
+# MEA_OVERRIDE_GAIN = 7
 MEA_OVERRIDE_GAIN = None
 
 def device_paths():
@@ -69,9 +70,9 @@ def _mea1k_el_center_table_micrometer():
     mea1k.index.name = 'el'
     return mea1k
 
-MEA1K_EL_CENTER_TABLE_MICROMETER = _mea1k_el_center_table_micrometer()
-MEA1K_EL_CENTER_TABLE_PIXEL = MEA1K_EL_CENTER_TABLE_MICROMETER.copy().astype(np.uint16)
-MEA1K_EL_TABLE_PIXEL_YX_IDX = MEA1K_EL_CENTER_TABLE_PIXEL.reset_index().set_index(['y', 'x'])
+# MEA1K_EL_CENTER_TABLE_MICROMETER = _mea1k_el_center_table_micrometer()
+# MEA1K_EL_CENTER_TABLE_PIXEL = MEA1K_EL_CENTER_TABLE_MICROMETER.copy().astype(np.uint16)
+# MEA1K_EL_TABLE_PIXEL_YX_IDX = MEA1K_EL_CENTER_TABLE_PIXEL.reset_index().set_index(['y', 'x'])
 
 
 
@@ -101,29 +102,29 @@ METALLIZATION_COLOR_OFFSET = .5
 
 
 
-# future should use the whole mea1k el pixels
-MEA1K_EL_WIDTH_MICROMETER = 5
-MEA1K_EL_HEIGHT_MICROMETER = 9
+# # future should use the whole mea1k el pixels
+# MEA1K_EL_WIDTH_MICROMETER = 5
+# MEA1K_EL_HEIGHT_MICROMETER = 9
 
-def _mea1k_el_pixel_table():
-    code_dir = device_paths()[2]
-    if code_dir is None:
-        return None
-    cached_fullfname = os.path.join(code_dir, 'ephysVR', 'assets', "mea1k_el_pixel_table.pkl")
-    if os.path.exists(cached_fullfname):
-        return pd.read_pickle(cached_fullfname)
+# def _mea1k_el_pixel_table():
+#     code_dir = device_paths()[2]
+#     if code_dir is None:
+#         return None
+#     cached_fullfname = os.path.join(code_dir, 'ephysVR', 'assets', "mea1k_el_pixel_table.pkl")
+#     if os.path.exists(cached_fullfname):
+#         return pd.read_pickle(cached_fullfname)
     
-    all_el_pixels = []
-    for el_i, (y, x) in MEA1K_EL_CENTER_TABLE_MICROMETER.iterrows():
-        all_y = np.arange(y - MEA1K_EL_HEIGHT_MICROMETER/2, 
-                          y + MEA1K_EL_HEIGHT_MICROMETER/2, 1)
-        all_x = np.arange(x - MEA1K_EL_WIDTH_MICROMETER/2, 
-                          x + MEA1K_EL_WIDTH_MICROMETER/2, 1)
-        # stack the x and y coordinates to get a 2D grid, then collapse 2D to 1D
-        el_i_yx = np.stack(np.meshgrid(all_y, all_x)).reshape(2, -1).round().astype(np.uint16)
-        multiindex = pd.MultiIndex.from_arrays(el_i_yx, names=['y', 'x'])
-        all_el_pixels.append(pd.Series([el_i]*len(el_i_yx.T), index=multiindex, name='el'))
-    pd.to_pickle(pd.concat(all_el_pixels), cached_fullfname)
-    return pd.concat(all_el_pixels)
+#     all_el_pixels = []
+#     for el_i, (y, x) in MEA1K_EL_CENTER_TABLE_MICROMETER.iterrows():
+#         all_y = np.arange(y - MEA1K_EL_HEIGHT_MICROMETER/2, 
+#                           y + MEA1K_EL_HEIGHT_MICROMETER/2, 1)
+#         all_x = np.arange(x - MEA1K_EL_WIDTH_MICROMETER/2, 
+#                           x + MEA1K_EL_WIDTH_MICROMETER/2, 1)
+#         # stack the x and y coordinates to get a 2D grid, then collapse 2D to 1D
+#         el_i_yx = np.stack(np.meshgrid(all_y, all_x)).reshape(2, -1).round().astype(np.uint16)
+#         multiindex = pd.MultiIndex.from_arrays(el_i_yx, names=['y', 'x'])
+#         all_el_pixels.append(pd.Series([el_i]*len(el_i_yx.T), index=multiindex, name='el'))
+#     pd.to_pickle(pd.concat(all_el_pixels), cached_fullfname)
+#     return pd.concat(all_el_pixels)
     
-MEA1K_EL_2D_TABLE_PIXEL = _mea1k_el_pixel_table()
+# MEA1K_EL_2D_TABLE_PIXEL = _mea1k_el_pixel_table()
