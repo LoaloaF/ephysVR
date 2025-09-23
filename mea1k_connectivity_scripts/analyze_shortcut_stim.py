@@ -80,7 +80,7 @@ def analyze_shorts(subdir, implant_name, debug=False, deepdebug=False):
         stimulated = stimulated.sort_values(by=['tile', 'stim']).reset_index(drop=True)
         ratios = stimulated.groupby("tile").apply(
             lambda x: (x.sine_voltage_uV /x[x.stim].sine_voltage_uV.item()),
-            include_groups=False
+            # include_groups=False
         )
         print(stimulated)
         if len(ratios) != len(stimulated):
@@ -117,7 +117,11 @@ def vis_shorts(subdir, output_dir=None, output_fname=None):
         tile, config_name, el = row.tile, row.config, row.el
         center = center_shorts[(center_shorts.tile == tile) & 
                                (center_shorts.config == config_name) &
-                               (center_shorts.stim)].iloc[0]
+                               (center_shorts.stim)]#.iloc[0]
+        if center.empty:
+            print(f"Warning: no center found for tile {tile}, config {config_name}")
+            continue
+        center = center.iloc[0]
         # Draw a line between the center and the short
         ax.plot((row.x+8.75, center.x+8.75), (row.y+8.75, center.y+8.75),
                 color='red', alpha=0.6, linewidth=1.5)
@@ -139,18 +143,22 @@ def main():
     
     # fix seed
     np.random.seed(42)
-    implant_name = "4983"
+    # implant_name = "4983"
+    implant_name = "MEA1K12"
     
     subdirs = [
-        f"devices/well_devices/{4983}/recordings/2025-05-09_10.14.37_invivo_imp_mode='voltage'_stimpulse='sine'_amplitude=10",
+        # f"devices/well_devices/{MEA1K08}/recordings/2025-05-09_10.14.37_invivo_imp_mode='voltage'_stimpulse='sine'_amplitude=10",
+        # f"devices/headstage_devices/{implant_name}/recordings/2025-07-18_09.30.23_beforeGP_mode='voltage'_stimpulse='sine'_amplitude=10",
+        # f"devices/headstage_devices/{implant_name}/recordings/2025-07-18_12.42.31_afterGP_mode='voltage'_stimpulse='sine'_amplitude=10",
+        f"devices/headstage_devices/{implant_name}/recordings/2025-09-18_13.59.32_2ndBondBatch5SingelShankTight_mode='voltage'_stimpulse='sine'_amplitude=10",
     ]
-    output_dir = f"{nas_dir}/mea1k_paper/figures/shortcut_stim_analysis/"
+    output_dir = os.path.join(nas_dir, subdirs[-1], 'processed')
     output_fname = f"shortcuts_fristimpl_{implant_name}.png"
     
 
     # el_config_S1D1650.raw.h5
-    # analyze_shorts(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name, 
-    #                 debug=False, deepdebug=False)
+    analyze_shorts(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name, 
+                    debug=False, deepdebug=False)
     vis_shorts(os.path.join(nas_dir, subdirs[0]), 
                output_dir=output_dir, 
                output_fname=output_fname)

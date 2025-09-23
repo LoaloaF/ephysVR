@@ -8,9 +8,9 @@ import mea1k_modules.mea1k_config_utils as mea1k
 def main():
     # ======== PARAMETERS ========
     nas_dir = device_paths()[0]
-    subdir = "devices/headstage_devices/MEA1K07/recordings"
+    subdir = "devices/headstage_devices/MEA1K12/recordings"
     # subdir = "headstage_devices/MEA1K06/recordings"
-    rec_dir = "all_pad_testrec_VrefFPGAStim_ampl16_rec3_noGND_7GUI"
+    rec_dir = "2ndBondTightened_VrefFPGAStim_ampl16"
     post_download_wait_time = .6
     rec_time = .5
     gain = 7

@@ -17,8 +17,8 @@ DEVICE_NAME_RAT011 = '241211_MEA1K06_H1278pad4shankB5'
 SEED = 43
 
 MEA_LOGGER_DEFAULT_GAIN = 512
-# MEA_OVERRIDE_GAIN = 7
-MEA_OVERRIDE_GAIN = None
+MEA_OVERRIDE_GAIN = 7
+# MEA_OVERRIDE_GAIN = None
 
 def device_paths():
     which_os = platform.system()

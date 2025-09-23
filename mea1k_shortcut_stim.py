@@ -67,7 +67,8 @@ def main():
     # ======== PARAMETERS ========
     # implant_name = "250205_MEA1K03_H1278pad4shankB5" # animal 10
     # implant_name = "241211_MEA1K06_H1278pad4shankB5" # animal 11
-    subdir = f"devices/well_devices/4983/recordings"
+    # subdir = f"devices/well_devices/4983/recordings"
+    subdir = f"devices/headstage_devices/MEA1K12/recordings"
     nas_dir = C.device_paths()[0]
     local_basedir = '/home/houmanjava/local_data'
     
@@ -81,7 +82,7 @@ def main():
     # stimpulse = 'sine'
     
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-    rec_dir = f"{t}_invivo_imp_{mode=}_{stimpulse=}_{amplitude=}"
+    rec_dir = f"{t}_2ndBondBatch5SingelShankTight_{mode=}_{stimpulse=}_{amplitude=}"
     
     post_download_wait_time = .4
     log2file = False
@@ -109,8 +110,8 @@ def main():
                                                voltage_conversion=mode=='voltage')
     # ======== PARAMETERS ========
     
-    # full_recdir = os.path.join(nas_dir, subdir, rec_dir)
-    full_recdir = os.path.join(local_basedir, subdir, rec_dir)
+    full_recdir = os.path.join(nas_dir, subdir, rec_dir)
+    # full_recdir = os.path.join(local_basedir, subdir, rec_dir)
     if log2file:
         log_fname = os.path.join(full_recdir, "log.txt")
         logfile = open(log_fname, "w")
