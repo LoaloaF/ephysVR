@@ -8,10 +8,43 @@ import matplotlib.pyplot as plt
 import napari
 from napari.utils import DirectLabelColormap
 
-import ephys_constants as C
+# import ephys_constants as C
 from ephys_constants import device_paths
-from mea1k_viz import draw_mea1k
+from mea1k_modules.mea1k_visualizations import draw_mea1k
 
+def _mea1k_el_pixel_table(MEA1K_EL_WIDTH_MICROMETER = 5.45, MEA1K_EL_HEIGHT_MICROMETER = 9.3):
+    code_dir = device_paths()[2]
+    if code_dir is None:
+        return None
+    cached_fullfname = os.path.join(code_dir, 'ephysVR', 'assets', "mea1k_el_pixel_table.pkl")
+    if os.path.exists(cached_fullfname):
+        return pd.read_pickle(cached_fullfname)
+    
+    def mea1k_el_center_table_micrometer():
+        el_i = 0
+        all_els = {}
+        for y in np.arange(17.5/4, 2100, 17.5):
+            for x in np.arange(17.5/4, 3850, 17.5):
+                all_els[el_i] = (y, x)
+                el_i += 1
+        mea1k = pd.DataFrame(all_els).T
+        mea1k.columns = ['y', 'x']
+        mea1k.index.name = 'el'
+        return mea1k
+    
+    all_el_pixels = []
+    for el_i, (y, x) in mea1k_el_center_table_micrometer().iterrows():
+        all_y = np.arange(y - MEA1K_EL_HEIGHT_MICROMETER/2, 
+                          y + MEA1K_EL_HEIGHT_MICROMETER/2, 1)
+        all_x = np.arange(x - MEA1K_EL_WIDTH_MICROMETER/2, 
+                          x + MEA1K_EL_WIDTH_MICROMETER/2, 1)
+        # stack the x and y coordinates to get a 2D grid, then collapse 2D to 1D
+        el_i_yx = np.stack(np.meshgrid(all_y, all_x)).reshape(2, -1).round().astype(np.uint16)
+        multiindex = pd.MultiIndex.from_arrays(el_i_yx, names=['y', 'x'])
+        all_el_pixels.append(pd.Series([el_i]*len(el_i_yx.T), index=multiindex, name='el'))
+    pd.to_pickle(pd.concat(all_el_pixels), cached_fullfname)
+    return pd.concat(all_el_pixels)
+    
 def _align(mapping, mea1k_connectivity, alignment, split_el_device, alignment2=None):
     # parse the alligned pads and match them to mea1k electrodes under them
     pad_alignment = []
@@ -39,8 +72,9 @@ def _align(mapping, mea1k_connectivity, alignment, split_el_device, alignment2=N
         aligned_pad["x_aligned"] = new_pad_yx[1]
 
         # get the mea1k electrodes under the pad
-        mea1k_els_under_pad_mask = (C.MEA1K_EL_2D_TABLE_PIXEL.index.isin(new_pad_yx_pixels.tolist()))
-        mea1k_el_underpad = C.MEA1K_EL_2D_TABLE_PIXEL[mea1k_els_under_pad_mask]
+        MEA1K_EL_2D_TABLE_PIXEL = _mea1k_el_pixel_table()
+        mea1k_els_under_pad_mask = (MEA1K_EL_2D_TABLE_PIXEL.index.isin(new_pad_yx_pixels.tolist()))
+        mea1k_el_underpad = MEA1K_EL_2D_TABLE_PIXEL[mea1k_els_under_pad_mask]
         mea1k_el_underpad = np.unique(mea1k_el_underpad.values)
         print(f"pad{pad_id} -> n el:{len(mea1k_el_underpad)}", end='...', flush=True)
         
@@ -55,7 +89,6 @@ def _align(mapping, mea1k_connectivity, alignment, split_el_device, alignment2=N
         pad_alignment.append(aligned_pad)
     pad_alignment = pd.concat(pad_alignment, axis=0).reset_index(drop=True)
     return pad_alignment
-
 
 def _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping):
     # draw circles (connectivity pads)
@@ -82,6 +115,8 @@ def align_pads2mea1k(electrode_device_name, IMPLANT_DEVICE_NAME,
     
     connectivity_fullfname = os.path.join(nas_dir, connectivty_measures_path, 
                                           'processed', 'extr_connectivity.png')
+    if not os.path.exists(connectivity_fullfname):
+        raise FileNotFoundError(f"connectivity image not found: {connectivity_fullfname}")
     mea1k_connectivity_png = cv2.imread(connectivity_fullfname)[:,:,0] # black and white
     
     # path = os.path.join(nas_dir, connectivty_measures_path, 'ext_signal_ampl.csv')
@@ -242,14 +277,29 @@ def main():
     #                  split_el_device)
     # plot_pad_alignment(IMPLANT_DEVICE_NAME)
     
-    # test device MEA1K07 1628 chanenls
+    # # test device MEA1K07 1628 chanenls
+    # ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
+    # HEADSTAGE_DEVICE_NAME = 'MEA1K07'
+    # date = '250308'
+    # batch = 6
+    # IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
+    # rec_dir_name = 'all_pad_testrec_VrefFPGAStim_ampl16_rec2'
+    # split_el_device = True
+    # connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices', 
+    #                                      IMPLANT_DEVICE_NAME, 'recordings', 
+    #                                      rec_dir_name)
+    # align_pads2mea1k(ELECTRODE_DEVICE_NAME, IMPLANT_DEVICE_NAME, connectivity_rec_path,
+    #                  split_el_device)
+    # plot_pad_alignment(IMPLANT_DEVICE_NAME)
+
+    # NewGen 2025 - device MEA1K12 1628 channels
     ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
-    HEADSTAGE_DEVICE_NAME = 'MEA1K07'
-    date = '250308'
-    batch = 6
+    HEADSTAGE_DEVICE_NAME = 'MEA1K12'
+    date = '250917'
+    batch = 5
     IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
-    rec_dir_name = 'all_pad_testrec_VrefFPGAStim_ampl16_rec2'
-    split_el_device = True
+    rec_dir_name = '2ndBondTightened_VrefFPGAStim_ampl16'
+    split_el_device = False
     connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices', 
                                          IMPLANT_DEVICE_NAME, 'recordings', 
                                          rec_dir_name)
