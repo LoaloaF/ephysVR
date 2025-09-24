@@ -12,16 +12,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import ephys_constants as C
-from mea1k_ephys import get_implant_mapping
+# from mea1k_ephys import get_implant_mapping
 from mea1k_modules.mea1k_config_utils import setup_array, array_config2df, try_routing
-from mea1k_modules.mea1k_raw_preproc import animal_name2implant_device
+from mea1k_modules.mea1k_raw_preproc import animal_name2implant_device, get_raw_implant_mapping
 
-def make_bonding_config(animal_name):
+def make_bonding_config(animal_name=None, implant_name=None):
     nas_dir = C.device_paths()[0]
     
-    # get the bonding mapping for the animal
-    device_name = animal_name2implant_device(animal_name)
-    implant_mapping = get_implant_mapping(nas_dir, device_name)
+    if animal_name is not None:
+        # get the bonding mapping for the animal
+        implant_name = animal_name2implant_device(animal_name)
+    
+    implant_mapping = get_raw_implant_mapping(animal_name=animal_name,
+                                              implant_name=implant_name)
     implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
     print(implant_mapping)
 
@@ -53,7 +56,7 @@ def make_bonding_config(animal_name):
         els = succ_routed + alt_els.tolist()
 
     day = datetime.datetime.now().strftime("%d.%b")
-    config_fullfname = os.path.join(nas_dir, "devices", "implant_devices", device_name, 'bonding', 
+    config_fullfname = os.path.join(nas_dir, "devices", "implant_devices", implant_name, 'bonding', 
                                     f"{animal_name}_{day}_{len(els)}ElConfig.cfg")
     # csv of config
     print(config_fullfname)
@@ -133,7 +136,7 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
     if not os.path.exists(fulldirname):
         os.makedirs(fulldirname)
     
-    implant_mapping = get_implant_mapping(nas_dir, implant_name)
+    implant_mapping = get_raw_implant_mapping(nas_dir, implant_name)
 
     implant_mapping = implant_mapping[(implant_mapping.mea1k_connectivity>.8)]
     implant_mapping = implant_mapping.sort_values(['shank_id', 'depth', 'pad_id', 'connectivity_order']).reset_index(drop=True)
@@ -198,7 +201,7 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
 
 # def extend_config_to_double_pad_stim(device_name, config_name):
 #     nas_dir = C.device_paths()[0]
-#     implant_mapping = get_implant_mapping(nas_dir, device_name)
+#     implant_mapping = get_raw_implant_mapping(nas_dir, device_name)
 #     # slice to electrodes under pads that are routed to a shank PI electrode
 #     implant_mapping = implant_mapping[implant_mapping.shank_id.isin((1, 2))]
 #     print("Filtered implant_mapping by shank_id:\n", implant_mapping)
@@ -263,7 +266,7 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
 
 
 # def make_full_padlayout_configs(device_name, ):
-#     implant_mapping = get_implant_mapping(nas_dir, device_name)
+#     implant_mapping = get_raw_implant_mapping(nas_dir, device_name)
 #     # slice to electrodes under pads that are routed to a shank PI electrode
 #     implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
 
@@ -480,7 +483,7 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
 #     if not os.path.exists(fulldirname):
 #         os.makedirs(fulldirname)
     
-#     implant_mapping = get_implant_mapping(nas_dir, implant_name)
+#     implant_mapping = get_raw_implant_mapping(nas_dir, implant_name)
 #     implant_mapping = implant_mapping[(implant_mapping.shank_id<3) &
 #                                       (implant_mapping.mea1k_connectivity>20) &
 #                                       (implant_mapping.connectivity_order<4)]
@@ -589,17 +592,20 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
     
 def main():
     L = Logger()
-    L.init_logger("pad_routing2", "./", "DEBUG")
+    L.init_logger(None, None, "DEBUG")
     
     seed = 42
-    # np.random.seed(seed)
-    # make_bonding_config(animal_name="rYL010")
-    # implant_name = "250308_MEA1K07_H1628pad1shankB6"
-    # implant_name = "250205_MEA1K03_H1278pad4shankB5"
-    implant_name = "241211_MEA1K06_H1278pad4shankB5"
+    np.random.seed(seed)
     
-    make_whole_bonded_pad_stim_config(implant_name=implant_name,
-                                      config_dirname="imp_rec_configs")
+    implant_name = "250917_MEA1K12_H1628pad1shankB5"
+    animal_name = None
+    make_bonding_config(animal_name=animal_name, implant_name=implant_name)
+    
+    # implant_name = "250205_MEA1K03_H1278pad4shankB5"
+    # implant_name = "241211_MEA1K06_H1278pad4shankB5"
+    # implant_name = "250917_MEA1K12_H1628pad1shankB5"
+    # make_whole_bonded_pad_stim_config(implant_name=implant_name,
+    #                                   config_dirname="imp_rec_configs")
     
     # make_invivo_stim_config(implant_name=C.DEVICE_NAME_RAT006, 
     #                         config_dirname="invivo_localstim_configs")
