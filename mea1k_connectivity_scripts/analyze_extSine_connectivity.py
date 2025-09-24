@@ -74,10 +74,10 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     for el_i, el_recs in enumerate(el_recs):
         if el_i not in data.index:
             print("missing", el_i, end=' ')
-            el_recs.set_edgecolor((.8,0,0))
+            # el_recs.set_edgecolor((.8,0,0))
             continue
         if data.loc[el_i:el_i].connectivity.isna().any():
-            el_recs.set_edgecolor((.8,0,0))
+            # el_recs.set_edgecolor((.8,0,0))
             print("NaN", el_i, end=' ')
             continue
         # needed for new local configs that were used for a hort time
@@ -101,29 +101,44 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     # save inverted
     plt.imsave(fullfname.replace(".csv", "_inverted.png"), img)
     
+def create_implant_dir(sine_stim_recdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME):
+    implant_dir = os.path.join(nas_dir, "devices", "implant_devices", IMPLANT_DEVICE_NAME)
+    os.makedirs(os.path.join(implant_dir))
+    os.makedirs(os.path.join(implant_dir, "recordings"))
+    os.makedirs(os.path.join(implant_dir, "bonding"))
+    
+    # copy the sine stim recording dir to implant dir
+    target = os.path.join(implant_dir, "recordings", os.path.basename(sine_stim_recdir))
+    os.system(f"cp -r {sine_stim_recdir} {target}")
+    print(f"Copied {sine_stim_recdir} to implant recordings dir")
+
 def main():
     L = Logger()
     L.init_logger(None, None, "DEBUG")
     L.logger.info("Starting connectivity analysis")
-    
-    input_ampl_mV = 10
-    n_samples = 8_000
-    
-    subdirs = [
-        # "devices/headstage_devices/MEA1K03/recordings/bonding2_250205_D9_25mVext_2_2Shankbatch5_silk/"
-        "devices/headstage_devices/MEA1K12/recordings/2ndBondTightened_VrefFPGAStim_ampl16",
-    ]
-    
     nas_dir = C.device_paths()[0]
     
-    for subdir in subdirs:
-        subdir = os.path.join(nas_dir, subdir)
-        if not os.path.exists(os.path.join(subdir)):
-            print(f"Error: {os.path.join(subdir)} does not exist.")
-            continue
-        
-        extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False)
-        vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
+    # bonding which electrode to which headstage
+    bonding_date = '250917'
+    HEADSTAGE_DEVICE_NAME = 'MEA1K12'
+    ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
+    batch = 5
+    IMPLANT_DEVICE_NAME = f"{bonding_date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
+    
+    # sine stim recording parameters
+    rec_name = f'2ndBondTightened_VrefFPGAStim_ampl16'
+    input_ampl_mV = 10
+    n_samples = 8_000 # where sine stim is visible
+
+    subdir = f"{nas_dir}/devices/headstage_devices/{HEADSTAGE_DEVICE_NAME}/recordings/{rec_name}"
+    if not os.path.exists(subdir):
+        print(f"Error: {os.path.join(subdir)} does not exist.")
+        exit()
+    
+    extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False)
+    vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
+    create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
+    
     
 if __name__ == "__main__":
     main()
