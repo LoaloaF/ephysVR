@@ -105,8 +105,8 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
             #     els_to_route = els_to_route + [overr_el]
 
             _, failed_routing, array = try_routing(els_to_route, 
-                                                stim_electrodes=[stim_el],
-                                                return_array=True)
+                                                   stim_electrodes=[stim_el],
+                                                   return_array=True)
             if len(failed_routing) != 0:
                 L.logger.debug(f"Failed routing {len(failed_routing)}: {failed_routing}")
                 if pad_subset.mea1k_el.values.shape[0] > stim_el_i+1:
@@ -588,19 +588,145 @@ def make_whole_bonded_pad_stim_config(implant_name, config_dirname):
         
 #     plt.imshow(canvas)
 #     plt.show()
+
+# def determine_el2stimuni_map(output_dirname)
+def make_single_el2stimunit_configs(output_dirname, animal_name=None, implant_name=None):
+    if not os.path.exists(output_dirname):
+        os.makedirs(output_dirname)
+        
+    # if animal_name is not None:
+    #     # get the bonding mapping for the animal
+    #     implant_name = animal_name2implant_device(animal_name)
+    
+    # implant_mapping = get_raw_implant_mapping(animal_name=animal_name,
+    #                                           implant_name=implant_name)
+    # print(implant_mapping)
+    # mea1k_els = implant_mapping.mea1k_el[implant_mapping.mea1k_connectivity>.8].values
+    # mea1k_els_neg_controls = np.random.choice(np.setdiff1d(np.arange(26400), mea1k_els), 
+    #                                           size=100, replace=False)
+        
+    # mea1k_stim_els_left = np.concatenate([mea1k_els, mea1k_els_neg_controls])
+    
+    # for i, el in enumerate(mea1k_stim_els_left):
+    # for i, el in enumerate(list(range(26400))): # try all electrodes
+    for i, el in enumerate(list(range(20795,26400))): # try all electrodes
+        succ, _, arr = try_routing([el], stim_electrodes=[el], return_array=True)
+        stim_unit = arr.query_stimulation_at_electrode(el)
+        amplifier = arr.query_amplifier_at_electrode(el)
+        if stim_unit == '':
+            print("Couldn't route this electrode. Skipping.")
+            continue
+        
+        fname = f"el_config_El{el:05d}_StimUnit{int(stim_unit):02d}_Ampl{int(amplifier):04d}.cfg"
+        dirname = os.path.join(output_dirname, f"StimUnit{int(stim_unit):02d}")
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        config_fullfname = os.path.join(dirname, fname)
+
+        # csv of config
+        config_mapping = array_config2df(arr)
+        
+        
+        config_mapping['stim_unit'] = [int(stim_unit)]
+        config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
+        # save config in mea1k specific format
+        arr.save_config(config_fullfname)
+        
+def make_complete_impedance_config(output_dirname, animal_name=None, implant_name=None):
+    if not os.path.exists(output_dirname):
+        os.makedirs(output_dirname)
+
+    if animal_name is not None:
+        # get the bonding mapping for the animal
+        implant_name = animal_name2implant_device(animal_name)
+    
+    implant_mapping = get_raw_implant_mapping(animal_name=animal_name,
+                                              implant_name=implant_name)
+    print(implant_mapping)
+    mea1k_els = implant_mapping.mea1k_el[implant_mapping.mea1k_connectivity>.8].values
+    mea1k_els_neg_controls = np.random.choice(np.setdiff1d(np.arange(26400), mea1k_els), 
+                                              size=100, replace=False)
+        
+    mea1k_stim_els_left = np.concatenate([mea1k_els, mea1k_els_neg_controls])
+            
+    config_routed_els, config_el2tile_map = [], {}
+    config_i, fail_counter = 0, 0
+    while True:
+        # attampt to route another electrode
+        new_config_el = np.random.choice(np.setdiff1d(mea1k_stim_els_left, config_routed_els))
+        
+        _, failed_routing, array = try_routing([*config_routed_els, new_config_el], 
+                                               stim_electrodes=[*config_routed_els, new_config_el],
+                                               return_array=True)
+        # failed_routing = [stim_el] if np.random.rand() > 0.99 else []
+        
+        # could the new tile be routed without chaning the previous config?
+        if len(failed_routing) != 0:
+            if fail_counter < 20:
+                fail_counter += 1
+                print(f"\tFail {fail_counter}/20", end=',')
+                continue
+            
+            # finalize the current config, save it and start a new one
+            else:
+                array = try_routing(config_routed_els, stim_electrodes=config_routed_els,
+                                    return_array=True)[2]
+                print("Failed to route 20 times in a row. Stopping.")
+                # new config, save current config
+                fname = f"el_config_{config_i:03}_n{len(config_routed_els):02}_impedance.cfg"
+                config_fullfname = os.path.join(output_dirname, fname)
+                print(f"Saving config number {config_i:03} with {len(config_routed_els):02} "
+                      f"electrodes as {config_fullfname}. {len(mea1k_stim_els_left)} left\n")
+                
+                # csv of config
+                config_mapping = array_config2df(array)
+                if config_mapping.empty:
+                    print("Couldn't route any more electrodes. Done.")
+                    break
+                print(config_mapping)
+                config_mapping['stim_unit'] = [array.query_stimulation_at_electrode(el) 
+                                               for el in config_mapping.electrode]
+                print(config_mapping)
+
+                config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
+                # save config in mea1k specific format
+                array.save_config(config_fullfname)
+                array.close()
+                
+                # update for next config
+                config_routed_els, config_el2tile_map = [], {}
+                fail_counter = 0
+                config_i += 1
+
+        # success, append the new electrode to the config
+        else:
+            config_routed_els.append(new_config_el)
+            fail_counter = 0 # reset fail counter
+            # drop sampled electrode from the pool
+            mea1k_stim_els_left = np.setdiff1d(mea1k_stim_els_left, [new_config_el])
+            if len(mea1k_stim_els_left) == 0:
+                print("Done.")
+                break
+        
     
     
 def main():
     L = Logger()
     L.init_logger(None, None, "DEBUG")
+    nas_dir = C.device_paths()[0]
     
     seed = 42
     np.random.seed(seed)
     
     implant_name = "250917_MEA1K12_H1628pad1shankB5"
     animal_name = None
-    make_bonding_config(animal_name=animal_name, implant_name=implant_name)
-    
+    # make_bonding_config(animal_name=animal_name, implant_name=implant_name)
+
+    output_dirname = os.path.join(nas_dir, "mea1k_configs", "single_el2stimunit_configs2",)
+    make_single_el2stimunit_configs(output_dirname=output_dirname,
+                                   animal_name=animal_name,
+                                   implant_name=implant_name)
+
     # implant_name = "250205_MEA1K03_H1278pad4shankB5"
     # implant_name = "241211_MEA1K06_H1278pad4shankB5"
     # implant_name = "250917_MEA1K12_H1628pad1shankB5"

@@ -41,7 +41,11 @@ def _get_recording_version(path, fname):
             fmt = 'routed'
         elif 'data_store/data0000/groups/all_channels/raw' in file:
             fmt = 'all_channels'
-        elif 'MEA1k_raw':
+        elif 'data_store/data0000/groups/channel_subset/raw' in file:
+            fmt = 'channel_subset'
+        
+        else:
+            print("Format not recognized, assuming logger format")        
             fmt = 'logger'
     return fmt
 
@@ -52,10 +56,10 @@ def _get_recording_version(path, fname):
 
 def _get_recording_config(path, fname):
     rec_file_fmt = _get_recording_version(path, fname)
-    if rec_file_fmt in ('legacy', 'routed', 'all_channels'):
+    if rec_file_fmt in ('legacy', 'channel_subset', 'all_channels'):
         if rec_file_fmt == 'legacy':
             mapping_key = 'mapping'
-        elif rec_file_fmt in ('routed', 'all_channels'):
+        elif rec_file_fmt in ('all_channels', 'channel_subset'):
             mapping_key = 'data_store/data0000/settings/mapping'
         with h5py.File(os.path.join(path, fname), 'r') as file:
             mapping = np.array([list(m) for m in np.array(file[mapping_key])])
@@ -119,8 +123,8 @@ def _ADC2voltage(data, gain, subtract_dc_offset):
 def _get_data_key(rec_file_fmt):
     if rec_file_fmt == 'legacy':
         data_key = 'sig'
-    elif rec_file_fmt == 'routed':
-        data_key = 'data_store/data0000/groups/routed/raw'
+    elif rec_file_fmt == 'channel_subset':
+        data_key = 'data_store/data0000/groups/channel_subset/raw'
     elif rec_file_fmt == 'all_channels':
         data_key = 'data_store/data0000/groups/all_channels/raw'
     elif rec_file_fmt == 'logger':
@@ -130,8 +134,8 @@ def _get_data_key(rec_file_fmt):
 def _get_frame_nos_key(rec_file_fmt):
     if rec_file_fmt == 'legacy':
         data_key = None
-    elif rec_file_fmt == 'routed':
-        data_key = 'data_store/data0000/groups/routed/frame_nos'
+    elif rec_file_fmt == 'channel_subset':
+        data_key = 'data_store/data0000/groups/channel_subset/frame_nos'
     elif rec_file_fmt == 'all_channels':
         data_key = 'data_store/data0000/groups/all_channels/frame_nos'
     elif rec_file_fmt == 'logger':
@@ -160,22 +164,26 @@ def _read_mea1k_file(path, fname, dtype=np.float16, row_slice=slice(None),
                     col_slice=slice(None)):
     rec_file_fmt = _get_recording_version(path, fname)
     data_key = _get_data_key(rec_file_fmt)
-    gain = _get_recording_gain(path, fname)
-    Logger().logger.debug(f"Reading MEA1K ephys data (format: {rec_file_fmt}, gain={gain}) "
-                          f"casting to `{dtype}` with col slice {col_slice}, "
-                          f"row slice {row_slice}...")
+    print(f"Reading MEA1K ephys data (format: {rec_file_fmt}) "
+          f"casting to `{dtype}` with col slice {col_slice}, "
+          f"row slice {row_slice}...")
 
     # read the MEA1K file
     start_time = time.time()
     with h5py.File(os.path.join(path, fname), 'r') as file:
         raw_data = np.array(file[data_key][row_slice, col_slice], dtype=dtype)
-    Logger().logger.debug(f"Done. Decompressed {raw_data.shape} in "
-                          f"{time.time() - start_time:.2f} seconds")
+    print(f"Done. Decompressed {raw_data.shape} in "
+          f"{time.time() - start_time:.2f} seconds: {raw_data}," 
+          f"min: {raw_data.min()}, max: {raw_data.max()}")
     return raw_data
 
-def read_stim_DAC(path, fname, col_slice=slice(None)):
-    dac_data = _read_mea1k_file(path, fname, row_slice=1023, 
-                                col_slice=col_slice, dtype=np.int16)
+def read_stim_DAC(path, fname, col_slice=slice(None), dac_id=0):
+    try:
+        dac_data = _read_mea1k_file(path, fname, row_slice=1024+dac_id, 
+                                    col_slice=col_slice, dtype=np.int16)
+    except IndexError:
+        print("ERROR. No DAC data found in file. Expected at row 1024.")
+        return None
     return dac_data
 
 def read_raw_data(path, fname, convert2uV,
@@ -190,11 +198,11 @@ def read_raw_data(path, fname, convert2uV,
             dtype = np.float32 # uV get ±400 mV for gain=7.0, prevent overflow
     raw_data = _read_mea1k_file(path, fname, row_slice=row_slice, 
                                 col_slice=col_slice, dtype=dtype)
-    
-    if not isinstance(row_slice, pd.Index):
-        # if data is recorded with format `all_channels`, we use mapping to subset the amplifers
-        raw_data_mapping, _ = _get_recording_config(path, fname)
-        raw_data = raw_data[raw_data_mapping.values]
+
+    # if not isinstance(row_slice, pd.Index):
+    #     # if data is recorded with format `all_channels`, we use mapping to subset the amplifers
+    #     raw_data_mapping, _ = _get_recording_config(path, fname)
+    #     raw_data = raw_data[raw_data_mapping.values]
     
     if convert2uV:
         gain = _get_recording_gain(path, fname)

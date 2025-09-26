@@ -8,13 +8,13 @@ import maxlab
 import pandas as pd
 import numpy as np
 
-import ephys_constants as C
 from mea1k_modules.mea1k_config_utils import start_saving, stop_saving, try_routing
 from mea1k_modules.mea1k_config_utils import attampt_connect_el2stim_unit, create_stim_sine_sequence
 from mea1k_modules.mea1k_config_utils import reset_MEA1K, turn_on_stimulation_units, array_config2df, turn_off_stimulation_units
 
 from mea1k_modules.mea1k_config_utils import create_stim_pulse_sequence
 from mea1k_modules.mea1k_config_utils import create_stim_onoff_sequence
+import ephys_constants as C
 
 def process_config(config_fullfname, path, rec_time, post_download_wait_time, s, 
                    stim_seq, mode):
@@ -39,7 +39,7 @@ def process_config(config_fullfname, path, rec_time, post_download_wait_time, s,
         
     array.download()
     fname = os.path.basename(config_fullfname).replace(".cfg", "")
-    start_saving(s, dir_name=path, fname=fname, legacy_mode=False)
+    start_saving(s, dir_name=path, fname=fname, legacy=False)
     
     turn_on_stimulation_units(stim_units, mode=mode)
     time.sleep((post_download_wait_time/3) *2)
@@ -73,8 +73,8 @@ def main():
     local_basedir = '/home/houmanjava/local_data'
     
     amplitude = 10
-    mode = "voltage"
-    # mode = "small_current"
+    # mode = "voltage"
+    mode = "small_current"
     stimpulse = 'sine'
     # stimpulse = 'onoff'
     # stimpulse = 'bursting'

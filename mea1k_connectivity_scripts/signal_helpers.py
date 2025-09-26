@@ -37,9 +37,12 @@ def extract_average_amplitude(signal):
     amplitude_envelope = np.abs(analytic_signal)
     # Compute the average amplitude of the envelope
     average_amplitude = np.mean(amplitude_envelope)
-    return average_amplitude, amplitude_envelope
+    instantaneous_phase = np.angle(analytic_signal)
+    
+    return average_amplitude, amplitude_envelope, instantaneous_phase
 
-def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=False):
+def estimate_frequency_power(signal, sampling_rate, min_band, max_band, dac=None, 
+                             debug=False):
     m = signal.mean()
     signal -= m
     
@@ -51,25 +54,23 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
     freqs = np.fft.fftfreq(len(signal), 1 / sampling_rate)
     # Only keep the positive frequencies
     positive_freqs = freqs[freqs >= 1]
-    positive_power_spectrum = power_spectrum[freqs >= 1]
-    # print(positive_power_spectrum)
-    # power_1KHz = positive_power_spectrum[(positive_freqs > min_band) & 
-    #                                      (positive_freqs < max_band)].max()
-    # power_300_3000KHz, mean not max
-    power_1KHz = positive_power_spectrum[(positive_freqs > min_band) & 
-                                         (positive_freqs < max_band)]
-    power_1KHz = np.median(power_1KHz)
-    
+
     if min_band == 0:
-        signal_1khz = lowpass_filter(signal, sampling_rate, max_band)
+        signal_filtered = lowpass_filter(signal, sampling_rate, max_band)
     else:
-        signal_1khz = bandpass_filter(signal, sampling_rate, min_band, max_band)
-    
-    mean_ampl, _ = extract_average_amplitude(signal_1khz)
+        signal_filtered = bandpass_filter(signal, sampling_rate, min_band, max_band)
+    mean_ampl, _, instantaneous_phase = extract_average_amplitude(signal_filtered)
+
+    if dac is not None:
+        _, _, instantaneous_phase_dac = extract_average_amplitude(dac)
+        # compute wrapped phase difference
+        phi_diff = (instantaneous_phase - instantaneous_phase_dac + np.pi) % (2*np.pi) - np.pi
+        mean_phase_shift = np.degrees(np.angle(np.mean(np.exp(1j*phi_diff))))  # circular mean
+
     if debug:
-        fig, ax = plt.subplots(3, 1, figsize=(12, 6))
+        fig, ax = plt.subplots(4, 1, figsize=(12, 6))
         fig.subplots_adjust( hspace=.5)
-        fig.suptitle("Voltage with external 2uA 1KHz sine signal")
+        fig.suptitle("Amplifier voltage trace")
         
         t = np.arange(len(signal))/sampling_rate *1000
         ax[0].plot(t, signal, color='blue', alpha=.8, label='Signal')
@@ -79,11 +80,13 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
         ax[0].grid(True)
         [ax[0].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
         ax[0].legend()
+        if dac is not None:
+            ax[0].plot(t, dac*10000 -5_000_000, color='green', alpha=.5, label='DAC signal')
+            ax[0].legend()
         
-        ax[1].plot(positive_freqs, positive_power_spectrum, color='orange',
+        ax[1].plot(positive_freqs, power_spectrum[freqs >= 1], color='orange',
                    label='Power Spectrum')
-        ax[1].scatter([1000], power_1KHz, edgecolor='red', facecolor='none', 
-                      label=f'1KHz Power: {power_1KHz:.1e}', s=100)
+        ax[1].axvline(x=1000, color='blue', linestyle='--', label='1KHz')
         ax[1].set_xlabel('Frequency (Hz)')
         ax[1].set_ylabel('Power')
         ax[1].set_xlim(0, 1500)
@@ -93,8 +96,8 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
         ax[1].legend()
         
         
-        ax[2].plot(t, signal_1khz, color='blue', alpha=.5,
-                   label='1KHz Bandpass Filtered Signal')
+        ax[2].plot(t, signal_filtered, color='blue', alpha=.5,
+                   label=f'1KHz Bandpass Filtered Signal, phase shift={mean_phase_shift:.2f} deg')
         ax[2].plot([t[0]-20,t[-1]+20], [mean_ampl,mean_ampl], color='k', 
                    linestyle='dashed', label=f'Average Amplitude: {mean_ampl:.3f} uV')
         ax[2].set_xlabel('Time [ms]')
@@ -105,21 +108,18 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, debug=Fa
         ax[2].sharex(ax[0])
         [ax[2].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
         ax[2].legend()
-        plt.show()
-        debug = False
         
-    # print((np.abs(signal[:20] +1.37237234)))
-    # print((np.abs(signal[:20] +1.37237234) < .001).all())
-    # print()
-    # print((np.abs(signal[-20:])))
-    # print((np.abs(signal[-20:] -0.66959086)))
-    # print((np.abs(signal[-20:] -0.66959086) < .001).all())
-    
-    if (np.abs(signal[:20] +1.37237234) < .001).all() or (np.abs(signal[-20:] -0.66959086) < .001).all():
-        print("Signal is clipped")
-        return np.nan, np.nan
-        
-    return power_1KHz, mean_ampl
+        if dac is not None:
+            ax[3].plot(t, dac, color='green', alpha=.8, label=f'DAC Signal')
+            ax[3].set_xlabel('Time [ms]')
+            ax[3].set_ylabel('DAC units')
+            ax[3].grid(True)
+            ax[3].sharex(ax[0])
+            [ax[3].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
+            ax[3].legend()
+        plt.savefig('./debug_signal.png')
+        # plt.show()
+    return mean_ampl, mean_phase_shift if dac is not None else None
 
 
 def calculate_phase_shift(data, dac, sampling_rate=20000, freq=1000, debug=False):
@@ -175,7 +175,6 @@ def calculate_phase_shift(data, dac, sampling_rate=20000, freq=1000, debug=False
         phase_shift = row_phase - dac_phase
         # Normalize phase shift to [-π, π]
         phase_shift = (phase_shift + np.pi) % (2 * np.pi) - np.pi
-        print(phase_shift)
         phase_shifts.append(phase_shift)
 
         if debug :  # Plot the first 5 rows for debugging
