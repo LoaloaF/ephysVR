@@ -86,6 +86,7 @@ def els_around_3x3_tile(center_el):
     return tile_els
 
 def make_tile_shortcut_stim_config(config_dirname):
+    nas_dir = device_paths()[0]
     fulldirname = os.path.join(nas_dir, "mea1k_configs", config_dirname)
     canvas = np.zeros((120, 220))
     mea1k_stim_els_left = np.arange(26400)

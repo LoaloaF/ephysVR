@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from baseVR.base_logger import CustomLogger as Logger
-from baseVR.base_functionality import device_paths
+# from baseVR.base_functionality import device_paths
 
 from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION, MEA_LOGGER_DEFAULT_GAIN, MEA_OVERRIDE_GAIN
 from mea1k_modules.mea1k_visualizations import adjust_saturation
