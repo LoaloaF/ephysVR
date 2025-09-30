@@ -1,4 +1,5 @@
 import os
+import sys
 import cv2
 
 import numpy as np
@@ -8,8 +9,11 @@ import matplotlib.pyplot as plt
 import napari
 from napari.utils import DirectLabelColormap
 
-# import ephys_constants as C
-from ephys_constants import device_paths
+# to import logger, VR-wide constants and device paths
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from baseVR.base_logger import CustomLogger as Logger
+from baseVR.base_functionality import device_paths
+
 from mea1k_modules.mea1k_visualizations import draw_mea1k
 
 def _mea1k_el_pixel_table(MEA1K_EL_WIDTH_MICROMETER = 5.45, MEA1K_EL_HEIGHT_MICROMETER = 9.3):
@@ -90,14 +94,14 @@ def _align(mapping, mea1k_connectivity, alignment, split_el_device, alignment2=N
     pad_alignment = pd.concat(pad_alignment, axis=0).reset_index(drop=True)
     return pad_alignment
 
-def _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping):
+def _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping, scale_up_pads):
     # draw circles (connectivity pads)
     pad_colors = {-1: (0,0,0,0)}
     pads_canvas = np.ones_like(mea1k_connectivity_png, dtype=np.int16) * -1
     for pad_id, row in mapping.iterrows():
         x,y = row[['x', 'y']]
-        # oversize pads by 70%
-        pad_r = int(row.pad_diameter_um/2 * 1.7)
+        # oversize pads by scale_up_pads factor for easier alignment
+        pad_r = int(row.pad_diameter_um/2 * scale_up_pads)
         cv2.circle(pads_canvas, (x,y), pad_r, pad_id, -1)
         pad_colors[pad_id] = (row[['r','g','b']].values.astype(float)/255.)
     pad_colors = DirectLabelColormap(color_dict=pad_colors)
@@ -107,7 +111,8 @@ def _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping):
     return alignment
     
 def align_pads2mea1k(electrode_device_name, IMPLANT_DEVICE_NAME, 
-                     connectivty_measures_path, split_el_device=False):
+                     connectivty_measures_path, split_el_device=False,
+                     scale_up_pads=2.7):
     nas_dir = device_paths()[0]
     mapping_fullfname = os.path.join(nas_dir, 'devices', "electrode_devices", electrode_device_name, 
                                      f"device_mapping_{electrode_device_name}.csv")
@@ -136,10 +141,13 @@ def align_pads2mea1k(electrode_device_name, IMPLANT_DEVICE_NAME,
     
     if split_el_device:
         # two half s that need to be aligned seperately
-        alignment = _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping[mapping.index<=638])
-        alignment2 = _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping[mapping.index>638])
+        alignment = _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping[mapping.index<=638],
+                                        scale_up_pads=scale_up_pads)
+        alignment2 = _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping[mapping.index>638],
+                                         scale_up_pads=scale_up_pads)
     else:
-        alignment = _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping)
+        alignment = _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping,
+                                        scale_up_pads=scale_up_pads)
         alignment2 = None
         
     # do the alignment manually
@@ -293,12 +301,13 @@ def main():
     # plot_pad_alignment(IMPLANT_DEVICE_NAME)
 
     # NewGen 2025 - device MEA1K12 1628 channels
+    # ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
     ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
     HEADSTAGE_DEVICE_NAME = 'MEA1K12'
-    date = '250917'
+    date = '250929'
     batch = 5
     IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
-    rec_dir_name = '2ndBondTightened_VrefFPGAStim_ampl16'
+    rec_dir_name = '5thBond1Shank_rec3_VrefFPGAStim_ampl15'
     split_el_device = False
     connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices', 
                                          IMPLANT_DEVICE_NAME, 'recordings', 

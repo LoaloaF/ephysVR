@@ -1,12 +1,12 @@
 import time
 import os
 import random
-
-import maxlab
 import pandas as pd
-import ephys_constants as C
 import numpy as np
 import math
+
+import maxlab
+import ephys_constants as EC
 
 def reset_MEA1K(gain, enable_stimulation_power=False):
     print(f"Resetting MEA1K with gain of {gain}, then offset...", end='', flush=True)
@@ -191,7 +191,7 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100,
         
     seq = maxlab.Sequence()
     # Create a time array, 50 us * 20kHz = 1000 samples, 1 khz exmaple
-    t = np.linspace(0,1, int(C.SAMPLING_RATE/f), endpoint=False)
+    t = np.linspace(0,1, int(EC.SAMPLING_RATE/f), endpoint=False)
     # Create a sine wave with a frequency of 1 kHz
     sine_wave = (amplitude * np.sin(t*2*np.pi)).astype(int)
     for i in range(nreps):
@@ -260,101 +260,3 @@ def find_stim_unit_amplifier(array, stim_unit, which_amplifier=0):
                 print(f" skipping this one.")
                 continue
     raise ValueError(f"Could not find amplifier for stimulation unit {stim_unit}")
-
-
-
-
-
-
-
-
-
-
-
-
-#### NOT TESTED YET ##############################
-
-def create_stim_pulse_sequence(dac_id=0, amplitude=25, pulse_duration=167e-6, 
-                               inter_phase_interval=67e-6, frequency=50, 
-                               burst_duration=400e-3, nreps=1,
-                               voltage_conversion=False):
-    """
-    Create a sequence of biphasic, charge-balanced stimulation pulses.
-
-    Parameters:
-        dac_id (int): DAC ID for stimulation.
-        amplitude (int): Peak amplitude of the stimulation pulses (in arbitrary units).
-        pulse_duration (float): Duration of each phase of the pulse in seconds.
-        inter_phase_interval (float): Interval between the cathodic and anodic phases in seconds.
-        frequency (float): Frequency of the pulse train in Hz.
-        burst_duration (float): Duration of each burst in seconds.
-        nreps (int): Number of burst repetitions.
-
-    Returns:
-        seq: A sequence object containing the stimulation pulses.
-    """
-    if voltage_conversion:
-        daq_lsb = float(maxlab.query_DAC_lsb_mV())
-        # daq_lsb = maxlab.system.query_DAC_lsb()
-        print(f"DAQ LSB: {daq_lsb}")
-        amplitude = int(amplitude / daq_lsb)
-    
-    
-    seq = maxlab.Sequence()
-    
-    # Parameters
-    frequency = 50  # Hz
-    burst_duration = 400e-3  # seconds
-    n_pulses = int(burst_duration * frequency)
-    burst_interval = 1 / frequency  # seconds
-    pulse_duration = 167e-6  # seconds per phase
-    inter_phase_interval = 67e-6  # seconds
-    sampling_rate = 20000  # Hz (20 kHz)
-    samples_per_us = sampling_rate / 1e6
-
-    # print all of thse values
-    print(f"n_pulses: {n_pulses}, burst_interval: {burst_interval}, pulse_duration: {pulse_duration}, inter_phase_interval: {inter_phase_interval}, sampling_rate: {sampling_rate}, samples_per_us: {samples_per_us}")
-    
-    for _ in range(nreps):
-        for _ in range(n_pulses):
-            # Cathodic phase
-            seq.append(maxlab.chip.DAC(dac_id, 512 - amplitude))
-            seq.append(maxlab.system.DelaySamples(int(pulse_duration * samples_per_us * 1e6)))
-            print(int(pulse_duration * samples_per_us * 1e6))
-            # Inter-phase interval
-            seq.append(maxlab.chip.DAC(dac_id, 512))  # Zero amplitude for interval
-            seq.append(maxlab.system.DelaySamples(int(inter_phase_interval * samples_per_us * 1e6)))
-            print(int(inter_phase_interval * samples_per_us * 1e6))
-            # Anodic phase
-            seq.append(maxlab.chip.DAC(dac_id, 512 + amplitude))
-            seq.append(maxlab.system.DelaySamples(int(pulse_duration * samples_per_us * 1e6)))
-            print(int(pulse_duration * samples_per_us * 1e6))
-            print()
-        # Burst interval
-        # inter_burst_delay = int((burst_interval - burst_duration) * sampling_rate)
-        # print(inter_burst_delay)
-        # if inter_burst_delay > 0:
-        #     seq.append(maxlab.system.DelaySamples(inter_burst_delay))
-            seq.append(maxlab.system.DelaySamples(13+20))
-
-    return seq
-
-def create_stim_onoff_sequence(dac_id=0, amplitude=25, pulse_duration=5_000_000, 
-                               voltage_conversion=True):
-    seq = maxlab.Sequence()
-    
-    if voltage_conversion:
-        daq_lsb = float(maxlab.query_DAC_lsb_mV())
-        # daq_lsb = maxlab.system.query_DAC_lsb()
-        print(f"DAQ LSB: {daq_lsb}")
-        amplitude = int(amplitude / daq_lsb)
-        
-    seq.append(maxlab.chip.DAC(dac_id, 512 + amplitude))
-    seq.append(maxlab.system.DelaySamples(int(pulse_duration/50)))
-    seq.append(maxlab.chip.DAC(dac_id, 512))
-    seq.append(maxlab.system.DelaySamples(1))
-    seq.append(maxlab.chip.DAC(dac_id, 512 - amplitude))
-    seq.append(maxlab.system.DelaySamples(int(pulse_duration/50)))
-    seq.append(maxlab.chip.DAC(dac_id, 512))
-    seq.append(maxlab.system.DelaySamples(1))
-    return seq

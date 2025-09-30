@@ -48,7 +48,7 @@ def main():
     L.init_logger(None, None, "DEBUG")
     L.logger.debug("Starting in vivo impedance analysis")
     
-    nas_dir = C.device_paths()[0]
+    nas_dir = device_paths()[0]
     animal_name = "rYL010"
     implant_name = "250205_MEA1K03_H1278pad4shankB5"
     

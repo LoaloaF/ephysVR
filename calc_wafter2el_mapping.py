@@ -1,23 +1,25 @@
 import time
 import cv2
 import os
-
 import json
-import matplotlib.pyplot as plt
-import napari
 from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
-from ephys_constants import device_paths
+import napari
+
+# to import logger, VR-wide constants and device paths
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from baseVR.base_logger import CustomLogger as Logger
+from baseVR.base_functionality import device_paths
 
 def detect_wafer_pads(path, precomputed=False, save=False):
     fname_base = os.path.basename(path)
     circles_fullfname = f"{path}/detected_pads_{fname_base}.csv"
     if not precomputed:
         image = cv2.imread(f'{path}/waferpic_{fname_base}.png')
-        
         
         # Convert the image to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

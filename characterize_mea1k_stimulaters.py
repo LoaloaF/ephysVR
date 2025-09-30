@@ -1,27 +1,30 @@
-import datetime
-import glob
-import time
+import os
+import sys
 import random
+import glob
+import datetime
+import time
 
-import maxlab
-from mea1k_modules.mea1k_config_utils import create_stim_sine_sequence
-from mea1k_modules.mea1k_config_utils import reset_MEA1K, turn_on_stimulation_units, turn_off_stimulation_units
-from mea1k_modules.mea1k_config_utils import start_saving, stop_saving, shift_DAC
-from mea1k_modules.mea1k_config_utils import setup_stim_unit_characterization, find_stim_unit_amplifier
-# from glob import glob
-from mea1k_connectivity_scripts.signal_helpers import estimate_frequency_power
-from mea1k_connectivity_scripts.signal_helpers import lowpass_filter
-from mea1k_modules.mea1k_raw_preproc import read_stim_DAC, read_raw_data
 import numpy as np
 import pandas as pd
-import os
-# fix state
-
 import matplotlib.pyplot as plt
 
+# to import logger, VR-wide constants and device paths
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from baseVR.base_logger import CustomLogger as Logger
+from baseVR.base_functionality import device_paths
+
+from mea1k_modules.mea1k_config_utils import create_stim_sine_sequence
+from mea1k_modules.mea1k_config_utils import start_saving, stop_saving, shift_DAC
+from mea1k_modules.mea1k_config_utils import turn_on_stimulation_units, turn_off_stimulation_units
+from mea1k_modules.mea1k_config_utils import setup_stim_unit_characterization, find_stim_unit_amplifier
+from mea1k_modules.mea1k_config_utils import get_maxlab_saving
+
+from mea1k_connectivity_scripts.signal_helpers import estimate_frequency_power
+from mea1k_modules.mea1k_raw_preproc import read_stim_DAC, read_raw_data
 
 def _sweep_DAC(dirname, array, stim_unit, ampl_id, set_id, DAC_values, debug):
-    s = maxlab.Saving()
+    s = get_maxlab_saving()
         
     # first measurement is always off, skip saving and run it twice
     DAC_values = [DAC_values[0]] + DAC_values
@@ -50,7 +53,7 @@ def _sweep_DAC(dirname, array, stim_unit, ampl_id, set_id, DAC_values, debug):
         print(f"Turning on stim units...\n\n")
         array.connect_amplifier_to_stimulation(ampl_id)
         array.download()
-        # this is the dislocation we care about?
+        # usually no dislocation, but required for prv offset?
         time.sleep(.3)
 
         print(f"Turning off stim units...\n\n")
@@ -77,61 +80,7 @@ def _get_DAC_candidate_values(centered_around, delta):
                 DAC_candidates[i] = 1023 - shift_upper_end_by
                 shift_upper_end_by += 32
     return DAC_candidates.astype(int).tolist()
-    
-def char_stim_units(dirname, n_amplifiers=2, stim_units=list(range(32)), debug=False):
-    array = setup_stim_unit_characterization(dirname)
-    
-    for stim_unit in stim_units:
-        # initial DAC sweep parameters
-        centered_around = 512
-        delta = 16
-        for which_amplifier in range(n_amplifiers):
-            ampl_id = find_stim_unit_amplifier(array, stim_unit=stim_unit, which_amplifier=which_amplifier)
-
-            # new amplfier starts around previous amplifier best DAC value
-            set_id = 0
-            while True:
-                print(f"\n==========={centered_around}+-{delta}================")
-                DAC_values = _get_DAC_candidate_values(centered_around, delta)
-                _sweep_DAC(dirname, array, stim_unit, ampl_id, set_id, DAC_values, debug=debug)
-                results = extract_DAC_transient_set(dirname, ampl_id, stim_unit, 
-                                                    set_id, debug=debug)
-
-                # check if the transient is low enough, if yes, break - the exact number is hard to define
-                peak = results.peak_uV.abs().min()
-                if peak < 20_000:
-                    print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} done, peak_uV: {peak} uV")
-                    print(results.sort_values(by='peak_uV', key=abs, ascending=True).head(3))
-                    if delta == 16:
-                        print("Delta is already 16, and peak is <20mV, stopping here.\n\n\n")
-                        break
-                    else:
-                        print(f"Peak is low enough, but delta={delta} > 16")
-                        delta = max(16, delta // 4)
-                        centered_around = int(results.iloc[results.peak_uV.abs().argmin()].DAC_val)
-                        print(f"Recentering around {centered_around}, new delta={delta}")
-                
-                set_id += 1
-                peak_std = results.peak_uV.std()
-                if peak_std <30_000:
-                    delta *= 4
-                    print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} "
-                          f"done, peak std={peak_std}, low variance, increasing DAC range to {delta}")
-                
-                else:
-                    # find the DAC value that gives the lowest peak_uV
-                    best_row = results.iloc[results.peak_uV.abs().argmin()]
-                    print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} "
-                          f"with high variance: {peak_std} - peak_uV={best_row.peak_uV:.1f} uV at DAC"
-                          f" {best_row.DAC_val}, centering around it and reducing delta to 1/4")
-                    centered_around = int(best_row.DAC_val)
-                    delta = max(16, delta//4) # should get smaaller while closing in on the best value
-                
-                if set_id > 6:
-                    print("Too many sets, stopping here.\n\n\n")
-                    break
-
-def extract_fname_info(fname):
+def _extract_fname_info(fname):
     # config_StimUnit00_Ampl0828_Set0_DAC480.raw.h5
     stimunit_id = int(fname.split("_")[1].replace("StimUnit", ""))
     ampl_id = int(fname.split("_")[2].replace("Ampl", ""))
@@ -139,7 +88,7 @@ def extract_fname_info(fname):
     DAC_code = int(fname.split("_")[4].replace("DAC", "").replace(".raw.h5", ""))
     return stimunit_id, ampl_id, set_id, DAC_code
 
-def extract_DAC_transient_set(dirname, ampl_id, stim_unit, set_id, debug=False):
+def _extract_DAC_transient_set(dirname, ampl_id, stim_unit, set_id, debug=False):
     if debug:
         fig, ax = plt.subplots(figsize=(20, 8), nrows=2, sharex=True)
     
@@ -156,7 +105,7 @@ def extract_DAC_transient_set(dirname, ampl_id, stim_unit, set_id, debug=False):
             continue
         
         # extract dac_val
-        _, _, _, DAC_val = extract_fname_info(fname)
+        _, _, _, DAC_val = _extract_fname_info(fname)
         
         print(f"Processing {fname} ", ampl_id, stim_unit)
         data = read_raw_data(dirname, fname, convert2uV=True,
@@ -222,6 +171,61 @@ def extract_DAC_transient_set(dirname, ampl_id, stim_unit, set_id, debug=False):
     if debug:
         plt.show()
     return dac_transients_res
+    
+def char_stim_units(dirname, n_amplifiers=2, stim_units=list(range(32)), debug=False):
+    array = setup_stim_unit_characterization(dirname)
+    
+    for stim_unit in stim_units:
+        # initial DAC sweep parameters
+        centered_around = 512
+        delta = 16
+        for which_amplifier in range(n_amplifiers):
+            # iterate random mea1k el until we find the right stim unit + ampliifier
+            ampl_id = find_stim_unit_amplifier(array, stim_unit=stim_unit, 
+                                               which_amplifier=which_amplifier)
+
+            # new amplfier starts around previous amplifier best DAC value
+            set_id = 0
+            while True:
+                print(f"\n==========={centered_around}+-{delta}================")
+                DAC_values = _get_DAC_candidate_values(centered_around, delta)
+                _sweep_DAC(dirname, array, stim_unit, ampl_id, set_id, DAC_values, debug=debug)
+                results = _extract_DAC_transient_set(dirname, ampl_id, stim_unit, 
+                                                    set_id, debug=debug)
+
+                # check if the transient is low enough, if yes, break - the exact number is hard to define
+                peak = results.peak_uV.abs().min()
+                if peak < 20_000:
+                    print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} done, peak_uV: {peak} uV")
+                    print(results.sort_values(by='peak_uV', key=abs, ascending=True).head(3))
+                    if delta == 16:
+                        print("Delta is already 16, and peak is <20mV, stopping here.\n\n\n")
+                        break
+                    else:
+                        print(f"Peak is low enough, but delta={delta} > 16")
+                        delta = max(16, delta // 4)
+                        centered_around = int(results.iloc[results.peak_uV.abs().argmin()].DAC_val)
+                        print(f"Recentering around {centered_around}, new delta={delta}")
+                
+                set_id += 1
+                peak_std = results.peak_uV.std()
+                if peak_std <30_000:
+                    delta *= 4
+                    print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} "
+                          f"done, peak std={peak_std}, low variance, increasing DAC range to {delta}")
+                
+                else:
+                    # find the DAC value that gives the lowest peak_uV
+                    best_row = results.iloc[results.peak_uV.abs().argmin()]
+                    print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} "
+                          f"with high variance: {peak_std} - peak_uV={best_row.peak_uV:.1f} uV at DAC"
+                          f" {best_row.DAC_val}, centering around it and reducing delta to 1/4")
+                    centered_around = int(best_row.DAC_val)
+                    delta = max(16, delta//4) # should get smaaller while closing in on the best value
+                
+                if set_id > 6:
+                    print("Too many sets, stopping here.\n\n\n")
+                    break
 
 def eval_char_stim_units(dirname,  stim_units, debug=False):
     all_results = []
@@ -272,7 +276,7 @@ def eval_char_stim_units(dirname,  stim_units, debug=False):
 
 def char_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, n_amplifiers, debug=False):
     array = setup_stim_unit_characterization(dirname)
-    s = maxlab.Saving()
+    s = get_maxlab_saving()
     dac_settings = pd.read_csv(os.path.join(dirname, "processed", "StimUnits_characterization.csv"))
     
     for stim_unit in stim_units:
@@ -363,6 +367,13 @@ def eval_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, debug=False):
     ax[2].set_xticks(stim_units)
     ax[2].scatter([a.stimunit_id for a in aggr], [a.LSB_small_current_nA for a in aggr], s=50)
     ax[2].tick_params(axis='x', which='both', rotation=90)
+    
+    ax[3].set_title("Zero current DAC code")
+    ax[3].set_xlabel("Stim Unit ID")
+    ax[3].set_ylabel("Zero current DAC code")
+    ax[3].set_xticks(stim_units)
+    ax[3].scatter([a.stimunit_id for a in aggr], [a.zero_current_DAC for a in aggr], s=50)
+    ax[3].tick_params(axis='x', which='both', rotation=90)
 
     result_fullfname = os.path.join(dirname, "processed", "smallcurrent_lsb_characterization.csv")
     aggr = pd.DataFrame(aggr)
@@ -374,50 +385,47 @@ def eval_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, debug=False):
         plt.show()
     plt.close()
             
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-
 def main():
     random.seed(42)
     debug = False
     
-    nas_dir = "/mnt/SpatialSequenceLearning/"
+    nas_dir = device_paths()[0]
     # nas_dir = "/home/houmanjava/nas_imitation"
-    device_dir = "devices/headstage_devices/MEA1K12/recordings"
+    device_dir = "devices/headstage_devices/MEA1K11/recordings"
     # device_dir = "devices/well_devices/4983/recordings"
     R = 1_000_000  # 1 MOhm
     sine_ampl_DAC_units = 10 # in DAC units
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M")
     rec_dir = f"{t}_{R=}_CharStimUnits"
-    # rec_dir = "2025-09-24_16.20_R=1000000_CharStimUnits"
-    rec_dir = "2025-09-23_17.00_R=1000000_CharStimUnits"
+    # rec_dir = "2025-09-23_17.00_R=1000000_CharStimUnits"
+    # rec_dir = "2025-09-27_18.05_R=1000000_CharStimUnits"
     # take the newest directory
     # print(sorted(os.listdir(os.path.join(nas_dir, device_dir))))
     # rec_dir = sorted(os.listdir(os.path.join(nas_dir, device_dir)))[-1]
     full_path = os.path.join(nas_dir, device_dir, rec_dir)
 
-    n_amplifiers = 1
-    # stim_units = list(range(32))
-    stim_units = [0]
+    n_amplifiers = 3
+    stim_units = list(range(32))#[8:16]
+    # stim_units = [0]
     
-    # char_stim_units(full_path, n_amplifiers=n_amplifiers, stim_units=stim_units, debug=debug)
-    # eval_char_stim_units(full_path, stim_units=stim_units, debug=debug)
-    # print(full_path)
-    # char_current_lsb(full_path, R=R, sine_ampl_DAC_units=sine_ampl_DAC_units,
-    #                  stim_units=stim_units, n_amplifiers=n_amplifiers, debug=debug)
+    # Iterate over all stim units * n_amplifiers (samples) and sweep the DAC values
+    # until we find the one that gives the lowest parasitic current (lowest transient peak)
+    char_stim_units(full_path, n_amplifiers=n_amplifiers, stim_units=stim_units, debug=debug)
+    
+    # Evaluate the stim unit characterization results, aggreagting all sets,
+    # fitting a curve and finding the minimum
+    eval_char_stim_units(full_path, stim_units=stim_units, debug=debug)
+    
+    # Now that we know the DAC value that gives 0 current for each stim unit,
+    # we can measure the actual current that corresponds to a certain DAC amplitude
+    # in small_current mode + R=1MOhm, which gives us the current LSB
+    char_current_lsb(full_path, R=R, sine_ampl_DAC_units=sine_ampl_DAC_units,
+                     stim_units=stim_units, n_amplifiers=n_amplifiers, debug=debug)
+    
+    # Evaluate the current LSB characterization results, this table is saved in 
+    # the headstage_devices directory and its needed for stimulation configuration
     eval_current_lsb(full_path, R=R, sine_ampl_DAC_units=sine_ampl_DAC_units, 
                      stim_units=stim_units, debug=debug)
-    
-    
     
 if __name__ == "__main__":
     main()

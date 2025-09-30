@@ -1,26 +1,26 @@
 import os
 import sys
 
-# to import from parent dir
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from CustomLogger import CustomLogger as Logger
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib import cm
 
-import ephys_constants as C
+# to import logger, VR-wide constants and device paths
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from baseVR.base_logger import CustomLogger as Logger
+from baseVR.base_functionality import device_paths
+
+# import parent dir with general modules
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+import ephys_constants as EC
 from mea1k_modules.mea1k_raw_preproc import read_raw_data
 from mea1k_modules.mea1k_raw_preproc import read_stim_DAC
-from mea1k_modules.mea1k_raw_preproc import get_raw_implant_mapping
-from mea1k_modules.mea1k_raw_preproc import get_recording_implant_mapping
-from signal_helpers import estimate_frequency_power, calculate_phase_shift
+from signal_helpers import estimate_frequency_power
 
-from mea1k_modules.mea1k_visualizations import vis_shank_traces, viz_mea1k_config, draw_interconnect_pads
 from mea1k_modules.mea1k_visualizations import draw_mea1k
-from mea1k_modules.mea1k_visualizations import draw_mea1K_colorbar
 
 def get_hdf5_fnames_from_dir(subdir):
     fnames, ids = [], []
@@ -65,8 +65,8 @@ def analyze_shorts(subdir, implant_name, debug=False, deepdebug=False):
     
         mean_ampl = []
         for j,row in enumerate(data):
-            _, m_ampl = estimate_frequency_power(row.astype(float), 
-                                                 sampling_rate=C.SAMPLING_RATE, 
+            m_ampl, phase = estimate_frequency_power(row.astype(float), 
+                                                 sampling_rate=EC.SAMPLING_RATE, 
                                                  debug=deepdebug, 
                                                  min_band=960, max_band=1040)
             if stimulated.stim[j]:
@@ -138,8 +138,7 @@ def main():
     L = Logger()
     L.init_logger(None, None, "INFO")
     L.logger.debug("Starting shortcut analysis")
-    # local_dir = C.device_paths()[1]
-    nas_dir = C.device_paths()[0]
+    nas_dir = device_paths()[0]
     
     # fix seed
     np.random.seed(42)

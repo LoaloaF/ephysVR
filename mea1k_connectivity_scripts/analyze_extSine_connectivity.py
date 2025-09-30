@@ -1,22 +1,24 @@
 import os
 import sys
 
-# to import from parent dir
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from CustomLogger import CustomLogger as Logger
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import ephys_constants as C
+# to import logger, VR-wide constants and device paths
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from baseVR.base_logger import CustomLogger as Logger
+from baseVR.base_functionality import device_paths
+
+# import parent dir with general modules
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+import ephys_constants as EC
 from mea1k_modules.mea1k_raw_preproc import read_raw_data
+from mea1k_modules.mea1k_visualizations import draw_mea1k
 from signal_helpers import estimate_frequency_power
 
-# from mea1k_viz import draw_mea1k
-from mea1k_modules.mea1k_visualizations import draw_mea1k
-
-def get_hdf5_fnames_from_dir(subdir):
+def _get_hdf5_fnames_from_dir(subdir):
     fnames, ids = [], []
     for fname in sorted(os.listdir(subdir)):
         if fname.endswith('raw.h5'):
@@ -29,7 +31,7 @@ def get_hdf5_fnames_from_dir(subdir):
                 ids.append(int(pruned_fname[-3:]))
     return fnames, ids
 
-def save_output(subdir, data, fname):
+def _save_output(subdir, data, fname):
     fullpath = os.path.join(subdir, "processed")
     if not os.path.exists(fullpath):
         print("creating processed output dir")
@@ -37,7 +39,7 @@ def save_output(subdir, data, fname):
     data.to_csv(os.path.join(fullpath, fname))
 
 def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
-    fnames, ids = get_hdf5_fnames_from_dir(subdir)
+    fnames, ids = _get_hdf5_fnames_from_dir(subdir)
     all_data = []
     for fname, i in zip(fnames, ids):
         print(f"Config {i} of {len(fnames)}")
@@ -49,7 +51,7 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
         mean_ampl = []
         for j,row in enumerate(data.values):
             debug = True if j <10 and debug else False
-            _, m_ampl = estimate_frequency_power(row, sampling_rate=C.SAMPLING_RATE, 
+            m_ampl, _ = estimate_frequency_power(row, sampling_rate=EC.SAMPLING_RATE,
                                                  debug=debug, min_band=960, max_band=1040)
             mean_ampl.append(m_ampl)
         
@@ -60,16 +62,17 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
         print(f"Done. n >80%: {(data.connectivity >.8).sum()}\n")
 
         all_data.append(data)
-    save_output(subdir, pd.concat(all_data), f"extr_connectivity.csv")
+    _save_output(subdir, pd.concat(all_data), f"extr_connectivity.csv")
         
 def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
+    plt.figure(figsize=(6,4))
     fullfname = os.path.join(subdir, "processed", f"extr_connectivity.csv")
-    print(fullfname)
     data = pd.read_csv(fullfname)
     data.set_index('el', inplace=True)  
-    print(data)    
     plt.hist(data['ampl'], bins=100)
     plt.show()
+    plt.close()
+    
     (fig,ax), el_recs = draw_mea1k()
     for el_i, el_recs in enumerate(el_recs):
         if el_i not in data.index:
@@ -116,17 +119,20 @@ def main():
     L = Logger()
     L.init_logger(None, None, "DEBUG")
     L.logger.info("Starting connectivity analysis")
-    nas_dir = C.device_paths()[0]
+    nas_dir = device_paths()[0]
     
     # bonding which electrode to which headstage
-    bonding_date = '250917'
+    bonding_date = '250929'
     HEADSTAGE_DEVICE_NAME = 'MEA1K12'
     ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
+    # ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
     batch = 5
     IMPLANT_DEVICE_NAME = f"{bonding_date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
     
     # sine stim recording parameters
-    rec_name = f'2ndBondTightened_VrefFPGAStim_ampl16'
+    # rec_name = f'2ndBondTightened_VrefFPGAStim_ampl16'
+    rec_name = f'3rdBond4Shank_VrefFPGAStim_ampl15'
+    rec_name = f'5thBond1Shank_rec3_VrefFPGAStim_ampl15'
     input_ampl_mV = 10
     n_samples = 8_000 # where sine stim is visible
 
@@ -135,8 +141,8 @@ def main():
         print(f"Error: {os.path.join(subdir)} does not exist.")
         exit()
     
-    extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False)
-    vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
+    extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
+    vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2)
     create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
     
     
