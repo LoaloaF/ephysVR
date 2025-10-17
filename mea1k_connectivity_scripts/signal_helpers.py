@@ -44,6 +44,12 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, dac=None
     m = signal.mean()
     signal -= m
     
+    if dac is not None:
+        start = np.where(np.diff(dac) > 1)[0][0]
+        end = np.where(np.diff(dac) < -1)[0][-1]
+    else:
+        start, end = 0, len(signal)-1
+    
     # Compute the FFT of the signal
     fft_result = np.fft.fft(signal)
     # Compute the power spectrum
@@ -57,11 +63,11 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, dac=None
         signal_filtered = lowpass_filter(signal, sampling_rate, max_band)
     else:
         signal_filtered = bandpass_filter(signal, sampling_rate, min_band, max_band)
-    mean_ampl, _, instantaneous_phase = extract_average_amplitude(signal_filtered)
+    mean_ampl, _, instantaneous_phase = extract_average_amplitude(signal_filtered[start:end])
 
     mean_phase_shift = None
     if dac is not None:
-        _, _, instantaneous_phase_dac = extract_average_amplitude(dac)
+        _, _, instantaneous_phase_dac = extract_average_amplitude(dac[start:end])
         # compute wrapped phase difference
         phi_diff = (instantaneous_phase - instantaneous_phase_dac + np.pi) % (2*np.pi) - np.pi
         mean_phase_shift = np.degrees(np.angle(np.mean(np.exp(1j*phi_diff))))  # circular mean
@@ -108,6 +114,8 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, dac=None
         [ax[2].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
         if dac is not None:
             ax[2].set_title(f'Mean Phase Shift: {mean_phase_shift:.1f}°')
+            ax[2].axvline(x=t[start], color='gray', linestyle='--', label='Start')
+            ax[2].axvline(x=t[end], color='gray', linestyle='--', label='End')
         ax[2].legend()
         
         if dac is not None:
@@ -119,7 +127,7 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, dac=None
             [ax[3].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
             ax[3].legend()
         plt.savefig('./live_figures/debug_signal.png')
-        plt.show()
+        # plt.show()
     return mean_ampl, mean_phase_shift if dac is not None else None
 
 

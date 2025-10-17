@@ -58,22 +58,23 @@ def main():
     # ======== PARAMETERS ========
     # implant_name = "250205_MEA1K03_H1278pad4shankB5" # animal 10
     # implant_name = "241211_MEA1K06_H1278pad4shankB5" # animal 11
-    subdir = f"devices/headstage_devices/MEA1K12/recordings"
+    subdir = f"devices/headstage_devices/MEA1K11/recordings"
     # nas_dir = "/home/houmanjava/nas_imitation"
     nas_dir = device_paths()[0]
     
-    post_download_wait_time = .4
+    post_download_wait_time = 1
     rec_time = .4
-    gain = 112
+    gain = 7
     amplitude = 10
     configs_basepath = os.path.join(nas_dir, "mea1k_configs")
     which_configs = "3x3_stim_seed42"
-    # mode = "voltage"
-    mode = "small_current"
+    mode = "voltage"
+    # mode = "small_current"
     # ======== PARAMETERS ========
     
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-    rec_dir = f"{t}_2ndBondBatch5SingelShankTight_{mode=}_{amplitude=}"
+    # rec_dir = f"{t}_SC_postGPCheck_{mode=}_{amplitude=}"
+    rec_dir = f"{t}_SC_bonded_1shank_bigFlexPress"
     full_recdir = os.path.join(nas_dir, subdir, rec_dir)
     print(f"Recording path exists: {os.path.exists(full_recdir)} - ", full_recdir)
     

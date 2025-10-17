@@ -303,11 +303,11 @@ def main():
     # NewGen 2025 - device MEA1K12 1628 channels
     # ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
     ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
-    HEADSTAGE_DEVICE_NAME = 'MEA1K12'
-    date = '250929'
-    batch = 5
+    HEADSTAGE_DEVICE_NAME = 'MEA1K11'
+    date = '251014'
+    batch = 1
     IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
-    rec_dir_name = '5thBond1Shank_rec3_VrefFPGAStim_ampl15'
+    rec_dir_name = '14Shank_rec3_VrefFPGAStim_ampl15'
     split_el_device = False
     connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices', 
                                          IMPLANT_DEVICE_NAME, 'recordings', 

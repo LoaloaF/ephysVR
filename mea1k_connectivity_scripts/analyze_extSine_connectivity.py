@@ -122,17 +122,20 @@ def main():
     nas_dir = device_paths()[0]
     
     # bonding which electrode to which headstage
-    bonding_date = '250929'
-    HEADSTAGE_DEVICE_NAME = 'MEA1K12'
+    bonding_date = '251014'
+    HEADSTAGE_DEVICE_NAME = 'MEA1K11'
     ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
     # ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
-    batch = 5
+    batch = 1
     IMPLANT_DEVICE_NAME = f"{bonding_date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
     
     # sine stim recording parameters
     # rec_name = f'2ndBondTightened_VrefFPGAStim_ampl16'
     rec_name = f'3rdBond4Shank_VrefFPGAStim_ampl15'
-    rec_name = f'5thBond1Shank_rec3_VrefFPGAStim_ampl15'
+    rec_name = f'5thBond1Shank_rec4_VrefFPGAStim_ampl15-'
+    rec_name = f'firstNewDevide8HalfShank_rec2_VrefFPGAStim_ampl15'
+    rec_name = f'singlShankBadBatchNewEcoFlex_rec2_VrefFPGAStim_ampl15'
+    rec_name = f'14Shank_rec4_8shank_VrefFPGAStim_ampl15'
     input_ampl_mV = 10
     n_samples = 8_000 # where sine stim is visible
 
@@ -143,7 +146,7 @@ def main():
     
     extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
     vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2)
-    create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
+    # create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
     
     
 if __name__ == "__main__":

@@ -21,9 +21,10 @@ from mea1k_modules.mea1k_config_utils import stop_saving
 def main():
     # ======== PARAMETERS ========
     nas_dir = device_paths()[0]
-    subdir = "devices/headstage_devices/MEA1K12/recordings"
+    subdir = "devices/headstage_devices/MEA1K11/recordings"
     # rec_dir = "4thBond4Shank_rec2_VrefFPGAStim_ampl15"
-    rec_dir = "5thBond1Shank_rec3_VrefFPGAStim_ampl15-"
+    rec_dir = "singlShankBadBatchNewEcoFlex_tight_rec3_VrefFPGAStim_ampl15"
+    rec_dir = "1Shank_rec2_VrefFPGAStim_ampl15"
     post_download_wait_time = .6
     rec_time = .5
     gain = 7
@@ -42,7 +43,7 @@ def main():
     
     if with_external_sine:
         init_fpga_sine_stim(1/external_sine_freq, external_sine_amp_in_bits)
-    exit()
+
     fnames = glob(os.path.join(configs_basepath, which_configs, "*.cfg"))
     for i, config_fullfname in enumerate(sorted(fnames)):
         print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}")
@@ -53,7 +54,8 @@ def main():
         array.download()
         if with_external_sine:
             begin_fpga_sine_stim()
-        time.sleep(post_download_wait_time)        
+        time.sleep(post_download_wait_time)
+        # time.sleep(500)
         
         fname = os.path.basename(config_fullfname).replace(".cfg", "")
         start_saving(s, dir_name=path, fname=fname)

@@ -48,15 +48,15 @@ def analyze_shorts(subdir, implant_name, debug=False, deepdebug=False):
     for i, fname in enumerate(fnames):
         Logger().logger.info(f"Config {i}/{len(fnames)}")
         
-        if debug and i > 3:
-            continue
         # get the config information about this configuration
         stimulated = pd.read_csv(os.path.join(subdir, fname.replace(".raw.h5", ".csv")))
         
         # dac = read_stim_DAC(subdir, fname)
         # stim_sample_ids = np.where(dac != 512)[0]
         # shortcut, since we know the stim samples are between 20500 and 29500
-        stim_sample_ids = (6000, 14000)
+
+        # stim_sample_ids = (6000, 14000)
+        stim_sample_ids = (14000, 22500)
         data = read_raw_data(subdir, fname, convert2uV=True,
                             subtract_dc_offset=True, 
                             # col_slice=slice(None, None),
@@ -69,25 +69,25 @@ def analyze_shorts(subdir, implant_name, debug=False, deepdebug=False):
                                                  sampling_rate=EC.SAMPLING_RATE, 
                                                  debug=deepdebug, 
                                                  min_band=960, max_band=1040)
-            if stimulated.stim[j]:
-                pass
+            # if stimulated.stim[j]:
+            #     pass
             mean_ampl.append(m_ampl)
         mean_ampl = np.array(mean_ampl)
         
+        # TODO check if stimulated center el has actually sine 
         stimulated.drop("Unnamed: 0", axis=1, inplace=True)
         stimulated['sine_voltage_uV'] = mean_ampl
         # stimulated.drop(columns=['x', 'y'], inplace=True)
         stimulated = stimulated.sort_values(by=['tile', 'stim']).reset_index(drop=True)
         ratios = stimulated.groupby("tile").apply(
             lambda x: (x.sine_voltage_uV /x[x.stim].sine_voltage_uV.item()),
-            # include_groups=False
+            include_groups=False
         )
-        print(stimulated)
-        if len(ratios) != len(stimulated):
-            print(ratios)
-            print(stimulated)
-            print("Warning: not all tiles have a ratio")
-            continue
+        
+        # single tile case is turned into df instead of two-level series
+        if len(ratios.shape) == 2:
+            ratios = ratios.iloc[0] 
+        
         stimulated['tile_connectivity'] = ratios.values
         stimulated.index = pd.MultiIndex.from_product([[fname.replace(".raw.h5","")],
                                                         stimulated.index], names=['config', 'el'])
@@ -143,21 +143,22 @@ def main():
     # fix seed
     np.random.seed(42)
     # implant_name = "4983"
-    implant_name = "MEA1K12"
+    headstage_name = "MEA1K11"
     
     subdirs = [
         # f"devices/well_devices/{MEA1K08}/recordings/2025-05-09_10.14.37_invivo_imp_mode='voltage'_stimpulse='sine'_amplitude=10",
         # f"devices/headstage_devices/{implant_name}/recordings/2025-07-18_09.30.23_beforeGP_mode='voltage'_stimpulse='sine'_amplitude=10",
         # f"devices/headstage_devices/{implant_name}/recordings/2025-07-18_12.42.31_afterGP_mode='voltage'_stimpulse='sine'_amplitude=10",
-        f"devices/headstage_devices/{implant_name}/recordings/2025-09-18_13.59.32_2ndBondBatch5SingelShankTight_mode='voltage'_stimpulse='sine'_amplitude=10",
+        # f"devices/headstage_devices/{headstage_name}/recordings/2025-10-01_14.24.55_SC_postGPCheck_mode=\'voltage\'_amplitude=10",
+        f"devices/headstage_devices/{headstage_name}/recordings/2025-10-14_21.30.40_SC_bonded_13shank_tightnedd",
     ]
     output_dir = os.path.join(nas_dir, subdirs[-1], 'processed')
-    output_fname = f"shortcuts_fristimpl_{implant_name}.png"
+    output_fname = f"shortcuts_fristimpl_{headstage_name}.png"
     
 
     # el_config_S1D1650.raw.h5
-    analyze_shorts(os.path.join(nas_dir, subdirs[0]), implant_name=implant_name, 
-                    debug=False, deepdebug=False)
+    analyze_shorts(os.path.join(nas_dir, subdirs[0]), implant_name=headstage_name, 
+                    debug=True, deepdebug=False)
     vis_shorts(os.path.join(nas_dir, subdirs[0]), 
                output_dir=output_dir, 
                output_fname=output_fname)

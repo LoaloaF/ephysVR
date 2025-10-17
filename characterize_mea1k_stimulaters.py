@@ -80,6 +80,7 @@ def _get_DAC_candidate_values(centered_around, delta):
                 DAC_candidates[i] = 1023 - shift_upper_end_by
                 shift_upper_end_by += 32
     return DAC_candidates.astype(int).tolist()
+
 def _extract_fname_info(fname):
     # config_StimUnit00_Ampl0828_Set0_DAC480.raw.h5
     stimunit_id = int(fname.split("_")[1].replace("StimUnit", ""))
@@ -113,11 +114,17 @@ def _extract_DAC_transient_set(dirname, ampl_id, stim_unit, set_id, debug=False)
         print(data.shape)
         dac = read_stim_DAC(dirname, fname)
         
-        # 12_500, 20_000 interval contains the transient
-        dac_transient = data[0, 12_500:20_000].astype(float)
+        # TODO didn't see proper peaks last time?
+        from_t, to_t = 12_500, 20_000 # interval contains the transient
+        if dac.shape[0] < to_t:
+            print(f"WARNING! DAC trace too short {dac.shape[0]} < {to_t}, adjusting to available length")
+            to_t = dac.shape[0]
+            from_t = 0
+        # from_t, to_t = 0, 10_000 # interval contains the transient
+        dac_transient = data[0, from_t:to_t].astype(float)
         if dac is not None:
-            dac = dac[12_500:20_000]
-        
+            dac = dac[from_t:to_t]
+
         baseline = np.median(dac_transient[:2_000])
         dac_transient -= baseline
 
@@ -215,7 +222,7 @@ def char_stim_units(dirname, n_amplifiers=2, stim_units=list(range(32)), debug=F
                           f"done, peak std={peak_std}, low variance, increasing DAC range to {delta}")
                 
                 else:
-                    # find the DAC value that gives the lowest peak_uV
+                    # find the DAC value that gives the `lowest peak_uV
                     best_row = results.iloc[results.peak_uV.abs().argmin()]
                     print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} "
                           f"with high variance: {peak_std} - peak_uV={best_row.peak_uV:.1f} uV at DAC"
@@ -237,6 +244,7 @@ def eval_char_stim_units(dirname,  stim_units, debug=False):
         for fullfname in res_fullfnames:
             print(f"Reading {fullfname}")
             stimunit_res = pd.concat([stimunit_res, pd.read_csv(fullfname)], axis=0)
+            print(stimunit_res)
         
         dac_median = stimunit_res[['DAC_val', 'peak_uV']].groupby('DAC_val').apply(lambda x: x.abs().mean())
         dac_median = dac_median.rolling(window=2, center=True, min_periods=1).mean()
@@ -387,7 +395,7 @@ def eval_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, debug=False):
             
 def main():
     random.seed(42)
-    debug = False
+    debug = True
     
     nas_dir = device_paths()[0]
     # nas_dir = "/home/houmanjava/nas_imitation"
@@ -398,14 +406,15 @@ def main():
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M")
     rec_dir = f"{t}_{R=}_CharStimUnits"
     # rec_dir = "2025-09-23_17.00_R=1000000_CharStimUnits"
-    # rec_dir = "2025-09-27_18.05_R=1000000_CharStimUnits"
+    # rec_dir = "2025-10-14_19.52_R=1000000_CharStimUnits"
+    # rec_dir = "2025-10-14_19.46_R=1000000_CharStimUnits"
     # take the newest directory
     # print(sorted(os.listdir(os.path.join(nas_dir, device_dir))))
     # rec_dir = sorted(os.listdir(os.path.join(nas_dir, device_dir)))[-1]
     full_path = os.path.join(nas_dir, device_dir, rec_dir)
 
-    n_amplifiers = 3
-    stim_units = list(range(32))#[8:16]
+    n_amplifiers = 1
+    stim_units = list(range(32))#[0:16]
     # stim_units = [0]
     
     # Iterate over all stim units * n_amplifiers (samples) and sweep the DAC values

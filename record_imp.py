@@ -57,32 +57,40 @@ def _extract_sine_amplitude(dir_name, fname, debug=True):
                                                           dac=dac.astype(float))
     return mean_ampl, phase_shift
         
-def scatter_vis_impedance(aggr_df):
+def scatter_vis_impedance(aggr_df, output_dir=None):
     aggr_df = aggr_df[aggr_df.impedance_Ohm > 0]
     fig, ax = plt.subplots(1, 1)
-    ax.axhline(70, color='k', linestyle='--')
-    ax.axhline(30, color='k', linestyle='--')
+    ax.axhline(100, color='k', linestyle='--')
+    ax.axhline(50, color='k', linestyle='--')
     # Use actual min/max for color scaling
     imp_kohm = aggr_df.impedance_Ohm / 1000
+    stimunit = aggr_df.stim_unit
     vmin = imp_kohm.min()
-    vmax = 90
-    sc = ax.scatter(aggr_df.connectivity, imp_kohm + 1, alpha=.3, s=20)
+    vmax = 1100
+    # sc = ax.scatter(aggr_df.connectivity, imp_kohm + 1, alpha=.3, s=20)
     # sc = ax.scatter(aggr_df.connectivity, imp_kohm + 1, c=imp_kohm, cmap='viridis', vmin=vmin, vmax=vmax, s=20)
     # plt.colorbar(sc, label='Impedance (kOhm)')
+    sc = ax.scatter(aggr_df.connectivity, imp_kohm + 1, c=stimunit, cmap='tab20', s=20)
+    plt.colorbar(sc, label='StimUnit Impedance (kOhm)')
+    
     ax.set_yscale('log')
     ax.set_xlabel('Connectivity (external Sine signal)')
     ax.set_ylabel('Impedance (kOhm)')
     plt.title('Impedance Measurement Results')
     plt.savefig(f"./live_figures/all_imp_vs_connectivity_scatter.png")
+    if output_dir is not None:
+        plt.savefig(os.path.join(output_dir, "all_imp_vs_connectivity_scatter.png"))
     # plt.show()
         
-def mea1k_vis_impedance(data, cmap_scaler=1):
+def mea1k_vis_impedance(data, output_dir=None, cmap_scaler=1):
     data.set_index('electrode', inplace=True)
     
     # create a colormap from 0 to 1000, matplotlib colormap 
     cmap = plt.get_cmap('viridis')
-    norm = plt.Normalize(vmin=0, vmax=110)
-
+    norm = plt.Normalize(vmin=0, vmax=1100)
+    print(data)
+    data = data[data.index.duplicated(keep=False)==False]
+    print(data)
     (fig,ax), el_recs = draw_mea1k()
     for el_i, el_recs in enumerate(el_recs):
         if el_i not in data.index:
@@ -116,6 +124,10 @@ def mea1k_vis_impedance(data, cmap_scaler=1):
         el_recs.set_facecolor((whiteness, whiteness, whiteness))
     fig.savefig("./live_figures/all_imp_vs_connectivity_CMOS.png", dpi=300, transparent=False,
                 bbox_inches='tight', pad_inches=0)
+    if output_dir is not None:
+        fig.savefig(os.path.join(output_dir, "all_imp_vs_connectivity_CMOS.png"), 
+                    dpi=300, transparent=False,
+                    bbox_inches='tight', pad_inches=0)
     # plt.show()
 
 def measure_impedance(full_recdir, rec_time, nas_dir, configs_basepath, stim_settings,
@@ -141,7 +153,8 @@ def measure_impedance(full_recdir, rec_time, nas_dir, configs_basepath, stim_set
         # files look like el_config_El16752_StimUnit08_Ampl0114.cfg
         all_mea1k_els = [int(fname[fname.find("El")+2:fname.find("El")+7]) for fname in fnames]
         test_el_entries = implant_mapping[(implant_mapping.mea1k_el.isin(all_mea1k_els) & 
-                                          (implant_mapping.pad_id.notna() | implant_mapping.mea1k_connectivity > .7))].sort_values(["connectivity_order", 'mea1k_connectivity'], ascending=[True, False])
+                                          (implant_mapping.pad_id.notna() | implant_mapping.mea1k_connectivity > .01))].sort_values(["connectivity_order", 'mea1k_connectivity'], ascending=[True, False])
+                                        #   (implant_mapping.mea1k_connectivity > .7))].sort_values(["connectivity_order", 'mea1k_connectivity'], ascending=[True, False])
         print(test_el_entries)
 
         # cmos_arr = np.arange(26400).reshape(120,220)
@@ -186,7 +199,9 @@ def measure_impedance(full_recdir, rec_time, nas_dir, configs_basepath, stim_set
         turn_off_stimulation_units([stim_unit])  # reset all stim units
 
         aggr_df = pd.DataFrame(aggr)
-        aggr_df.to_csv(os.path.join(full_recdir, "all_impedance.csv"), index=False)
+        if not os.path.exists(os.path.join(full_recdir, "processed")):
+            os.makedirs(os.path.join(full_recdir, "processed"))
+        aggr_df.to_csv(os.path.join(full_recdir, "processed", "all_impedance.csv"), index=False)
         # live redraw
         scatter_vis_impedance(aggr_df)
         mea1k_vis_impedance(aggr_df)
@@ -199,14 +214,14 @@ def main():
     nas_dir = device_paths()[0]
     # implant_name = "250917_MEA1K12_H1628pad1shankB5"
     # implant_name = "250926_MEA1K12_H1278pad4shankB5"
-    implant_name = "250929_MEA1K12_H1628pad1shankB5"
+    implant_name = "251014_MEA1K11_H1628pad1shankB1"
     headstage_name = "MEA1K12"
     subdir = f"devices/implant_devices/{implant_name}/recordings"
     configs_basepath = f"mea1k_configs/single_el2stimunit_configs2"
     stimulater_settings_path = f"devices/headstage_devices/{headstage_name}/smallcurrent_lsb_characterization.csv"
     stim_settings = pd.read_csv(os.path.join(nas_dir, stimulater_settings_path)).set_index("stimunit_id", drop=True)
 
-    rec_dir = "5thBond_imp_measurement"
+    rec_dir = "1stBond_imp_6half_measurement"
     post_download_wait_time = .6
     rec_time = .5
     gain = 7
@@ -214,18 +229,21 @@ def main():
     dac_id = 0
     # ======== PARAMETERS ========
     
+    #TODO shoould also work with headstage device, or bare connecivity table, 
+    # also recorded in strange order last time
+    
     implant_mapping = get_raw_implant_mapping(implant_name)
     full_recdir = os.path.join(nas_dir, subdir, rec_dir)
     print(f"Recording path exists: {os.path.exists(full_recdir)} - ", full_recdir)
     
-    # measure_impedance(full_recdir, rec_time, 
-    #                   nas_dir, configs_basepath, stim_settings, implant_mapping,
-    #                   gain=gain, dac_sine_amplitude=dac_sine_amplitude, 
-    #                   dac_id=dac_id)
+    measure_impedance(full_recdir, rec_time, 
+                      nas_dir, configs_basepath, stim_settings, implant_mapping,
+                      gain=gain, dac_sine_amplitude=dac_sine_amplitude, 
+                      dac_id=dac_id)
     
-    aggr_df = pd.read_csv(os.path.join(full_recdir, "all_impedance.csv"))
-    mea1k_vis_impedance(aggr_df)
-    scatter_vis_impedance(aggr_df)
+    aggr_df = pd.read_csv(os.path.join(full_recdir, "processed", "all_impedance.csv"))
+    mea1k_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
+    scatter_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
 
 if __name__ == "__main__":
     main()
