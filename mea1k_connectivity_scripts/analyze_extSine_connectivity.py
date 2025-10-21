@@ -136,6 +136,14 @@ def main():
     rec_name = f'firstNewDevide8HalfShank_rec2_VrefFPGAStim_ampl15'
     rec_name = f'singlShankBadBatchNewEcoFlex_rec2_VrefFPGAStim_ampl15'
     rec_name = f'14Shank_rec4_8shank_VrefFPGAStim_ampl15'
+    rec_name = f'1Shank_newNew_rec1_VrefFPGAStim_ampl15'
+    
+    # 4 white bonding maps, redraw with this new code and black background, they need _5mV.csv files
+    # rec_name = f'bonding3_singleshank_B6_241207+2_ext5mV1Khz_rec2'
+    # rec_name = f'bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3'
+    # rec_name = f'25mVext_oneShankbatch2_press'
+    # rec_name = f'bonding_4shank_B4_241207_ext5mV1Khz'
+    
     input_ampl_mV = 10
     n_samples = 8_000 # where sine stim is visible
 
@@ -144,8 +152,8 @@ def main():
         print(f"Error: {os.path.join(subdir)} does not exist.")
         exit()
     
-    extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
-    vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2)
+    # extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False)
+    vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
     # create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
     
     
