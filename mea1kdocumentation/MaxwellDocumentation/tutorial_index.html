@@ -1,0 +1,1073 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Tutorial &#8212; MaxLab 1.0.0-7602a7806 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/design-tabs.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorial_index';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Python API" href="api_python.html" />
+    <link rel="prev" title="MaxLab API Module Documentation" href="index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  <div class="navbar-header-items__start">
+    
+      <div class="navbar-item">
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/logo_maxwell.png" class="logo__image only-light" alt="Logo image"/>
+    <script>document.write(`<img src="_static/logo_maxwell.png" class="logo__image only-dark" alt="Logo image"/>`);</script>
+  
+  
+</a></div>
+    
+  </div>
+  
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        MaxLab API Module Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="#">
+                        Tutorial
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_python.html">
+                        Python API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_cpp.html">
+                        C/C++ API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="faq.html">
+                        FAQ
+                      </a>
+                    </li>
+                
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="glossary.html">
+                        Glossary
+                      </a>
+                    </li>
+                
+                </div>
+            </div>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        MaxLab API Module Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="#">
+                        Tutorial
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_python.html">
+                        Python API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_cpp.html">
+                        C/C++ API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="faq.html">
+                        FAQ
+                      </a>
+                    </li>
+                
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="glossary.html">
+                        Glossary
+                      </a>
+                    </li>
+                
+                </div>
+            </div>
+            
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumbs">
+  <ul class="bd-breadcrumbs" role="navigation" aria-label="Breadcrumb">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">Tutorial</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this heading">#</a></h1>
+<section id="api-module">
+<h2>API Module<a class="headerlink" href="#api-module" title="Permalink to this heading">#</a></h2>
+<section id="introduction">
+<h3>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">#</a></h3>
+<p>Welcome to the Python API tutorial for your MaxOne/MaxTwo device! The Python API gives you
+access to a seamless communication with your MaxOne/MaxTwo devices, enabling you to unleash
+the potential of the MaxWell Biosystems techology. In this comprehensive tutorial, we will
+walk you through the essential functions of the Python API, demonstrating how you can use it
+to execute your experiments.</p>
+<p>Throughout this tutorial, we will focus on a specific experiment goal: simultaneous stimulation
+of up to 32 distinct electrodes on the chip using biphasic pulses. The example assumes the mapping
+of a neural pattern and its data collection. The tutorial will guide you through stimulating a set
+of electrodes and record the data.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>To execute the code snippets in the following sections, it is essential to ensure that the <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code> is running.</p></li>
+<li><p>We only support Python3.</p></li>
+<li><p>An aggregated version of all the code snippets can be found in the <code class="docutils literal notranslate"><span class="pre">~/MaxLab/share/maxlab_lib/examples</span></code> folder on your PC. Note that the <code class="docutils literal notranslate"><span class="pre">maxlab_lib</span></code> folder gets generated by unpacking <code class="docutils literal notranslate"><span class="pre">~/MaxLab/share/libmaxlab-*.zip</span></code>.</p></li>
+</ul>
+</div>
+<section id="device-mxwserver-script-interaction">
+<h4>Device-<code class="docutils literal notranslate"><span class="pre">mxwserver</span></code>-Script Interaction<a class="headerlink" href="#device-mxwserver-script-interaction" title="Permalink to this heading">#</a></h4>
+<img alt="_images/setup.png" class="align-center" src="_images/setup.png" />
+</section>
+</section>
+<section id="setup-the-experiment">
+<h3>Setup the Experiment<a class="headerlink" href="#setup-the-experiment" title="Permalink to this heading">#</a></h3>
+<section id="initialization">
+<h4>Initialization<a class="headerlink" href="#initialization" title="Permalink to this heading">#</a></h4>
+<p>Prior to starting any operations, we first import the Python modules as indicated below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">maxlab</span> <span class="k">as</span> <span class="nn">mx</span>
+</pre></div>
+</div>
+<p>Once the modules are correctly imported, we initialize the system by running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mx</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+<span class="n">mx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">Core</span><span class="p">()</span><span class="o">.</span><span class="n">enable_stimulation_power</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The first command initializes the chip/WP and loads a default configuration. The subsequent
+line activates all Stimulation Units, a step required only if stimulation is part of your experiment.
+Successful execution of this code will be indicated by the ‘Ok’ message, signifying that the system
+initialization was successful. We can now proceed to preparing the Electrode Selection.</p>
+</section>
+<section id="preparing-the-electrode-selection">
+<h4>Preparing the Electrode Selection<a class="headerlink" href="#preparing-the-electrode-selection" title="Permalink to this heading">#</a></h4>
+<p>We distinguish between two categories of electrodes: Recording Electrodes and Stimulation Electrodes.
+While all Stimulation Electrodes serve as Recording Electrodes, the reverse is not necessarily true.
+Therefore, we will refer to Recording Electrodes simply as <code class="docutils literal notranslate"><span class="pre">electrodes</span></code> and to the Stimulation Electrodes
+as <code class="docutils literal notranslate"><span class="pre">stim_electrodes</span></code>. To illustrate this, we will select 12 electrodes, which include 2 stimulation
+electrodes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">electrodes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4885</span><span class="p">,</span> <span class="mi">4666</span><span class="p">,</span> <span class="mi">4886</span><span class="p">,</span> <span class="mi">4022</span><span class="p">,</span> <span class="mi">5327</span><span class="p">,</span> <span class="mi">5328</span><span class="p">,</span> <span class="mi">5106</span><span class="p">,</span> <span class="mi">5326</span><span class="p">,</span> <span class="mi">3138</span><span class="p">,</span> <span class="mi">3140</span><span class="p">,</span> <span class="mi">3580</span><span class="p">,</span> <span class="mi">4887</span><span class="p">]</span>
+<span class="n">stim_electrodes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3580</span><span class="p">,</span> <span class="mi">4887</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The maximum allowed number of recording electrodes is 1020, corresponding to the number of
+recording channels, while the maximum number of stimulation electrodes is 32, in line with
+the available stimulation units.</p>
+</div>
+<p>Alternatively, an existing electrode configuration file can be utilised. You can directly load the
+configuration file into the electrode array using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">array</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="s2">&quot;stimulation&quot;</span><span class="p">)</span>
+<span class="n">array</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span><span class="s2">&quot;path/to/config/file.cfg&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>While it is feasible to load an existing configuration for Recording Electrodes, you will need to
+manually specify the indices for the Stimulation Electrodes, as they are not stored within the
+configuration file.</p>
+<p>Once the Recording Electrodes and the indices of the Stimulation Electrodes are saved in their respective
+variables, we can proceed to configure the Electrode Array and establish the electrode routing. This
+procedure remains consistent regardless of the specific stimulation experiment you intend to conduct:</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Array configuration and electrodes routing</span><a class="headerlink" href="#id2" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">array</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="s2">&quot;stimulation&quot;</span><span class="p">)</span>
+<span class="n">array</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="n">array</span><span class="o">.</span><span class="n">clear_selected_electrodes</span><span class="p">()</span>
+<span class="n">array</span><span class="o">.</span><span class="n">select_electrodes</span><span class="p">(</span><span class="n">electrodes</span><span class="p">)</span>
+<span class="n">array</span><span class="o">.</span><span class="n">select_stimulation_electrodes</span><span class="p">(</span><span class="n">stim_electrodes</span><span class="p">)</span>
+<span class="n">array</span><span class="o">.</span><span class="n">route</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>Please be aware that selecting a large number of stimulation electrodes can potentially lead to routing
+issues. In such a scenario, a straightforward solution is to choose the electrode adjacent to the problematic
+one and repeat the procedure.</p>
+<p>With the Electrode Array now configured, the next step, if you’re using MaxTwo, is to define from which
+well(s) you intend to record and stimulate. You can choose to work with one specific well or up to all six wells.
+For example, if you plan to conduct your experiments using wells 1 and 2, you would execute the following
+command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wells</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">mx</span><span class="o">.</span><span class="n">activate</span><span class="p">(</span><span class="n">wells</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="stimulation-units-preparation">
+<h4>Stimulation Units Preparation<a class="headerlink" href="#stimulation-units-preparation" title="Permalink to this heading">#</a></h4>
+<p>As the Stimulation Electrodes are selected and the Electrode Array is now configured, the next step is to connect
+these electrodes to the stimulation units. This can be achieved using the following code:</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Stimulation units Preparation</span><a class="headerlink" href="#id3" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">stimulation_units</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">stimulation_electrode</span> <span class="ow">in</span> <span class="n">stimulation_electrodes</span><span class="p">:</span>
+    <span class="n">array</span><span class="o">.</span><span class="n">connect_electrode_to_stimulation</span><span class="p">(</span><span class="n">stimulation_electrode</span><span class="p">)</span>
+    <span class="n">stim</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">query_stimulation_at_electrode</span><span class="p">(</span><span class="n">stimulation_electrode</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stim</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;No stimulation channel can connect to electrode: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">stim_el</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="n">stim_unit_int</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">stim</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">stim_unit_int</span> <span class="ow">in</span> <span class="n">stim_units</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Two electrodes connected to the same stim unit.</span><span class="se">\</span>
+<span class="s2">                           This is not allowed. Please Select a neighboring electrode of </span><span class="si">{</span><span class="n">stim_el</span><span class="si">}</span><span class="s2">!&quot;</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">stim_units</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stim_unit_int</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The code snippet above generates a list of the indices of the stimulation units linked to the stimulation
+electrodes. If a stimulation electrode cannot be connected to a stimulation unit, an error message is displayed.
+Note that this message serves as a notification and does not halt the execution of your code. Therefore,
+it important to ensure, before proceeding, that some of the stimulation electrodes have been successfully
+connected. Another error message can occur, if two electrodes are connected to the same stimulation unit. If
+such a situation occurs, it is recommended to select a neighboring electrode.</p>
+<p>Before initiating the transmission of stimulation sequences, the next step is to download the pre-configured
+Electrode Array to the MaxOne/MaxTwo device, as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">array</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">wells</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Downloading the Electrode Array is a necessary step. Merely routing is insufficient. Routing takes place within
+the <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code>, but no data is being transmitted to the chip.</p>
+<p>After successfully downloading the Electrode Array configuration, the subsequent operation involves running an
+offset compensation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mx</span><span class="o">.</span><span class="n">offset</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Finally, we can configure and power up the selected stimulation units (saved in the list stimulation_units),
+using the following code:</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Configure and power up stimulation units</span><a class="headerlink" href="#id4" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">stimulation_unit_commands</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">mx</span><span class="o">.</span><span class="n">StimulationUnits</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">stimulation_unit</span> <span class="ow">in</span> <span class="n">stimulation_units</span><span class="p">:</span>
+    <span class="n">stimulation</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">StimulationUnit</span><span class="p">(</span><span class="n">stimulation_unit</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">power_up</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">set_voltage_mode</span><span class="p">()</span>
+                    <span class="o">.</span><span class="n">dac_source</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">stimulation_unit_commands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stimulation</span><span class="p">)</span>
+    <span class="n">mx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">stimulation</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Up to this stage, the <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code> has no information regarding the specific stimulation pulses and
+sequences intended for your experiment. Actual data transmission to the server only occurs when using the
+<code class="docutils literal notranslate"><span class="pre">mx.send(</span> <span class="pre">...</span> <span class="pre">)</span></code> function.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The waveforms which are sent through the stimulation units are generated in the DAC channels
+(Digital-Analog Converters). Thus, the stimulation unit’s output are controlled by
+configuring the values within the DAC channels.</p>
+</div>
+</section>
+<section id="stimulation-sequences-preparation">
+<h4>Stimulation Sequences Preparation<a class="headerlink" href="#stimulation-sequences-preparation" title="Permalink to this heading">#</a></h4>
+<p>Creating a stimulation sequence is a straightforward process. It commences with defining the ‘shape’ of the
+stimulation pulse. As an example, we can use a sinusoidal, biphasic pulse.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>DAC inputs operate within the range of 0 to 1023 bits, where 512 corresponds to 0 V, and a single bit
+corresponds to 2.9 mV. Consequently, to generate a pulse of 100 millivolts, the DAC channel needs to be
+set to 512 + 34 (equivalent to 100mV/2.9) and subsequently reverted to 512. For further details, please
+refer to <a class="reference internal" href="api_python.html#maxlab.chip.DAC" title="maxlab.chip.DAC"><code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.chip.DAC</span></code></a>.</p>
+</div>
+<p>The following code illustrates a function which creates such a pulse:</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Pulse shape function</span><a class="headerlink" href="#id5" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">create_stim_pulse</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">phase</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mx</span><span class="o">.</span><span class="n">Sequence</span><span class="p">:</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span> <span class="o">-</span> <span class="n">amplitude</span><span class="p">))</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="n">phase</span><span class="p">))</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span> <span class="o">+</span> <span class="n">amplitude</span><span class="p">))</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="n">phase</span><span class="p">))</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">seq</span>
+</pre></div>
+</div>
+</div>
+<p>This function creates a pulse with the following shape:</p>
+<img alt="_images/pulse.svg" class="align-center" src="_images/pulse.svg" /><p>We will use this function to create our stimulation sequence. In this process, several
+parameters need to be considered:</p>
+<ul class="simple">
+<li><p><cite>amplitude</cite>: Amplitude of the pulse in bits.</p></li>
+<li><p><cite>phase</cite>: Number of samples being sent between different pulse amplitudes, where each sample corresponds to 50us.</p></li>
+<li><p><cite>number_pulses_per_train</cite>: Repetitions of the created stimulation pulse with <code class="docutils literal notranslate"><span class="pre">create_stim_pulse</span></code> one wishes to send.</p></li>
+<li><p><cite>inter_pulse_interval</cite>: Number of delay samples between two repetitions of a pulse (50us per sample).</p></li>
+</ul>
+<p>We are now ready to prepare the stimulation sequence.</p>
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">Stimulation sequence Preparation</span><a class="headerlink" href="#id6" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">number_pulses_per_train</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">amplitude</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">phase</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">inter_pulse_interval</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">seq</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Sequence</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_pulses_per_train</span><span class="p">):</span>
+    <span class="n">seq</span> <span class="o">=</span> <span class="n">create_stim_pulse</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">,</span> <span class="n">phase</span><span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="n">inter_pulse_interval</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<p>The provided code generates a sequence object, appends a stimulation pulse using the
+<code class="docutils literal notranslate"><span class="pre">create_stim_pulse</span></code> function, and introduces a delay of 200 samples before incorporating the
+subsequent stimulation pulse. Note that up to this point, no data has been transmitted to the
+MaxOne/MaxTwo device. Before starting the stimulation, a recording should be started first, a
+topic we will delve into in the next section.</p>
+</section>
+</section>
+<section id="run-the-experiment">
+<h3>Run the Experiment<a class="headerlink" href="#run-the-experiment" title="Permalink to this heading">#</a></h3>
+<section id="starting-the-recording">
+<h4>Starting the Recording<a class="headerlink" href="#starting-the-recording" title="Permalink to this heading">#</a></h4>
+<p>To start a recording, first we need to specify the name of the recording file, the directory where the
+file will be stored, and, for the MaxTwo, from which well we wish to record data.</p>
+<p>Note that the recording wells must be given in a list format. For instance <code class="docutils literal notranslate"><span class="pre">[0]</span></code> represents well
+0, and <code class="docutils literal notranslate"><span class="pre">[1,</span> <span class="pre">2,</span> <span class="pre">5]</span></code> represents wells 1, 2, and 5.</p>
+<p>Once this is defined, the recording can be prepared:</p>
+<div class="literal-block-wrapper docutils container" id="id7">
+<div class="code-block-caption"><span class="caption-text">Recording preparation</span><a class="headerlink" href="#id7" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">directory_name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">mp&quot;</span>
+<span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;stim&quot;</span>
+<span class="n">recording_wells</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Saving</span><span class="p">()</span>
+<span class="n">s</span><span class="o">.</span><span class="n">open_directory</span><span class="p">(</span><span class="n">directory_name</span><span class="p">)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">start_file</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">group_delete_all</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>The final step before initiating the recording process is to define electrode groups. We need to
+specify from which electrodes we intend to record data. This is achieved using the <code class="docutils literal notranslate"><span class="pre">group_define</span></code>
+function, which follows this format: <code class="docutils literal notranslate"><span class="pre">s.group_define(well_nr,</span> <span class="pre">&quot;any_name&quot;,</span> <span class="pre">list_of_channels_to_record_from)</span></code>.
+In the context of our example, the configuration will look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span><span class="o">.</span><span class="n">group_define</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;all_channels&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1024</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>We are now ready to start the recordings:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span><span class="o">.</span><span class="n">start_recording</span><span class="p">(</span><span class="n">recording_wells</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once the recording started, we can send our prepared stimulation sequence.</p>
+</section>
+<section id="send-stimulation-sequence">
+<h4>Send Stimulation Sequence<a class="headerlink" href="#send-stimulation-sequence" title="Permalink to this heading">#</a></h4>
+<p>The way of sending the stimulation sequence can be tailored. For example, you can transmit the
+sequence ‘sequentially’ to all stimulation units simultaneously, or alternatively, you can send
+the same sequence to one stimulation unit at a time. In this tutorial, we will focus on the simplest
+scenario, where we send the previously prepared stimulation sequence to all units simultaneously. Before
+proceeding, it is crucial to determine how many times you want to send the stimulation sequence. A
+sequence of pulses, created as shown above, will be referred to as  <code class="docutils literal notranslate"><span class="pre">stimulation</span> <span class="pre">train</span></code>. Therefore, you
+need to specify the number of stimulation trains you wish to send, and then execute the following code:</p>
+<div class="literal-block-wrapper docutils container" id="id8">
+<div class="code-block-caption"><span class="caption-text">Send stimulation sequence</span><a class="headerlink" href="#id8" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">number_pulse_trains</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_pulse_trains</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Send pulse&quot;</span><span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">send</span><span class="p">()</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>This code sends the prepared sequence 5 times, and it waits a specified time between each train. Once
+the stimulation is done, we need to stop the recording, which is done the following way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span><span class="o">.</span><span class="n">stop_recording</span><span class="p">()</span>
+<span class="n">s</span><span class="o">.</span><span class="n">stop_file</span><span class="p">()</span>
+<span class="n">s</span><span class="o">.</span><span class="n">group_delete_all</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="closed-loop-api">
+<h2>Closed-Loop API<a class="headerlink" href="#closed-loop-api" title="Permalink to this heading">#</a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading">#</a></h3>
+<p>The static library against you need to link your code has been written in C++. To simplify the linking step,
+the interface of the library only exposes C-compatible types (i.e. only functions, struct’s, and no classes, etc.).
+It was compiled with:</p>
+<ul class="simple">
+<li><p>Compiler: <code class="docutils literal notranslate"><span class="pre">gcc-11.2.1</span></code></p></li>
+<li><p>GLIBC: <code class="docutils literal notranslate"><span class="pre">2.3.2</span></code></p></li>
+<li><p>CPP-Standard: GNU C++20 (<code class="docutils literal notranslate"><span class="pre">-std=gnu++20</span></code>)</p></li>
+</ul>
+</section>
+<section id="id1">
+<h3>Introduction<a class="headerlink" href="#id1" title="Permalink to this heading">#</a></h3>
+<p>To conduct closed-loop, real-time experiments, a different approach is necessary. The general setup
+remains similar to the previous one, with an Electrode Array preparation and sequence creation. However,
+to gain more precise control over when to transmit the prepared sequence to the MaxOne/MaxTwo device,
+an additional C++ interface comes into play. This interface monitors the incoming data stream and swiftly
+delivers a response (the closed-loop sequence) based on predefined custom conditions. This bi-directional
+data exchange involves concurrent reading and transmission on two separate ports.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Before starting with closed-loop experiments, it is highly recommended to be familiar with the
+Python API code explained above. Additionally, C++ knowledge is required. You will find all referenced
+files in this tutorial in <code class="docutils literal notranslate"><span class="pre">~/MaxLab/share/maxlab_lib</span></code>, which you get by unzipping <code class="docutils literal notranslate"><span class="pre">~/MaxLab/share/libmaxlab-*.zip</span></code>.</p>
+</div>
+<p>For this example, we will simulate a triggering sequence here. In a real experimental setup, this
+sequence should not be created, as the triggers will come from your cells.</p>
+</section>
+<section id="python-setup">
+<h3>Python Setup<a class="headerlink" href="#python-setup" title="Permalink to this heading">#</a></h3>
+<p>The first step involves creating a python setup script, following the guidelines outlined in the Python
+API tutorial, with the following additional changes.</p>
+<section id="system-initialization">
+<h4>System Initialization<a class="headerlink" href="#system-initialization" title="Permalink to this heading">#</a></h4>
+<p>Firstly, two additional parameters need to be set. The first parameter defines the amplitude of the
+trigger stimulation sequence, which originates from an electrode named <code class="docutils literal notranslate"><span class="pre">trigger_electrode</span></code>. The second
+parameter defines the amplitude of the closed-loop response, generated from an electrode designated as
+<code class="docutils literal notranslate"><span class="pre">closed_loop_electrode</span></code>. The newly introduced parameters are as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trigger_electrode</span> <span class="o">=</span> <span class="mi">13248</span>
+<span class="n">closed_loop_electrode</span> <span class="o">=</span> <span class="mi">13378</span>
+<span class="n">trigger_stimulation_amplitude</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">closed_loop_stimulation_amplitude</span> <span class="o">=</span> <span class="mi">10</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using the closed-loop scripts outside of this tutorial, there is no need to simulate
+a trigger sequence. The simulation is solely for illustrative purposes. Hence, there is no necessity
+to set <code class="docutils literal notranslate"><span class="pre">trigger_stimulation_amplitude</span></code>. Instead, you need to set a condition in the C++ script, as
+explained later.</p>
+</div>
+<p>Prior to initializing the system, you need to make sure that no sequence has been pre-defined in the server.
+This can be achieved with the following procedure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">del</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span><span class="s1">&#39;closed_loop&#39;</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">del</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The system is now ready for initialization, as detailed earlier. However, for the purposes of this example,
+a final adjustment is required to mitigate the occurrence of false positives. This adjustment involves
+setting the detection threshold to 8.5 times the standard deviation of the noise:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mx</span><span class="o">.</span><span class="n">send_raw</span><span class="p">(</span><span class="s2">&quot;stream_set_event_threshold  8.5&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="array-and-stimulation-units-preparation">
+<h4>Array and Stimulation Units Preparation<a class="headerlink" href="#array-and-stimulation-units-preparation" title="Permalink to this heading">#</a></h4>
+<p>The configuration process for the Electrode Array and Stimulation Units follows the same steps
+as detailed above. However, there is a key distinction: unlike in the Python API tutorial, where multiple
+electrodes are stimulated, here, only two electrodes will be stimulated. These two electrodes will be
+associated with their respective stimulation units and designated as <code class="docutils literal notranslate"><span class="pre">stimulation_1</span></code> and <code class="docutils literal notranslate"><span class="pre">stimulation_2</span></code>.</p>
+</section>
+<section id="stimulation-sequence-s-preparation">
+<h4>Stimulation Sequence(s) Preparation<a class="headerlink" href="#stimulation-sequence-s-preparation" title="Permalink to this heading">#</a></h4>
+<p>The stimulation sequences (in our case the trigger and closed-loop sequences) can be prepared similarly as explained in the
+Pyhton API. Assuming that the function <code class="docutils literal notranslate"><span class="pre">create_stim_pulse</span></code> as defined above exists, we would run the following code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sequence_1</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">stimulation_pulses_number</span><span class="p">):</span>
+    <span class="n">sequence_1</span> <span class="o">=</span> <span class="n">create_stim_pulse</span><span class="p">(</span><span class="n">sequence_1</span><span class="p">,</span> <span class="n">trigger_stimulation_amplitude</span><span class="p">,</span> <span class="n">delay_samples</span><span class="p">)</span>
+    <span class="n">sequence_1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
+
+<span class="n">sequence_2</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span><span class="s1">&#39;closed_loop_sequence&#39;</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">stimulation_pulses_number</span><span class="p">):</span>
+    <span class="n">sequence_2</span> <span class="o">=</span> <span class="n">create_stim_pulse</span><span class="p">(</span><span class="n">sequence_2</span><span class="p">,</span> <span class="n">closed_loop_stimulation_amplitude</span><span class="p">,</span> <span class="n">delay_samples</span><span class="p">)</span>
+    <span class="n">sequence_2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Similar to the explanation provided in the Python API Tutorial, to this point, no data has been
+sent to the device, and the Electrode Array and sequence preparations have been executed only locally.</p>
+</section>
+<section id="stimulation-sequence-s-sending-and-data-saving">
+<h4>Stimulation Sequence(s) Sending and Data Saving<a class="headerlink" href="#stimulation-sequence-s-sending-and-data-saving" title="Permalink to this heading">#</a></h4>
+<p>Sending and recording the data must be then run similarly as in the Python API tutorial.</p>
+<p>Once the script is ready, it should not be executed immediately. It should be saved with a filename
+like <code class="docutils literal notranslate"><span class="pre">closedLoopSetup.py</span></code>, and run from a terminal or executable after setting up the C++ part.</p>
+</section>
+</section>
+<section id="c-setup">
+<h3>C++ Setup<a class="headerlink" href="#c-setup" title="Permalink to this heading">#</a></h3>
+<p>This code interacts with the MaxOne/MaxTwo, listening to the data stream and responding in real time.
+There are two distinct types of data streams: the raw data stream and the filtered data stream. The former
+contains unprocessed data, while the latter exclusively includes the spikes detected by MaxLab Live.</p>
+<section id="raw-data-stream">
+<h4>Raw Data Stream<a class="headerlink" href="#raw-data-stream" title="Permalink to this heading">#</a></h4>
+<p>We start here by explaining how the C++ code for processing raw data works. Here is a copy of the script:</p>
+<div class="literal-block-wrapper docutils container" id="id9">
+<div class="code-block-caption"><span class="caption-text">process_raw_data.cpp</span><a class="headerlink" href="#id9" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#include &lt;stdlib.h&gt;</span>
+<span class="c1">#include &lt;stdio.h&gt;</span>
+<span class="c1">#include &quot;maxlab/maxlab.h&quot;</span>
+
+<span class="nb">int</span> <span class="n">main</span><span class="p">(</span><span class="nb">int</span> <span class="n">argc</span><span class="p">,</span> <span class="n">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s2">&quot;Call with: </span><span class="si">%s</span><span class="s2"> [detection_channel]&quot;</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="n">const</span> <span class="nb">int</span> <span class="n">detection_channel</span> <span class="o">=</span> <span class="n">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+
+    <span class="n">maxlab</span><span class="p">::</span><span class="n">verifyStatus</span><span class="p">(</span><span class="n">maxlab</span><span class="p">::</span><span class="n">DataStreamerRaw_open</span><span class="p">());</span>
+
+    <span class="n">uint64_t</span> <span class="n">blanking</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">true</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">maxlab</span><span class="p">::</span><span class="n">RawFrameData</span> <span class="n">frameData</span><span class="p">;</span>
+        <span class="n">maxlab</span><span class="p">::</span><span class="n">Status</span> <span class="n">status</span> <span class="o">=</span> <span class="n">maxlab</span><span class="p">::</span><span class="n">DataStreamerRaw_receiveNextFrame</span><span class="p">(</span><span class="o">&amp;</span><span class="n">frameData</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">==</span> <span class="n">maxlab</span><span class="p">::</span><span class="n">Status</span><span class="p">::</span><span class="n">MAXLAB_NO_FRAME</span> <span class="o">||</span> <span class="n">frameData</span><span class="o">.</span><span class="n">frameInfo</span><span class="o">.</span><span class="n">corrupted</span><span class="p">)</span>
+            <span class="k">continue</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">blanking</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">blanking</span><span class="o">--</span><span class="p">;</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">blanking</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">continue</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">frameData</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="n">detection_channel</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">maxlab</span><span class="p">::</span><span class="n">verifyStatus</span><span class="p">(</span><span class="n">maxlab</span><span class="p">::</span><span class="n">sendSequence</span><span class="p">(</span><span class="s2">&quot;stimulation_sequence&quot;</span><span class="p">));</span>
+            <span class="n">blanking</span> <span class="o">=</span> <span class="mi">8000</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">maxlab</span><span class="p">::</span><span class="n">verifyStatus</span><span class="p">(</span><span class="n">maxlab</span><span class="p">::</span><span class="n">DataStreamerRaw_close</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>The general approach of the code is the following: we first <cite>open</cite> the stream from which we will receive real-time data that is coming from the MaxOne/MaxTwo.
+Notice how in the end we need to again <cite>close</cite> this stream. This is important because otherwise we will leave the <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code> in a undefined state!
+We also call the function <code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab::verifyStatus()</span></code> to ensure that no errors happened during the opening of the stream. You should only call this function
+if the error is not recoverable, since we exit execution in case something goes wrong.
+The next step is to create an instance of <code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab::RawFrameData</span></code> in which the information that is received in <code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab::DataStreamerRaw_receiveNextFrame()</span></code>
+can be stored in. Notice that we also check the status of the reception to make sure that actually received data (the <code class="docutils literal notranslate"><span class="pre">while</span></code>-loop might be faster than the sampling rate
+of the device and we thus might not have any data in the stream). If we have data, we can check a condition to decide if we want to stimulate or not.
+Here we have chosen to simply stimulate if we have a spike on a particular channel (i.e. <code class="docutils literal notranslate"><span class="pre">detection_channel</span></code>). In that case we call <code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab::sendSequence()</span></code>
+to send the response stimulus.</p>
+<p>Most of the general structure from the example above can be taken for any experiment.
+A simple generalization here might be to write a function with the signature <code class="docutils literal notranslate"><span class="pre">bool</span> <span class="pre">condition(maxlab::RawFrameData&amp;)</span></code> that takes the received data and
+returns a <code class="docutils literal notranslate"><span class="pre">bool</span></code> based on the input if a stimulation pulse should be sent.
+.. code-block:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="p">(</span><span class="n">condition</span><span class="p">(</span><span class="n">frameData</span><span class="p">))</span>
+<span class="p">{</span>
+    <span class="n">maxlab</span><span class="p">::</span><span class="n">verifyStatus</span><span class="p">(</span><span class="n">maxlab</span><span class="p">::</span><span class="n">sendSequence</span><span class="p">(</span><span class="s2">&quot;stimulation_sequence&quot;</span><span class="p">));</span>
+    <span class="n">blanking</span> <span class="o">=</span> <span class="mi">8000</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>To complete our understanding of this code, we here briefly explain the role that the variable <code class="docutils literal notranslate"><span class="pre">blanking</span></code> plays. After sending
+a stimulation pulse to the MaxOne/MaxTwo, the voltage of the chip needs some amount of time until returning back to neutral (0V).
+This is done by continuously decrementing this variable after having sent the stimulation pulse.</p>
+</section>
+<section id="filtered-data-stream">
+<h4>Filtered Data Stream<a class="headerlink" href="#filtered-data-stream" title="Permalink to this heading">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">process_spike_events.cpp</span></code> (filtered data stream) script closely resembles the raw data
+stream script. However, it distinguishes itself through the incorporation of an additional for-loop
+designed specifically for data filtration:</p>
+<div class="literal-block-wrapper docutils container" id="id10">
+<div class="code-block-caption"><span class="caption-text">Data filtering</span><a class="headerlink" href="#id10" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">maxlab</span><span class="p">::</span><span class="n">verifyStatus</span><span class="p">(</span><span class="n">maxlab</span><span class="p">::</span><span class="n">DataStreamerFiltered_open</span><span class="p">(</span><span class="n">maxlab</span><span class="p">::</span><span class="n">FilterType</span><span class="p">::</span><span class="n">IIR</span><span class="p">));</span>
+
+<span class="n">uint64_t</span> <span class="n">blanking</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="n">maxlab</span><span class="p">::</span><span class="n">FilteredFrameData</span> <span class="n">frameData</span><span class="p">;</span>
+<span class="k">while</span> <span class="p">(</span><span class="n">true</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">maxlab</span><span class="p">::</span><span class="n">Status</span> <span class="n">status</span> <span class="o">=</span> <span class="n">maxlab</span><span class="p">::</span><span class="n">DataStreamerFiltered_receiveNextFrame</span><span class="p">(</span><span class="o">&amp;</span><span class="n">frameData</span><span class="p">);</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">status</span> <span class="o">==</span> <span class="n">maxlab</span><span class="p">::</span><span class="n">Status</span><span class="p">::</span><span class="n">MAXLAB_NO_FRAME</span><span class="p">)</span>
+        <span class="k">continue</span> <span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">blanking</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">blanking</span><span class="o">--</span><span class="p">;</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">blanking</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">continue</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">frameData</span><span class="o">.</span><span class="n">spikeCount</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">const</span> <span class="n">maxlab</span><span class="p">::</span><span class="n">SpikeEvent</span> <span class="o">&amp;</span><span class="n">spike</span> <span class="o">=</span> <span class="n">frameData</span><span class="o">.</span><span class="n">spikeEvents</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">spike</span><span class="o">.</span><span class="n">channel</span> <span class="o">==</span> <span class="n">detection_channel</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">const</span> <span class="n">maxlab</span><span class="p">::</span><span class="n">Status</span> <span class="n">status</span> <span class="o">=</span> <span class="n">maxlab</span><span class="p">::</span><span class="n">sendSequence</span><span class="p">(</span><span class="s2">&quot;stimulation_sequence&quot;</span><span class="p">);</span>
+
+            <span class="n">blanking</span> <span class="o">=</span> <span class="mi">8000</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">!=</span> <span class="n">maxlab</span><span class="p">::</span><span class="n">Status</span><span class="p">::</span><span class="n">MAXLAB_OK</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">maxlab</span><span class="p">::</span><span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">maxlab</span><span class="p">::</span><span class="n">sendRaw</span><span class="p">(</span><span class="s2">&quot;get_errors&quot;</span><span class="p">);</span>
+                <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s2">&quot;An error occured: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">);</span>
+                <span class="n">maxlab</span><span class="p">::</span><span class="n">freeResponse</span><span class="p">(</span><span class="o">&amp;</span><span class="n">response</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">maxlab</span><span class="p">::</span><span class="n">verifyStatus</span><span class="p">(</span><span class="n">maxlab</span><span class="p">::</span><span class="n">DataStreamerFiltered_close</span><span class="p">());</span>
+</pre></div>
+</div>
+</div>
+<p>This ensures that only actual spikes are processed and what doesn’t pass as a spike event is not considered. More details can be
+found in <code class="docutils literal notranslate"><span class="pre">spike_event.h</span></code>.</p>
+</section>
+</section>
+<section id="integrating-everything-together">
+<h3>Integrating everything together<a class="headerlink" href="#integrating-everything-together" title="Permalink to this heading">#</a></h3>
+<p>Upon properly setting up the scripts, you can start the experiment. This process
+follows a specific sequence. Begin by compiling the C++ code; execute this step by running
+the <code class="docutils literal notranslate"><span class="pre">make</span></code> command from the main folder. This will generate a new directory named <code class="docutils literal notranslate"><span class="pre">build</span></code>,
+where the executable file can be found:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># cd /path/to/maxlab_lib</span>
+<span class="n">make</span>
+</pre></div>
+</div>
+<p>For more information on GNU CMake, please consult the <a class="reference external" href="https://cmake.org/cmake/help/latest/">official documentation</a>.</p>
+<p>Once the executable is created,  the <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code> can be launched through the GUI. The next step
+will be to run the compiled C++ script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># replace `detection_channel` with the appropriate number</span>
+<span class="o">./</span><span class="n">example_raw</span> <span class="n">detection_channel</span>
+</pre></div>
+</div>
+<p>And, finally, we are ready to run the Python setup script, called here <code class="docutils literal notranslate"><span class="pre">closedLoopSetup.py</span></code>. This can
+be done with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="n">closedLoopSetup</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To execute the Python script, it is important to install the <code class="docutils literal notranslate"><span class="pre">maxlab</span></code> package first.
+If a virtual environment, such as <code class="docutils literal notranslate"><span class="pre">pyenv</span></code> or <code class="docutils literal notranslate"><span class="pre">conda</span></code>, is in use, ensure that the environment
+is activated correctly.</p>
+</div>
+<p>The experiment is in progress, and it can be observed by accessing the GUI. The data is systematically saved.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+                <footer class="bd-footer-article">
+                  
+<div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item"><!-- Previous / next buttons -->
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">MaxLab API Module Documentation</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="api_python.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Python API</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div></div>
+  
+</div>
+
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api-module">API Module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction">Introduction</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#device-mxwserver-script-interaction">Device-<code class="docutils literal notranslate"><span class="pre">mxwserver</span></code>-Script Interaction</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#setup-the-experiment">Setup the Experiment</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#initialization">Initialization</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#preparing-the-electrode-selection">Preparing the Electrode Selection</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#stimulation-units-preparation">Stimulation Units Preparation</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#stimulation-sequences-preparation">Stimulation Sequences Preparation</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#run-the-experiment">Run the Experiment</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-the-recording">Starting the Recording</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#send-stimulation-sequence">Send Stimulation Sequence</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#closed-loop-api">Closed-Loop API</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Introduction</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#python-setup">Python Setup</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#system-initialization">System Initialization</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#array-and-stimulation-units-preparation">Array and Stimulation Units Preparation</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#stimulation-sequence-s-preparation">Stimulation Sequence(s) Preparation</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#stimulation-sequence-s-sending-and-data-saving">Stimulation Sequence(s) Sending and Data Saving</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#c-setup">C++ Setup</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#raw-data-stream">Raw Data Stream</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#filtered-data-stream">Filtered Data Stream</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#integrating-everything-together">Integrating everything together</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
+    
+      © Copyright 2023, Jan Mueller.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.2.1.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.13.3.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

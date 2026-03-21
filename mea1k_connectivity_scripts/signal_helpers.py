@@ -65,6 +65,10 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, dac=None
         signal_filtered = bandpass_filter(signal, sampling_rate, min_band, max_band)
     mean_ampl, _, instantaneous_phase = extract_average_amplitude(signal_filtered[start:end])
 
+    # fifty_hz = np.where((positive_freqs >= 50 - 5) & (positive_freqs <= 50 + 5))[0]
+    # mean_ampl = np.log(np.mean(power_spectrum[freqs >= 1][fifty_hz]))
+    # print("Log Power at 50Hz: ", mean_ampl)
+
     mean_phase_shift = None
     if dac is not None:
         _, _, instantaneous_phase_dac = extract_average_amplitude(dac[start:end])
@@ -127,7 +131,7 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, dac=None
             [ax[3].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
             ax[3].legend()
         plt.savefig('./live_figures/debug_signal.png')
-        # plt.show()
+        plt.show()
     return mean_ampl, mean_phase_shift if dac is not None else None
 
 

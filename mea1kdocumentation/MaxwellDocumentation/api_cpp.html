@@ -1,0 +1,824 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>C/C++ API &#8212; MaxLab 1.0.0-7602a7806 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/design-tabs.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api_cpp';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="FAQ" href="faq.html" />
+    <link rel="prev" title="Python API" href="api_python.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  <div class="navbar-header-items__start">
+    
+      <div class="navbar-item">
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/logo_maxwell.png" class="logo__image only-light" alt="Logo image"/>
+    <script>document.write(`<img src="_static/logo_maxwell.png" class="logo__image only-dark" alt="Logo image"/>`);</script>
+  
+  
+</a></div>
+    
+  </div>
+  
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        MaxLab API Module Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="tutorial_index.html">
+                        Tutorial
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_python.html">
+                        Python API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="#">
+                        C/C++ API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="faq.html">
+                        FAQ
+                      </a>
+                    </li>
+                
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="glossary.html">
+                        Glossary
+                      </a>
+                    </li>
+                
+                </div>
+            </div>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+    </div>
+  
+
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        MaxLab API Module Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="tutorial_index.html">
+                        Tutorial
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_python.html">
+                        Python API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="#">
+                        C/C++ API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="faq.html">
+                        FAQ
+                      </a>
+                    </li>
+                
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="glossary.html">
+                        Glossary
+                      </a>
+                    </li>
+                
+                </div>
+            </div>
+            
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumbs">
+  <ul class="bd-breadcrumbs" role="navigation" aria-label="Breadcrumb">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">C/C++ API</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="c-c-api">
+<h1>C/C++ API<a class="headerlink" href="#c-c-api" title="Permalink to this heading">#</a></h1>
+<dl class="cpp enum-class">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab10FilterTypeE">
+<span id="_CPPv3N6maxlab10FilterTypeE"></span><span id="_CPPv2N6maxlab10FilterTypeE"></span><span class="target" id="namespacemaxlab_1a7f58e378dcd7d20e3d0a6691ecb9cd39"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">FilterType</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab10FilterTypeE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Enum that represents the possible types of filters that can be selected. </p>
+<p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab10FilterType3FIRE">
+<span id="_CPPv3N6maxlab10FilterType3FIRE"></span><span id="_CPPv2N6maxlab10FilterType3FIRE"></span><span class="target" id="namespacemaxlab_1a7f58e378dcd7d20e3d0a6691ecb9cd39a9a7920297b31ec7489d9f59e009df7ed"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FIR</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab10FilterType3FIRE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Default filter in scope. Latency is roughly <code class="docutils literal notranslate"><span class="pre">2048</span> <span class="pre">/</span> <span class="pre">sampling</span> <span class="pre">rate</span></code> ms. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab10FilterType3IIRE">
+<span id="_CPPv3N6maxlab10FilterType3IIRE"></span><span id="_CPPv2N6maxlab10FilterType3IIRE"></span><span class="target" id="namespacemaxlab_1a7f58e378dcd7d20e3d0a6691ecb9cd39a91d9799d5066794f4ca55840614bb2bc"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">IIR</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab10FilterType3IIRE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Latency is roughly <code class="docutils literal notranslate"><span class="pre">10</span> <span class="pre">/</span> <span class="pre">sampling</span> <span class="pre">rate</span></code> ms. </p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab9FrameInfoE">
+<span id="_CPPv3N6maxlab9FrameInfoE"></span><span id="_CPPv2N6maxlab9FrameInfoE"></span><span id="maxlab::FrameInfo"></span><span class="target" id="structmaxlab_1_1FrameInfo"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FrameInfo</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab9FrameInfoE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Information about the state of a data frame. </p>
+<p>In particular, the frame-number, the well-id and if the frame is corrupted or not. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab9FrameInfo12frame_numberE">
+<span id="_CPPv3N6maxlab9FrameInfo12frame_numberE"></span><span id="_CPPv2N6maxlab9FrameInfo12frame_numberE"></span><span id="maxlab::FrameInfo::frame_number__uint64_t"></span><span class="target" id="structmaxlab_1_1FrameInfo_1a7241d0d3235c748b9e7eadda16147675"></span><span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">frame_number</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N6maxlab9FrameInfo12frame_numberE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Frame number. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab9FrameInfo7well_idE">
+<span id="_CPPv3N6maxlab9FrameInfo7well_idE"></span><span id="_CPPv2N6maxlab9FrameInfo7well_idE"></span><span id="maxlab::FrameInfo::well_id__uint8_t"></span><span class="target" id="structmaxlab_1_1FrameInfo_1a4cb429cbfdf7ab9d8d374b842d2bc754"></span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">well_id</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N6maxlab9FrameInfo7well_idE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Well Id on MultiWell devices. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab9FrameInfo9corruptedE">
+<span id="_CPPv3N6maxlab9FrameInfo9corruptedE"></span><span id="_CPPv2N6maxlab9FrameInfo9corruptedE"></span><span id="maxlab::FrameInfo::corrupted__b"></span><span class="target" id="structmaxlab_1_1FrameInfo_1a93504e79b8920823305cf8a90b49b2cf"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">corrupted</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><a class="headerlink" href="#_CPPv4N6maxlab9FrameInfo9corruptedE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>If frame is corrupted or not. If corrupted, no guarantees on data contained in it. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab12sendSequenceEPKc">
+<span id="_CPPv3N6maxlab12sendSequenceEPKc"></span><span id="_CPPv2N6maxlab12sendSequenceEPKc"></span><span id="maxlab::sendSequence__cCP"></span><span class="target" id="namespacemaxlab_1a907f7c1d45cc06418dad6e2b27833a98"></span><a class="reference internal" href="#_CPPv4N6maxlab6StatusE" title="maxlab::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendSequence</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">sequenceName</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6maxlab12sendSequenceEPKc" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Function to trigger sending of sequence from <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code> to the device. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sequenceName</strong> – The name of the predefined <code class="docutils literal notranslate"><span class="pre">maxlab.sequence.Sequence</span></code> with the Python API. </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Information if call was successful and if not what kind of error happened. Please consult the definition of <a class="reference internal" href="#namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328"><span class="std std-ref">maxlab::Status</span></a> for more infos. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp enum">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6StatusE">
+<span id="_CPPv3N6maxlab6StatusE"></span><span id="_CPPv2N6maxlab6StatusE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">Status</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6StatusE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Enum indicating all possible error codes. </p>
+<p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status9MAXLAB_OKE">
+<span id="_CPPv3N6maxlab6Status9MAXLAB_OKE"></span><span id="_CPPv2N6maxlab6Status9MAXLAB_OKE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328ac6b9e45f0cf88ae9442866372ebf86de"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_OK</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status9MAXLAB_OKE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>All good. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status15MAXLAB_API_FAILE">
+<span id="_CPPv3N6maxlab6Status15MAXLAB_API_FAILE"></span><span id="_CPPv2N6maxlab6Status15MAXLAB_API_FAILE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328a0af78a97457bfc6c36d8773f58b64538"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_API_FAIL</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status15MAXLAB_API_FAILE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>API response was unexpected. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status27MAXLAB_NO_SERVER_CONNECTIONE">
+<span id="_CPPv3N6maxlab6Status27MAXLAB_NO_SERVER_CONNECTIONE"></span><span id="_CPPv2N6maxlab6Status27MAXLAB_NO_SERVER_CONNECTIONE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328ad2078dec37a4c8a4ab9ba1cfe520d093"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_NO_SERVER_CONNECTION</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status27MAXLAB_NO_SERVER_CONNECTIONE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>No connection to <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code></p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status22MAXLAB_LICENSE_INVALIDE">
+<span id="_CPPv3N6maxlab6Status22MAXLAB_LICENSE_INVALIDE"></span><span id="_CPPv2N6maxlab6Status22MAXLAB_LICENSE_INVALIDE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328a6735c33b1a489b3074d6c5b92dd43697"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_LICENSE_INVALID</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status22MAXLAB_LICENSE_INVALIDE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>No valid license. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status22MAXLAB_API_NO_RESPONSEE">
+<span id="_CPPv3N6maxlab6Status22MAXLAB_API_NO_RESPONSEE"></span><span id="_CPPv2N6maxlab6Status22MAXLAB_API_NO_RESPONSEE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328ac5cb41ace4b63bbc122ca44c74a2f37f"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_API_NO_RESPONSE</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status22MAXLAB_API_NO_RESPONSEE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>No response from API. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status28MAXLAB_STREAM_ALREADY_OPENEDE">
+<span id="_CPPv3N6maxlab6Status28MAXLAB_STREAM_ALREADY_OPENEDE"></span><span id="_CPPv2N6maxlab6Status28MAXLAB_STREAM_ALREADY_OPENEDE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328a2978f9ff5c80ee888e5b05fdbde2329e"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_STREAM_ALREADY_OPENED</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status28MAXLAB_STREAM_ALREADY_OPENEDE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Trying to open an already open stream for the second time. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status29MAXLAB_INCOMPATIBLE_FILTERINGE">
+<span id="_CPPv3N6maxlab6Status29MAXLAB_INCOMPATIBLE_FILTERINGE"></span><span id="_CPPv2N6maxlab6Status29MAXLAB_INCOMPATIBLE_FILTERINGE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328a427d72c38950e81101372ecf735bb682"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_INCOMPATIBLE_FILTERING</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status29MAXLAB_INCOMPATIBLE_FILTERINGE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Not all filtering options are compatible with all streams. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status20MAXLAB_INVALID_INPUTE">
+<span id="_CPPv3N6maxlab6Status20MAXLAB_INVALID_INPUTE"></span><span id="_CPPv2N6maxlab6Status20MAXLAB_INVALID_INPUTE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328add2b82d8bb4013241810eee8f73eff00"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_INVALID_INPUT</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status20MAXLAB_INVALID_INPUTE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Arguments passed to function are invalid. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status24MAXLAB_STREAM_NOT_OPENEDE">
+<span id="_CPPv3N6maxlab6Status24MAXLAB_STREAM_NOT_OPENEDE"></span><span id="_CPPv2N6maxlab6Status24MAXLAB_STREAM_NOT_OPENEDE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328a218b07ada21d43442273f31a235ab8dd"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_STREAM_NOT_OPENED</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status24MAXLAB_STREAM_NOT_OPENEDE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Stream is not opened. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab6Status15MAXLAB_NO_FRAMEE">
+<span id="_CPPv3N6maxlab6Status15MAXLAB_NO_FRAMEE"></span><span id="_CPPv2N6maxlab6Status15MAXLAB_NO_FRAMEE"></span><span class="target" id="namespacemaxlab_1a6f1e4c9ac4755eb0681afed86c797328af3f7170579dcf94064118f81d7b16bbf"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MAXLAB_NO_FRAME</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab6Status15MAXLAB_NO_FRAMEE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>No data in the stream. </p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab17FilteredFrameDataE">
+<span id="_CPPv3N6maxlab17FilteredFrameDataE"></span><span id="_CPPv2N6maxlab17FilteredFrameDataE"></span><span id="maxlab::FilteredFrameData"></span><span class="target" id="structmaxlab_1_1FilteredFrameData"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FilteredFrameData</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab17FilteredFrameDataE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Structure to store the information obtained from the filtered data stream. </p>
+<p>Note that there will at most be a 1024 spikes (i.e. the number of readout channels), but there might be less. You thus need to make sure to never access memory that is further offset from the <code class="docutils literal notranslate"><span class="pre">spikeEvents</span></code> pointer than <code class="docutils literal notranslate"><span class="pre">spikeCount</span></code>.</p>
+<p>Example <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+<span class="n">FilteredFrameData</span> <span class="n">frame</span><span class="p">;</span>
+<span class="n">DataStreamerFiltered_receiveNextFrame</span><span class="p">(</span><span class="o">&amp;</span><span class="n">frame</span><span class="p">);</span>
+<span class="n">frame</span><span class="o">.</span><span class="n">spikeEvents</span><span class="p">[</span><span class="n">frame</span><span class="o">.</span><span class="n">spikeCount</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>    <span class="o">//</span> <span class="n">Valid</span> <span class="n">access</span>
+<span class="n">frame</span><span class="o">.</span><span class="n">spikeEvents</span><span class="p">[</span><span class="n">frame</span><span class="o">.</span><span class="n">spikeCount</span><span class="p">]</span>        <span class="o">//</span> <span class="n">Invalid</span> <span class="n">access</span> <span class="ow">and</span> <span class="n">undefined</span> <span class="n">behaviour</span>
+</pre></div>
+</div>
+</p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab17FilteredFrameData10spikeCountE">
+<span id="_CPPv3N6maxlab17FilteredFrameData10spikeCountE"></span><span id="_CPPv2N6maxlab17FilteredFrameData10spikeCountE"></span><span id="maxlab::FilteredFrameData::spikeCount__uint64_t"></span><span class="target" id="structmaxlab_1_1FilteredFrameData_1a29345f542ab23bbc740df6db3d0ae3dd"></span><span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">spikeCount</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab17FilteredFrameData10spikeCountE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>How many spikes were detected. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab17FilteredFrameData11spikeEventsE">
+<span id="_CPPv3N6maxlab17FilteredFrameData11spikeEventsE"></span><span id="_CPPv2N6maxlab17FilteredFrameData11spikeEventsE"></span><span id="maxlab::FilteredFrameData::spikeEvents__SpikeEventCP"></span><span class="target" id="structmaxlab_1_1FilteredFrameData_1afc21eeafeb80f0a0c4f26fd91550054d"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">SpikeEvent</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">spikeEvents</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab17FilteredFrameData11spikeEventsE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Pointer to the spikes. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab12RawFrameDataE">
+<span id="_CPPv3N6maxlab12RawFrameDataE"></span><span id="_CPPv2N6maxlab12RawFrameDataE"></span><span id="maxlab::RawFrameData"></span><span class="target" id="structmaxlab_1_1RawFrameData"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RawFrameData</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab12RawFrameDataE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Structure to store the information obtained from the raw data stream. </p>
+<p>Note that there are always exactly 1024 amplitudes (i.e. the number of readout channels).</p>
+<p>Example <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+<span class="n">RawFrameData</span> <span class="n">frame</span><span class="p">;</span>
+<span class="n">DataStreamerRaw_receiveNextFrame</span><span class="p">(</span><span class="o">&amp;</span><span class="n">frame</span><span class="p">);</span>
+<span class="n">frame</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="n">frame</span><span class="o">.</span><span class="n">amplitudeCount</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>    <span class="o">//</span> <span class="n">Valid</span> <span class="n">access</span>
+<span class="n">frame</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">[</span><span class="n">frame</span><span class="o">.</span><span class="n">amplitudeCount</span><span class="p">]</span>        <span class="o">//</span> <span class="n">Invalid</span> <span class="n">access</span> <span class="ow">and</span> <span class="n">undefined</span> <span class="n">behaviour</span>
+</pre></div>
+</div>
+</p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab12RawFrameData9frameInfoE">
+<span id="_CPPv3N6maxlab12RawFrameData9frameInfoE"></span><span id="_CPPv2N6maxlab12RawFrameData9frameInfoE"></span><span id="maxlab::RawFrameData::frameInfo__FrameInfo"></span><span class="target" id="structmaxlab_1_1RawFrameData_1abed0a343d1b653a16fe22971967fece5"></span><a class="reference internal" href="#_CPPv4N6maxlab9FrameInfoE" title="maxlab::FrameInfo"><span class="n"><span class="pre">FrameInfo</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">frameInfo</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab12RawFrameData9frameInfoE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>For more infos see <a class="reference internal" href="#structmaxlab_1_1FrameInfo"><span class="std std-ref">maxlab::FrameInfo</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab12RawFrameData10amplitudesE">
+<span id="_CPPv3N6maxlab12RawFrameData10amplitudesE"></span><span id="_CPPv2N6maxlab12RawFrameData10amplitudesE"></span><span id="maxlab::RawFrameData::amplitudes__floatCP"></span><span class="target" id="structmaxlab_1_1RawFrameData_1a22581abb260d59021bcd6c208daf3697"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">amplitudes</span></span></span><a class="headerlink" href="#_CPPv4N6maxlab12RawFrameData10amplitudesE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Pointer to the amplitudes array. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab12RawFrameData14amplitudeCountE">
+<span id="_CPPv3N6maxlab12RawFrameData14amplitudeCountE"></span><span id="_CPPv2N6maxlab12RawFrameData14amplitudeCountE"></span><span id="maxlab::RawFrameData::amplitudeCount__uint64_tC"></span><span class="target" id="structmaxlab_1_1RawFrameData_1af02c9def61d3eb2da3a96af988d4a3be"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">amplitudeCount</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1024</span></span><a class="headerlink" href="#_CPPv4N6maxlab12RawFrameData14amplitudeCountE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Fixed size of the amplitudes pointer. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab25DataStreamerFiltered_openE10FilterType">
+<span id="_CPPv3N6maxlab25DataStreamerFiltered_openE10FilterType"></span><span id="_CPPv2N6maxlab25DataStreamerFiltered_openE10FilterType"></span><span id="maxlab::DataStreamerFiltered_open__FilterType"></span><span class="target" id="namespacemaxlab_1a3b72d84d9fdfa24818e70427aa7a6abb"></span><a class="reference internal" href="#_CPPv4N6maxlab6StatusE" title="maxlab::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">DataStreamerFiltered_open</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N6maxlab10FilterTypeE" title="maxlab::FilterType"><span class="n"><span class="pre">FilterType</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">filterType</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6maxlab25DataStreamerFiltered_openE10FilterType" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Crates the connection to the filtered data stream. </p>
+<p>
+It is recommended to use maxlab::verifyStatus to check the return of this function. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filterType</strong> – Specify the type of filtering you want. For more information, see <a class="reference internal" href="#namespacemaxlab_1a7f58e378dcd7d20e3d0a6691ecb9cd39"><span class="std std-ref">maxlab::FilterType</span></a>. </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Status of the initialization of the stream. Possible values are:<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_OK</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_LICENSE_INVALID</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_STREAM_ALREADY_OPENED</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_INCOMPATIBLE_FILTERING</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_NO_SERVER_CONNECTION</span></code></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab26DataStreamerFiltered_closeEv">
+<span id="_CPPv3N6maxlab26DataStreamerFiltered_closeEv"></span><span id="_CPPv2N6maxlab26DataStreamerFiltered_closeEv"></span><span id="maxlab::DataStreamerFiltered_close"></span><span class="target" id="namespacemaxlab_1a2a6722412b26dedebcc12e21ec5caff1"></span><a class="reference internal" href="#_CPPv4N6maxlab6StatusE" title="maxlab::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">DataStreamerFiltered_close</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6maxlab26DataStreamerFiltered_closeEv" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Closes the connection to the filtered data stream and restores the state of the mxwserver to the default. </p>
+<p>
+Note that you should ensure to always call this function at end of you experiment and check with maxlab::verifyStatus if the closing worked correctly. If it did not, make sure to restart <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code> before starting any new runs of doing any experiments in <code class="docutils literal notranslate"><span class="pre">scope</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Status of the closure of the stream. Possible values are:<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_OK</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_NO_SERVER_CONNECTION</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_API_NO_RESPONSE</span></code></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab37DataStreamerFiltered_receiveNextFrameEP17FilteredFrameData">
+<span id="_CPPv3N6maxlab37DataStreamerFiltered_receiveNextFrameEP17FilteredFrameData"></span><span id="_CPPv2N6maxlab37DataStreamerFiltered_receiveNextFrameEP17FilteredFrameData"></span><span id="maxlab::DataStreamerFiltered_receiveNextFrame__FilteredFrameDataP"></span><span class="target" id="namespacemaxlab_1a59c375c4079fcd5be11c9022adbcf8ce"></span><a class="reference internal" href="#_CPPv4N6maxlab6StatusE" title="maxlab::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">DataStreamerFiltered_receiveNextFrame</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N6maxlab17FilteredFrameDataE" title="maxlab::FilteredFrameData"><span class="n"><span class="pre">FilteredFrameData</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">frameData</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6maxlab37DataStreamerFiltered_receiveNextFrameEP17FilteredFrameData" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Receive next frame from filtered data stream if there is one. </p>
+<p>
+Depending on the setup of your experiment, this function might be called more often than there are actually frames in the stream. This function is currently &lt; b&gt; not blocking &lt; /b&gt;, i.e. you need to check the <a class="reference internal" href="#structmaxlab_1_1FilteredFrameData_1a29345f542ab23bbc740df6db3d0ae3dd"><span class="std std-ref">maxlab::FilteredFrameData::spikeCount</span></a> to ensure that there are spikes before accessing the pointer to the spikes. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>frameData</strong> – Buffer in which data can be written into. </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Status of the receiving operation. Possible values are:<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_OK</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_INVALID_INPUT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_NO_SPIKES</span></code></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab34DataStreamerFiltered_setFilterTypeE10FilterType">
+<span id="_CPPv3N6maxlab34DataStreamerFiltered_setFilterTypeE10FilterType"></span><span id="_CPPv2N6maxlab34DataStreamerFiltered_setFilterTypeE10FilterType"></span><span id="maxlab::DataStreamerFiltered_setFilterType__FilterType"></span><span class="target" id="namespacemaxlab_1a8af4455e48543fa979878c7804c22654"></span><a class="reference internal" href="#_CPPv4N6maxlab6StatusE" title="maxlab::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">DataStreamerFiltered_setFilterType</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N6maxlab10FilterTypeE" title="maxlab::FilterType"><span class="n"><span class="pre">FilterType</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">filterType</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6maxlab34DataStreamerFiltered_setFilterTypeE10FilterType" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Allows the change of filter-type while keeping the data stream open. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filterType</strong> – Filter type, for more information see <a class="reference internal" href="#namespacemaxlab_1a7f58e378dcd7d20e3d0a6691ecb9cd39"><span class="std std-ref">maxlab::FilterType</span></a>. </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Status of the operation. Possible values are:<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_OK</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_STREAM_NOT_OPENED</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_INCOMPATIBLE_FILTERING</span></code></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab34DataStreamerFiltered_getFilterTypeEv">
+<span id="_CPPv3N6maxlab34DataStreamerFiltered_getFilterTypeEv"></span><span id="_CPPv2N6maxlab34DataStreamerFiltered_getFilterTypeEv"></span><span id="maxlab::DataStreamerFiltered_getFilterType"></span><span class="target" id="namespacemaxlab_1ae382224be2d7bac7b9990e517034fb07"></span><a class="reference internal" href="#_CPPv4N6maxlab10FilterTypeE" title="maxlab::FilterType"><span class="n"><span class="pre">FilterType</span></span></a><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">DataStreamerFiltered_getFilterType</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6maxlab34DataStreamerFiltered_getFilterTypeEv" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Get currently set filter type. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Filter type, for more infos, see <a class="reference internal" href="#namespacemaxlab_1a7f58e378dcd7d20e3d0a6691ecb9cd39"><span class="std std-ref">maxlab::FilterType</span></a>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab20DataStreamerRaw_openEv">
+<span id="_CPPv3N6maxlab20DataStreamerRaw_openEv"></span><span id="_CPPv2N6maxlab20DataStreamerRaw_openEv"></span><span id="maxlab::DataStreamerRaw_open"></span><span class="target" id="namespacemaxlab_1aee835537e979e05808085290b3b259de"></span><a class="reference internal" href="#_CPPv4N6maxlab6StatusE" title="maxlab::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">DataStreamerRaw_open</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6maxlab20DataStreamerRaw_openEv" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Crates the connection to the raw data stream. </p>
+<p>
+It is recommended to use maxlab::verifyStatus to check the return of this function. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Status of the initialization of the stream. Possible values are:<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_OK</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_LICENSE_INVALID</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_STREAM_ALREADY_OPENED</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_INCOMPATIBLE_FILTERING</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_NO_SERVER_CONNECTION</span></code></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab21DataStreamerRaw_closeEv">
+<span id="_CPPv3N6maxlab21DataStreamerRaw_closeEv"></span><span id="_CPPv2N6maxlab21DataStreamerRaw_closeEv"></span><span id="maxlab::DataStreamerRaw_close"></span><span class="target" id="namespacemaxlab_1ad2ae36ceb2300bb6c303a1467d21e7d8"></span><a class="reference internal" href="#_CPPv4N6maxlab6StatusE" title="maxlab::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">DataStreamerRaw_close</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6maxlab21DataStreamerRaw_closeEv" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Closes the connection to the raw data stream and restores the state of the mxwserver to the default. </p>
+<p>
+Note that you should ensure to always call this function at end of you experiment and check with maxlab::verifyStatus if the closing worked correctly. If it did not, make sure to restart <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code> before starting any new runs of doing any experiments in <code class="docutils literal notranslate"><span class="pre">scope</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Status of the closure of the stream. Possible values are:<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_OK</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_NO_SERVER_CONNECTION</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_API_NO_RESPONSE</span></code></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6maxlab32DataStreamerRaw_receiveNextFrameEP12RawFrameData">
+<span id="_CPPv3N6maxlab32DataStreamerRaw_receiveNextFrameEP12RawFrameData"></span><span id="_CPPv2N6maxlab32DataStreamerRaw_receiveNextFrameEP12RawFrameData"></span><span id="maxlab::DataStreamerRaw_receiveNextFrame__RawFrameDataP"></span><span class="target" id="namespacemaxlab_1a45a12e60686ea8a674939de3ddfe7dab"></span><a class="reference internal" href="#_CPPv4N6maxlab6StatusE" title="maxlab::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">maxlab</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">DataStreamerRaw_receiveNextFrame</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N6maxlab12RawFrameDataE" title="maxlab::RawFrameData"><span class="n"><span class="pre">RawFrameData</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">frameData</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6maxlab32DataStreamerRaw_receiveNextFrameEP12RawFrameData" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Receive next frame from filtered data stream if there is one. </p>
+<p>
+Depending on the setup of your experiment, this function might be called more often than there are actually frames in the stream. This function is currently &lt; b&gt; not blocking &lt; /b&gt;, i.e. we return maxlab::Status::MAXLAB_NO_FRAME if there currently is no frame in the stream, otherwise maxlab::Status::MAXLAB_OK. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>frameData</strong> – Buffer in which data can be written into. </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Status of the receiving operation. Possible values are:<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_OK</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_INVALID_INPUT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_STREAM_NOT_OPENED</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxlab::Status::MAXLAB_NO_FRAME</span></code></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+                <footer class="bd-footer-article">
+                  
+<div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item"><!-- Previous / next buttons -->
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="api_python.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Python API</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="faq.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">FAQ</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div></div>
+  
+</div>
+
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
+    
+      © Copyright 2023, Jan Mueller.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.2.1.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.13.3.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

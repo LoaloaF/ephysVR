@@ -1,0 +1,1595 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Python API &#8212; MaxLab 1.0.0-7602a7806 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/design-tabs.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api_python';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="C/C++ API" href="api_cpp.html" />
+    <link rel="prev" title="Tutorial" href="tutorial_index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  <div class="navbar-header-items__start">
+    
+      <div class="navbar-item">
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/logo_maxwell.png" class="logo__image only-light" alt="Logo image"/>
+    <script>document.write(`<img src="_static/logo_maxwell.png" class="logo__image only-dark" alt="Logo image"/>`);</script>
+  
+  
+</a></div>
+    
+  </div>
+  
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        MaxLab API Module Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="tutorial_index.html">
+                        Tutorial
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="#">
+                        Python API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_cpp.html">
+                        C/C++ API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="faq.html">
+                        FAQ
+                      </a>
+                    </li>
+                
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="glossary.html">
+                        Glossary
+                      </a>
+                    </li>
+                
+                </div>
+            </div>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        MaxLab API Module Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="tutorial_index.html">
+                        Tutorial
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="#">
+                        Python API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_cpp.html">
+                        C/C++ API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="faq.html">
+                        FAQ
+                      </a>
+                    </li>
+                
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="glossary.html">
+                        Glossary
+                      </a>
+                    </li>
+                
+                </div>
+            </div>
+            
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumbs">
+  <ul class="bd-breadcrumbs" role="navigation" aria-label="Breadcrumb">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">Python API</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="module-maxlab">
+<span id="python-api"></span><span id="api"></span><h1>Python API<a class="headerlink" href="#module-maxlab" title="Permalink to this heading">#</a></h1>
+<p>Python module for programmatic control of MaxLab Live.</p>
+<section id="general">
+<h2>General<a class="headerlink" href="#general" title="Permalink to this heading">#</a></h2>
+<p>The Python API is based around objects that derive from a base class called <code class="docutils literal notranslate"><span class="pre">maxlab.api_object.ApiObject</span></code>.
+This base class contains only one abstract method called <code class="docutils literal notranslate"><span class="pre">set</span></code>. Each class that derives
+from this base class can be sent with the <a class="reference internal" href="#maxlab.util.send" title="maxlab.util.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab.util.send()</span></code></a> to the <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">set</span></code> method is hidden from this documentation since it is only there to construct
+the correct message that needs to be send to the <code class="docutils literal notranslate"><span class="pre">mxwserver</span></code>. Please note that these
+messages have a strict format and it is thus not advised to try and create them yourself,
+this is precisely what the API is for.</p>
+<p>Warning
+It is important to understand that creating objects from classes that derive from <cite>maxlab.api_object.ApiObject</cite> will not have any effect on the system until they are sent to the server via <a class="reference internal" href="#maxlab.util.send" title="maxlab.util.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab.util.send()</span></code></a>.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="maxlab.util.send">
+<span class="sig-prename descclassname"><span class="pre">maxlab.util.</span></span><span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ApiObject</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.util.send" title="Permalink to this definition">#</a></dt>
+<dd><p>Utility function to send command objects to the server API.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>obj</strong> (<em>ApiObject</em>) – A command object from either <code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.system</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.chip</span></code>.
+The command object needs a method called <cite>send()</cite>, which contains
+all the information needed to program the API</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="system-commands">
+<h2>System Commands<a class="headerlink" href="#system-commands" title="Permalink to this heading">#</a></h2>
+<p>The classes and functions in this library are used to control the system, which is the MaxHub and the Recording Unit.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.system.DelaySamples">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.system.</span></span><span class="sig-name descname"><span class="pre">DelaySamples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.system.DelaySamples" title="Permalink to this definition">#</a></dt>
+<dd><p>Insert a delay between two consecutive commands</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>samples</strong> (<em>int</em>) – How many samples to delay between two consecutive
+commands. Time between two recording samples is 50 µs and
+is independent of the data sampling rate, i.e it is the same
+for MaxOne and MaxTwo.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.system.ReferenceStimulationHigh">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.system.</span></span><span class="sig-name descname"><span class="pre">ReferenceStimulationHigh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reference_voltage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2820</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.system.ReferenceStimulationHigh" title="Permalink to this definition">#</a></dt>
+<dd><p>Sets the high reference voltage for the stimulation buffers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>reference_voltage</strong> (<em>int</em>) – Value in bits to set the reference
+voltage. Allowed values are between 0 and 4095, whereas
+4095 corresponds to 3.3 volts. When doing voltage controlled
+stimulation, the recommended default value for this reference
+voltage is 2.25 volts, i.e. 2792 bits.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.system.ReferenceStimulationLow">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.system.</span></span><span class="sig-name descname"><span class="pre">ReferenceStimulationLow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reference_voltage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1304</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.system.ReferenceStimulationLow" title="Permalink to this definition">#</a></dt>
+<dd><p>Sets the low reference voltage for the stimulation buffers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>reference_voltage</strong> (<em>int</em>) – Value in bits to set the reference
+voltage. Allowed values are between 0 and 4095, whereas
+4095 corresponds to 3.3 volts. When doing voltage controlled
+stimulation, a typically recommended value for this reference
+voltage is 1.05 volts, i.e. 1304.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Refer to the system manual for more details about this reference
+voltage.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.system.GPIODirection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.system.</span></span><span class="sig-name descname"><span class="pre">GPIODirection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">direction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.system.GPIODirection" title="Permalink to this definition">#</a></dt>
+<dd><p>Set the direction of the GPIOs.</p>
+<p>Please refer to the glossary if you are not sure what GPIO means.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>direction</strong> (<em>int</em>) – <p>An 8-bit value, where each bit of <cite>direction</cite> controls the
+state of one GPIO, whether one GPIO is either in input or
+in output mode.</p>
+<ul class="simple">
+<li><p>bit = ‘0’: setting the corresponding GPIO channel into input mode.</p></li>
+<li><p>bit = ‘1’: setting the corresponding GPIO channel into output mode.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>When the GPIO is set to input mode, the value applied to the GPIO
+pin is sampled together with each sampling frame of the MaxOne/MaxTwo chip
+and the values are recorded into the recording file.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># This sets GPIO3 to output mode, GPIO7 - GPIO4 and GPIO2 - GPIO0 to input mode</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">maxlab</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">GPIODirection</span><span class="p">(</span><span class="mb">0b00001000</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.system.GPIOOutput">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.system.</span></span><span class="sig-name descname"><span class="pre">GPIOOutput</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.system.GPIOOutput" title="Permalink to this definition">#</a></dt>
+<dd><p>Control the output of the GPIOs.</p>
+<p>Please refer to the glossary if you are not sure what GPIO means.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output</strong> (<em>int</em>) – An 8-bit value specifying the output state of each GPIO channel.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>When the corresponding bit is set to output mode with
+<a class="reference internal" href="#maxlab.system.GPIODirection" title="maxlab.system.GPIODirection"><code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab.system.GPIODirection()</span></code></a>, the output of that channel can
+be controlled through this function.</p>
+<p class="rubric">Examples</p>
+<p>The following example generates a pulse on the GPIO channel 4,
+by toggling bit 4:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">maxlab</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">GPIOOutput</span><span class="p">(</span><span class="mb">0b1000</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">maxlab</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">maxlab</span><span class="o">.</span><span class="n">send</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">GPIOOutput</span><span class="p">(</span><span class="mb">0b0000</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.system.StatusLED">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.system.</span></span><span class="sig-name descname"><span class="pre">StatusLED</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.system.StatusLED" title="Permalink to this definition">#</a></dt>
+<dd><p>Control the color of the status LED.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>color</strong> (<em>int</em>) – <p>Value to control the color of the LED on the Recording Unit.</p>
+<dl class="simple">
+<dt>Values for the color parameter can be:</dt><dd><ul class="simple">
+<li><p>0: light blue.</p></li>
+<li><p>1: cyan.</p></li>
+<li><p>2: pink</p></li>
+<li><p>3: dark blue</p></li>
+<li><p>4: light green</p></li>
+<li><p>5: dark green</p></li>
+<li><p>6: red</p></li>
+<li><p>7: off</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>When the experiment is light sensitive, for example during a retina experiment,
+this LED can be switched off by setting the <cite>color</cite> parameter to 0.</p>
+</dd></dl>
+
+</section>
+<section id="chip-commands">
+<h2>Chip Commands<a class="headerlink" href="#chip-commands" title="Permalink to this heading">#</a></h2>
+<p>The classes and functions in this library are used to control the MaxOne sensor chip.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.chip.Amplifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.chip.</span></span><span class="sig-name descname"><span class="pre">Amplifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.chip.Amplifier" title="Permalink to this definition">#</a></dt>
+<dd><p>Program gain of the MaxOne/MaxTwo on-chip amplifiers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gain</strong> (<em>int</em>) – The gain to be set.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Default gain for this command is 512. Use <cite>maxlab.chip.Amplifier.set_gain</cite> to set a different gain.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Amplifier.set_gain">
+<span class="sig-name descname"><span class="pre">set_gain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.Amplifier" title="maxlab.chip.Amplifier"><span class="pre">Amplifier</span></a></span></span><a class="headerlink" href="#maxlab.chip.Amplifier.set_gain" title="Permalink to this definition">#</a></dt>
+<dd><p>Set different gain values for the amplifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gain</strong> (<em>int</em>) – <p>The gain to be set.</p>
+<dl class="simple">
+<dt>Possible gain values are:</dt><dd><ul class="simple">
+<li><p>1</p></li>
+<li><p>7</p></li>
+<li><p>112</p></li>
+<li><p>512</p></li>
+<li><p>1024</p></li>
+<li><p>1025</p></li>
+<li><p>2048</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Other values are not valid and will raise an exception. For example trying to set the gain to 1000:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If <cite>gain</cite> is not a valid gain setting.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">try</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">Amplifier</span><span class="p">()</span><span class="o">.</span><span class="n">set_gain</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="nb">print</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="go">Not a valid gain parameter: 1000</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.chip.DAC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.chip.</span></span><span class="sig-name descname"><span class="pre">DAC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dac_no</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dac_code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dac_code_second</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.chip.DAC" title="Permalink to this definition">#</a></dt>
+<dd><p>Program the three on-chip DACs (digital-to-analog converters) channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dac_no</strong> (<em>int</em>) – Which DAC channel to control.</p></li>
+<li><p><strong>dac_code</strong> (<em>int</em>) – DAC code in bits.</p></li>
+<li><p><strong>dac_code_second</strong> (<em>int</em>) – This parameter is only relevant when <cite>dac_no=3</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Depending on which DAC channel is specified in the command, the
+parameter <cite>dac_code</cite> has a different meaning.</p>
+<p>The meaning of <cite>dac_code</cite> depending on <cite>dac_no</cite> (DAC channel) is:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>0: <cite>dac_code</cite> controls DAC0</p></li>
+<li><p>1: <cite>dac_code</cite> controls DAC1</p></li>
+<li><p>2: <cite>dac_code</cite> controls DAC2</p></li>
+<li><p>3: <cite>dac_code</cite> controls DAC0 and <cite>dac_code_second</cite> controls DAC1 at the very same time.</p></li>
+</ul>
+</div></blockquote>
+<p>The last mode <cite>dac_code=3</cite> is useful for applications where the
+outputs of two DAC channels need to be controlled/changed at the
+exact same time.</p>
+<p>Each DAC channel can be programmed with 10 bits, i.e. possible
+values range between 0 and 1023.  To convert between DAC bits and
+stimulation amplitude, one needs to multiply the DAC bits with the
+value from <code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab.system.query_DAC_lsb()</span></code>.</p>
+<p>This conversion does not hold when doing current
+stimulation.</p>
+<p class="rubric">Examples</p>
+<p>When the stimulation buffers are in voltage mode, the conversion
+between DAC code and stimulation voltage goes as follows:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stimVoltage</span> <span class="o">=</span> <span class="p">(</span><span class="n">dac_code</span> <span class="o">-</span> <span class="mi">512</span><span class="p">)</span> <span class="o">*</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">query_DAC_lsb</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.chip.</span></span><span class="sig-name descname"><span class="pre">StimulationUnit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_no</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.chip.StimulationUnit" title="Permalink to this definition">#</a></dt>
+<dd><p>Program the 32 on-chip stimulation units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>unit_no</strong> (<em>int</em>) – The stimulation unit to configure.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>When doing voltage stimulation, the amplifier in the stimulation
+unit acts as an inverting amplifier.  A DAC code of 512
+corresponds to mid-supply, i.e. 0-volt stimulation. 512+100
+results in a negative voltage.  512-100 results in a positive
+voltage.</p>
+<p class="rubric">Examples</p>
+<p>To convert between bits and stimulation voltage, one needs to know
+the DAC lsb:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lsb</span> <span class="o">=</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">query_DAC_lsb_mV</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">amplitude</span> <span class="o">=</span> <span class="n">lsb</span> <span class="o">*</span> <span class="n">bits</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit.connect">
+<span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connect</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit"><span class="pre">StimulationUnit</span></a></span></span><a class="headerlink" href="#maxlab.chip.StimulationUnit.connect" title="Permalink to this definition">#</a></dt>
+<dd><p>Connect or disconnect the stimulation unit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>connect</strong> (<em>bool</em>) – Connect or disconnect the output of the unit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit">maxlab.chip.StimulationUnit</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit.dac_source">
+<span class="sig-name descname"><span class="pre">dac_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit"><span class="pre">StimulationUnit</span></a></span></span><a class="headerlink" href="#maxlab.chip.StimulationUnit.dac_source" title="Permalink to this definition">#</a></dt>
+<dd><p>Choose the DAC channel for the stimulation unit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dac</strong> (<em>int</em>) – <p>The DAC channel to choose for the unit.</p>
+<dl class="simple">
+<dt>Possible values for DAC channels are:</dt><dd><ul class="simple">
+<li><p>0=DAC0</p></li>
+<li><p>1=DAC1</p></li>
+<li><p>2=DAC2</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit">maxlab.chip.StimulationUnit</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit.external_reference">
+<span class="sig-name descname"><span class="pre">external_reference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref_source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit"><span class="pre">StimulationUnit</span></a></span></span><a class="headerlink" href="#maxlab.chip.StimulationUnit.external_reference" title="Permalink to this definition">#</a></dt>
+<dd><p>Use an external reference voltage for this stimulation unit
+instead of a DAC channel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ref_source</strong> (<em>bool</em>) – If <cite>true</cite>, use the external reference source instead of a DAC channel.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit">maxlab.chip.StimulationUnit</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit.get_readout_channel">
+<span class="sig-name descname"><span class="pre">get_readout_channel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#maxlab.chip.StimulationUnit.get_readout_channel" title="Permalink to this definition">#</a></dt>
+<dd><p>Get the readout channel for this stimulation unit</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The readout channel for the stimulation unit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit.power_up">
+<span class="sig-name descname"><span class="pre">power_up</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">power_up</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit"><span class="pre">StimulationUnit</span></a></span></span><a class="headerlink" href="#maxlab.chip.StimulationUnit.power_up" title="Permalink to this definition">#</a></dt>
+<dd><p>Power-up this stimulation unit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>power_up</strong> (<em>bool</em>) – Enable on-chip power for this particular stimulation unit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit">maxlab.chip.StimulationUnit</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit.set_current_mode">
+<span class="sig-name descname"><span class="pre">set_current_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit"><span class="pre">StimulationUnit</span></a></span></span><a class="headerlink" href="#maxlab.chip.StimulationUnit.set_current_mode" title="Permalink to this definition">#</a></dt>
+<dd><p>Set the stimulation unit into current mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit">maxlab.chip.StimulationUnit</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit.set_large_current_range">
+<span class="sig-name descname"><span class="pre">set_large_current_range</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit"><span class="pre">StimulationUnit</span></a></span></span><a class="headerlink" href="#maxlab.chip.StimulationUnit.set_large_current_range" title="Permalink to this definition">#</a></dt>
+<dd><p>Set current range to <cite>large</cite> currents when in current mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit">maxlab.chip.StimulationUnit</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Refer to the system manual to what large means.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit.set_small_current_range">
+<span class="sig-name descname"><span class="pre">set_small_current_range</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit"><span class="pre">StimulationUnit</span></a></span></span><a class="headerlink" href="#maxlab.chip.StimulationUnit.set_small_current_range" title="Permalink to this definition">#</a></dt>
+<dd><p>Set current range to <cite>small</cite> currents when in current mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit">maxlab.chip.StimulationUnit</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Refer to the system manual to what small means.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.StimulationUnit.set_voltage_mode">
+<span class="sig-name descname"><span class="pre">set_voltage_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit"><span class="pre">StimulationUnit</span></a></span></span><a class="headerlink" href="#maxlab.chip.StimulationUnit.set_voltage_mode" title="Permalink to this definition">#</a></dt>
+<dd><p>Set the stimBuffer unit into voltage mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#maxlab.chip.StimulationUnit" title="maxlab.chip.StimulationUnit">maxlab.chip.StimulationUnit</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.chip.Array">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.chip.</span></span><span class="sig-name descname"><span class="pre">Array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'online'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.chip.Array" title="Permalink to this definition">#</a></dt>
+<dd><p>Control the electrode array of the MaxOne/MaxTwo chip.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>token</strong> (<em>str</em>) – Token id to identify this instance on the server. Default is
+‘online’</p></li>
+<li><p><strong>persistent</strong> (<em>bool</em>) – Should the instance of this array get deleted on the server
+when ‘close’ gets called</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Similarly to <code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.Sequence</span></code>, for each <code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.array.Array</span></code> object
+there is a counter part on the server, which can be uniquely
+identified through the token id parameter. However, differently than
+for <code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.Sequence</span></code>, creating such Array objects on the
+server is computationally expensive. It takes multiple seconds and it
+consumes significant amounts of RAM.</p>
+<p>One option is to use one of the already
+available array objects, whilst another is to create a new array
+object on the server. The names of the available objects are
+‘online’ and ‘offline’. The online array object is the same controlled
+through MaxLab Live. I.e. when downloading a
+configuration from the scope GUI, the ‘online’ array will have the
+same configuration set. If it is required to manipulate the array
+without affecting the online version, it is recommended to use the
+‘offline’ version. By specifying a different name, arbitrary amounts
+of arrays can be controlled at the same time.</p>
+<p>All operations on the array, such as loading a configuration
+or connecting amplifiers to stimulation units are done in
+software and no changes are applied to the hardware. Only once the
+<a class="reference internal" href="#maxlab.chip.Array.download" title="maxlab.chip.Array.download"><code class="xref py py-func docutils literal notranslate"><span class="pre">Array.download()</span></code></a> function is executed, the state of the array
+gets downloaded to the actual electrode array on the chip.</p>
+<p class="rubric">Examples</p>
+<p>When creating configurations through the <a class="reference internal" href="#maxlab.chip.Array.route" title="maxlab.chip.Array.route"><code class="xref py py-func docutils literal notranslate"><span class="pre">Array.route()</span></code></a> method,
+all other configurations, such as connecting stimulation channels etc.
+will be lost. So the best procedure is to:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Select electrodes</p></li>
+<li><p>Route</p></li>
+<li><p>Connect stimulation channels</p></li>
+<li><p>Save configuration</p></li>
+</ol>
+</div></blockquote>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">array</span> <span class="o">=</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="s1">&#39;online&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">select_electrodes</span><span class="p">(</span> <span class="p">[</span><span class="mi">11110</span><span class="p">,</span> <span class="mi">11111</span><span class="p">,</span> <span class="mi">11112</span><span class="p">]</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">select_stimulation_electrodes</span><span class="p">(</span> <span class="p">[</span><span class="mi">11330</span><span class="p">,</span> <span class="mi">11331</span><span class="p">,</span> <span class="mi">11332</span><span class="p">]</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">route</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">connect_electrode_to_stimulation</span><span class="p">(</span> <span class="mi">11330</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">connect_electrode_to_stimulation</span><span class="p">(</span> <span class="mi">11331</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">connect_electrode_to_stimulation</span><span class="p">(</span> <span class="mi">11332</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">save_config</span><span class="p">(</span><span class="s2">&quot;myConfig.cfg&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stim1</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">query_stimulation_at_electrode</span><span class="p">(</span> <span class="mi">11330</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stim2</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">query_stimulation_at_electrode</span><span class="p">(</span> <span class="mi">11331</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stim3</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">query_stimulation_at_electrode</span><span class="p">(</span> <span class="mi">11332</span> <span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.clear_selected_electrodes">
+<span class="sig-name descname"><span class="pre">clear_selected_electrodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.clear_selected_electrodes" title="Permalink to this definition">#</a></dt>
+<dd><p>Clear all selected electrodes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#maxlab.chip.Array.close" title="Permalink to this definition">#</a></dt>
+<dd><p>Close this <cite>Array</cite> object.</p>
+<p>If <cite>persistent</cite> is not set, delete the array with the same token
+from the server.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.connect_all_floating_amplifiers">
+<span class="sig-name descname"><span class="pre">connect_all_floating_amplifiers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.connect_all_floating_amplifiers" title="Permalink to this definition">#</a></dt>
+<dd><p>Connect all floating amplifiers to a common node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>By enabling <code class="xref py py-func docutils literal notranslate"><span class="pre">Core.enable_external_port()</span></code>, the floating
+amplifiers can be connected to the external port</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.connect_amplifier_to_ringnode">
+<span class="sig-name descname"><span class="pre">connect_amplifier_to_ringnode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">amplifier_channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.connect_amplifier_to_ringnode" title="Permalink to this definition">#</a></dt>
+<dd><p>Connect amplifier to the common ring node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>amplifier_channel</strong> (<em>int</em>) – Amplifier to be connected to the ring node.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>By enabling <code class="xref py py-func docutils literal notranslate"><span class="pre">Core.enable_external_port()</span></code>, the ring node
+can be connected to the external port.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.connect_amplifier_to_stimulation">
+<span class="sig-name descname"><span class="pre">connect_amplifier_to_stimulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">amplifier_channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.connect_amplifier_to_stimulation" title="Permalink to this definition">#</a></dt>
+<dd><p>Connect the amplifier to a stimulation unit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>amplifier_channel</strong> (<em>int</em>) – Amplifier to be connected to a stimulation unit.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.connect_electrode_to_stimulation">
+<span class="sig-name descname"><span class="pre">connect_electrode_to_stimulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrode_no</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.connect_electrode_to_stimulation" title="Permalink to this definition">#</a></dt>
+<dd><p>Connect electrode to stimulation unit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>electrode_no</strong> (<em>int</em>) – Electrode ID to be connected to a stimulation unit.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>For this function to work, the selected electrode ID needs
+already be routed to an amplifier.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.disconnect_amplifier_from_ringnode">
+<span class="sig-name descname"><span class="pre">disconnect_amplifier_from_ringnode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">amplifier_channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.disconnect_amplifier_from_ringnode" title="Permalink to this definition">#</a></dt>
+<dd><p>Disconnect amplifier from ring node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>amplifier_channel</strong> (<em>int</em>) – Which amplifier channel to disconnect from the ring node.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.disconnect_amplifier_from_stimulation">
+<span class="sig-name descname"><span class="pre">disconnect_amplifier_from_stimulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">amplifier_channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.disconnect_amplifier_from_stimulation" title="Permalink to this definition">#</a></dt>
+<dd><p>Disconnect amplifier from stimulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>amplifier_channel</strong> (<em>int</em>) – Which amplifier channel to disconnect from a stimulation unit.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.disconnect_electrode_from_stimulation">
+<span class="sig-name descname"><span class="pre">disconnect_electrode_from_stimulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.disconnect_electrode_from_stimulation" title="Permalink to this definition">#</a></dt>
+<dd><p>Disconnect electrode from stimulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>electrode</strong> (<em>int</em>) – Which electrode ID to disconnect from a stimulation unit.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.download">
+<span class="sig-name descname"><span class="pre">download</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wells</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#maxlab.chip.Array.download" title="Permalink to this definition">#</a></dt>
+<dd><p>Download the electrode configuration to the chip.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>wells</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – A list of the wells.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.load_config">
+<span class="sig-name descname"><span class="pre">load_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></span><a class="headerlink" href="#maxlab.chip.Array.load_config" title="Permalink to this definition">#</a></dt>
+<dd><p>Loads an electrode configuration from disk and sends it to the API.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config_file_name</strong> (<em>str</em>) – File name where to save the configuration to. Should end with “.cfg”</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>If the configuration is successfully loaded and sent to the API, the
+function returns a string indicating either ‘OK’ or ‘ERROR’.
+If there is an error or the configuration loading fails, the function
+returns an integer value of -1.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Union[str, int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.query_amplifier_at_electrode">
+<span class="sig-name descname"><span class="pre">query_amplifier_at_electrode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrode_no</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.query_amplifier_at_electrode" title="Permalink to this definition">#</a></dt>
+<dd><p>Query amplifier at the electrode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>electrode_no</strong> (<em>int</em>) – Which electrode ID to query.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.query_amplifier_at_ringnode">
+<span class="sig-name descname"><span class="pre">query_amplifier_at_ringnode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.query_amplifier_at_ringnode" title="Permalink to this definition">#</a></dt>
+<dd><p>Query which amplifiers are connected to the ring node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.query_amplifier_at_stimulation">
+<span class="sig-name descname"><span class="pre">query_amplifier_at_stimulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stimulation_channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.query_amplifier_at_stimulation" title="Permalink to this definition">#</a></dt>
+<dd><p>Query amplifier at stimulation unt.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>stimulation_channel</strong> (<em>int</em>) – Which stimulation unit to query.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.query_stimulation_at_amplifier">
+<span class="sig-name descname"><span class="pre">query_stimulation_at_amplifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">amplifier_channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.query_stimulation_at_amplifier" title="Permalink to this definition">#</a></dt>
+<dd><p>Query stimulation unit at amplifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>amplifier_channel</strong> (<em>int</em>) – Which amplifier channel to query.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.query_stimulation_at_electrode">
+<span class="sig-name descname"><span class="pre">query_stimulation_at_electrode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrode_no</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.query_stimulation_at_electrode" title="Permalink to this definition">#</a></dt>
+<dd><p>Query stimulation unit at the electrode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>electrode_no</strong> (<em>int</em>) – Which electrode ID to query.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.reset" title="Permalink to this definition">#</a></dt>
+<dd><p>Resets the array into a defined state.</p>
+<p>This function disconnects all electrodes and all amplifiers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.route">
+<span class="sig-name descname"><span class="pre">route</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.route" title="Permalink to this definition">#</a></dt>
+<dd><p>Route electrode configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Be aware that any manual switch settings, such as stimulation
+connections, are lost after the routing. This is due to the
+routing starting from an ‘empty’ array.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.save_config">
+<span class="sig-name descname"><span class="pre">save_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#maxlab.chip.Array.save_config" title="Permalink to this definition">#</a></dt>
+<dd><p>Save current array configuration to disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config_file_name</strong> (<em>str</em>) – File name where to save the configuration to. Should end with “.cfg”</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An integer value of 0 indicating the successful execution of the save operation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.select_electrodes">
+<span class="sig-name descname"><span class="pre">select_electrodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.select_electrodes" title="Permalink to this definition">#</a></dt>
+<dd><p>Select the given electrodes for routing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>electrodes</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – List of recording electrodes.</p></li>
+<li><p><strong>weight</strong> (<em>int</em>) – <p>Set the routing priority for the electrodes.</p>
+<p>By passing a weight parameter, the routing priority for the
+electrodes can be adjusted.  The higher the weight, the higher
+the routing priority during routing.</p>
+<p>Only one weight can be set for the electrode ids in the function
+argument. Usually, different priorities need to be assigned and
+<cite>select_electrodes</cite> can be called for each set of priorities. See below
+for an example.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">array</span> <span class="o">=</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">Array</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">select_electrodes</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="mi">10</span><span class="p">)</span> <span class="c1"># electrodes with priority of &#39;10&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">select_electrodes</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">8</span><span class="p">],</span> <span class="mi">15</span><span class="p">)</span> <span class="c1"># other electrodes with a higher priority</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Array.select_stimulation_electrodes">
+<span class="sig-name descname"><span class="pre">select_stimulation_electrodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.chip.Array.select_stimulation_electrodes" title="Permalink to this definition">#</a></dt>
+<dd><p>Select the given electrodes for stimulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>electrodes</strong> (<em>List</em><em>[</em><em>int</em><em>]</em>) – <p>List of stimulation electrodes.</p>
+<p>The selected electrodes get automatically a high priority when
+routed.</p>
+</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Possible values are ‘OK’ or ‘ERROR’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Make sure not to select more than 1020 of these
+electrodes.  Otherwise, routing will not work (converge) well.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.chip.Core">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.chip.</span></span><span class="sig-name descname"><span class="pre">Core</span></span><a class="headerlink" href="#maxlab.chip.Core" title="Permalink to this definition">#</a></dt>
+<dd><p>Control core settings of the MaxOne/MaxTwo chip.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.chip.Core.use_external_port">
+<span class="sig-name descname"><span class="pre">use_external_port</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.chip.Core" title="maxlab.chip.Core"><span class="pre">Core</span></a></span></span><a class="headerlink" href="#maxlab.chip.Core.use_external_port" title="Permalink to this definition">#</a></dt>
+<dd><p>Enables the external port access to the array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>enable</strong> (<em>bool</em>) – True if external port is used.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#maxlab.chip.Core" title="maxlab.chip.Core">maxlab.chip.Core</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="stimulation">
+<h2>Stimulation<a class="headerlink" href="#stimulation" title="Permalink to this heading">#</a></h2>
+<p>Sending commands over <code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab.send()</span></code> function might not provide accurate enough timing for Stimulation purposes.
+The problem here is that we have no real control over the timing between
+the execution of all these commands.
+First, the Python interpreter itself has some jitter. It might happen
+that Python pauses between the first and the second command. Or the network connection
+between MaxLab Live and the MaxHub introduces some jitter, and so on.</p>
+<p>In order to avoid the problem explained above, we use
+<code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.Sequence</span></code>. With such a sequence, we can download all
+commands which belong together in one go to the MaxHub and thus avoid any
+jitter in the execution. Precise timing of command execution is particularly
+important when performing stimulation experiments.</p>
+<p>Thus, a typical (positive first, biphasic voltage) stimulation pulse, using a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.Sequence</span></code>, would look like:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sequence</span> <span class="o">=</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">Sequence</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="o">+</span><span class="mi">100</span><span class="p">)</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sequence</span><span class="o">.</span><span class="n">send</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The calls to <code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab.Sequence.append()</span></code> load the API with the correct
+commands. But only the last call to <code class="xref py py-func docutils literal notranslate"><span class="pre">maxlab.Sequence.send()</span></code> actually
+executes the commands i.e. sends them to the system.</p>
+<p>Besides the <code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.Sequence</span></code>, the other construct
+one can use is the <code class="xref py py-class docutils literal notranslate"><span class="pre">maxlab.Loop</span></code>. This loop
+essentially is a function generator running on the MaxHub.
+Using this generator, it is possible to preload a series of functions and execute them
+indefinitely. For example, to stimulate using a sine wave, this class can be used.</p>
+<section id="relevant-classes">
+<h3>Relevant classes<a class="headerlink" href="#relevant-classes" title="Permalink to this heading">#</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="maxlab.sequence.Sequence">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maxlab.sequence.</span></span><span class="sig-name descname"><span class="pre">Sequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_delay</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#maxlab.sequence.Sequence" title="Permalink to this definition">#</a></dt>
+<dd><p>Holds a sequence of commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>token</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – The token associated with the sequence. If not provided, a new
+token will be generated.</p></li>
+<li><p><strong>initial_delay</strong> (<em>int</em>) – The number of samples to delay the first command in the sequence.</p></li>
+<li><p><strong>persistent</strong> (<em>bool</em>) – Indicates whether the sequence should persist on the server even
+after the Sequence object is deleted.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The commands contained in a sequence are executed immediately one
+after each other.</p>
+<p>Thus, the timing between consecutive commands can be precisely
+controlled, down to a resolution of 50 µs. The jitter between
+consecutive commands is negligible with respect to 50 µs,
+and this is relevant for sequences implementing electrical stimulation
+pulses. For a more detailed explanation, please see the introduction
+of this document.</p>
+<p>In case the first command of the sequence gets executed
+before all remaining commands were successfully downloaded,
+the timing would be no longer precise. To prevent this from
+happening, it is good practise to insert a delay command right at
+the beginning of the sequence. This is done through  the parameter
+<cite>initial_delay</cite>. Delaying for 100 samples (i.e. 5 ms) should be
+enough in virtually all cases.</p>
+<p>The sequences are managed on the server and one can generate as many
+sequences as needed. They will be maintained on the server. Whenever
+a sequence object in the python code gets deleted, either through
+explicitely calling <cite>del</cite> or if the code goes out of scope, the
+respective sequence in the server will also be removed:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">s1</span> <span class="o">=</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">Sequence</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">s1</span> <span class="c1"># All information about Sequence s1 is removed from the server</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">samples</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">s</span> <span class="o">=</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">Sequence</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">return</span> <span class="mi">0</span> <span class="c1"># As soon as the function finishes, the sequence s is removed from the server</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.sequence.Sequence.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ApiObject</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.sequence.Sequence" title="maxlab.sequence.Sequence"><span class="pre">Sequence</span></a></span></span><a class="headerlink" href="#maxlab.sequence.Sequence.append" title="Permalink to this definition">#</a></dt>
+<dd><p>Append the ApiObject <cite>obj</cite> to the sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>obj</strong> (<em>ApiObject</em>) – ApiObject to be appended to the sequence.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Sequence object itself after appending, not a new sequence.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#maxlab.sequence.Sequence" title="maxlab.sequence.Sequence">maxlab.sequence.Sequence</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.sequence.Sequence.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.sequence.Sequence" title="maxlab.sequence.Sequence"><span class="pre">Sequence</span></a></span></span><a class="headerlink" href="#maxlab.sequence.Sequence.reset" title="Permalink to this definition">#</a></dt>
+<dd><p>Resets the sequence.</p>
+<p>Calling this function removes all previously appended commands
+from the sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The Sequence object itself after resetting, not a new sequence.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#maxlab.sequence.Sequence" title="maxlab.sequence.Sequence">maxlab.sequence.Sequence</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maxlab.sequence.Sequence.send">
+<span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maxlab.sequence.Sequence" title="maxlab.sequence.Sequence"><span class="pre">Sequence</span></a></span></span><a class="headerlink" href="#maxlab.sequence.Sequence.send" title="Permalink to this definition">#</a></dt>
+<dd><p>Sends the sequence to the system.</p>
+<p>This function downloads the sequence to the MaxOne Hub/MaxTwo, from where
+it gets executed, command by command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The Sequence object itself after sending, not a new sequence.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#maxlab.sequence.Sequence" title="maxlab.sequence.Sequence">maxlab.sequence.Sequence</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+<section id="utilities">
+<h2>Utilities<a class="headerlink" href="#utilities" title="Permalink to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="maxlab.util.interrupt_routing">
+<span class="sig-prename descclassname"><span class="pre">maxlab.util.</span></span><span class="sig-name descname"><span class="pre">interrupt_routing</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.util.interrupt_routing" title="Permalink to this definition">#</a></dt>
+<dd><p>Utility function to interrupt long running routing jobs in
+the server.</p>
+<p>When a routing job or a sequence of routing jobs are ongoing, the
+user can choose to prematurely terminate the routing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="maxlab.util.query_DAC_lsb_mV">
+<span class="sig-prename descclassname"><span class="pre">maxlab.util.</span></span><span class="sig-name descname"><span class="pre">query_DAC_lsb_mV</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#maxlab.util.query_DAC_lsb_mV" title="Permalink to this definition">#</a></dt>
+<dd><p>Query LSB value of the DAC channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This value is only valid when doing voltage stimulation.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+                <footer class="bd-footer-article">
+                  
+<div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item"><!-- Previous / next buttons -->
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="tutorial_index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Tutorial</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="api_cpp.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">C/C++ API</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div></div>
+  
+</div>
+
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#general">General</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.util.send"><code class="docutils literal notranslate"><span class="pre">send()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#system-commands">System Commands</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.system.DelaySamples"><code class="docutils literal notranslate"><span class="pre">DelaySamples</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.system.ReferenceStimulationHigh"><code class="docutils literal notranslate"><span class="pre">ReferenceStimulationHigh</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.system.ReferenceStimulationLow"><code class="docutils literal notranslate"><span class="pre">ReferenceStimulationLow</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.system.GPIODirection"><code class="docutils literal notranslate"><span class="pre">GPIODirection</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.system.GPIOOutput"><code class="docutils literal notranslate"><span class="pre">GPIOOutput</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.system.StatusLED"><code class="docutils literal notranslate"><span class="pre">StatusLED</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#chip-commands">Chip Commands</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Amplifier"><code class="docutils literal notranslate"><span class="pre">Amplifier</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Amplifier.set_gain"><code class="docutils literal notranslate"><span class="pre">Amplifier.set_gain()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.DAC"><code class="docutils literal notranslate"><span class="pre">DAC</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit"><code class="docutils literal notranslate"><span class="pre">StimulationUnit</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit.connect"><code class="docutils literal notranslate"><span class="pre">StimulationUnit.connect()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit.dac_source"><code class="docutils literal notranslate"><span class="pre">StimulationUnit.dac_source()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit.external_reference"><code class="docutils literal notranslate"><span class="pre">StimulationUnit.external_reference()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit.get_readout_channel"><code class="docutils literal notranslate"><span class="pre">StimulationUnit.get_readout_channel()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit.power_up"><code class="docutils literal notranslate"><span class="pre">StimulationUnit.power_up()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit.set_current_mode"><code class="docutils literal notranslate"><span class="pre">StimulationUnit.set_current_mode()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit.set_large_current_range"><code class="docutils literal notranslate"><span class="pre">StimulationUnit.set_large_current_range()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit.set_small_current_range"><code class="docutils literal notranslate"><span class="pre">StimulationUnit.set_small_current_range()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.StimulationUnit.set_voltage_mode"><code class="docutils literal notranslate"><span class="pre">StimulationUnit.set_voltage_mode()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array"><code class="docutils literal notranslate"><span class="pre">Array</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.clear_selected_electrodes"><code class="docutils literal notranslate"><span class="pre">Array.clear_selected_electrodes()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.close"><code class="docutils literal notranslate"><span class="pre">Array.close()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.connect_all_floating_amplifiers"><code class="docutils literal notranslate"><span class="pre">Array.connect_all_floating_amplifiers()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.connect_amplifier_to_ringnode"><code class="docutils literal notranslate"><span class="pre">Array.connect_amplifier_to_ringnode()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.connect_amplifier_to_stimulation"><code class="docutils literal notranslate"><span class="pre">Array.connect_amplifier_to_stimulation()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.connect_electrode_to_stimulation"><code class="docutils literal notranslate"><span class="pre">Array.connect_electrode_to_stimulation()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.disconnect_amplifier_from_ringnode"><code class="docutils literal notranslate"><span class="pre">Array.disconnect_amplifier_from_ringnode()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.disconnect_amplifier_from_stimulation"><code class="docutils literal notranslate"><span class="pre">Array.disconnect_amplifier_from_stimulation()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.disconnect_electrode_from_stimulation"><code class="docutils literal notranslate"><span class="pre">Array.disconnect_electrode_from_stimulation()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.download"><code class="docutils literal notranslate"><span class="pre">Array.download()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.load_config"><code class="docutils literal notranslate"><span class="pre">Array.load_config()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.query_amplifier_at_electrode"><code class="docutils literal notranslate"><span class="pre">Array.query_amplifier_at_electrode()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.query_amplifier_at_ringnode"><code class="docutils literal notranslate"><span class="pre">Array.query_amplifier_at_ringnode()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.query_amplifier_at_stimulation"><code class="docutils literal notranslate"><span class="pre">Array.query_amplifier_at_stimulation()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.query_stimulation_at_amplifier"><code class="docutils literal notranslate"><span class="pre">Array.query_stimulation_at_amplifier()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.query_stimulation_at_electrode"><code class="docutils literal notranslate"><span class="pre">Array.query_stimulation_at_electrode()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.reset"><code class="docutils literal notranslate"><span class="pre">Array.reset()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.route"><code class="docutils literal notranslate"><span class="pre">Array.route()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.save_config"><code class="docutils literal notranslate"><span class="pre">Array.save_config()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.select_electrodes"><code class="docutils literal notranslate"><span class="pre">Array.select_electrodes()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Array.select_stimulation_electrodes"><code class="docutils literal notranslate"><span class="pre">Array.select_stimulation_electrodes()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Core"><code class="docutils literal notranslate"><span class="pre">Core</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.chip.Core.use_external_port"><code class="docutils literal notranslate"><span class="pre">Core.use_external_port()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stimulation">Stimulation</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#relevant-classes">Relevant classes</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.sequence.Sequence"><code class="docutils literal notranslate"><span class="pre">Sequence</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.sequence.Sequence.append"><code class="docutils literal notranslate"><span class="pre">Sequence.append()</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.sequence.Sequence.reset"><code class="docutils literal notranslate"><span class="pre">Sequence.reset()</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.sequence.Sequence.send"><code class="docutils literal notranslate"><span class="pre">Sequence.send()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#utilities">Utilities</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.util.interrupt_routing"><code class="docutils literal notranslate"><span class="pre">interrupt_routing()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maxlab.util.query_DAC_lsb_mV"><code class="docutils literal notranslate"><span class="pre">query_DAC_lsb_mV()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
+    
+      © Copyright 2023, Jan Mueller.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.2.1.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.13.3.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

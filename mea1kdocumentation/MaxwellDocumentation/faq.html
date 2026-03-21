@@ -1,0 +1,849 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>FAQ &#8212; MaxLab 1.0.0-7602a7806 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/design-tabs.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'faq';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Glossary" href="glossary.html" />
+    <link rel="prev" title="C/C++ API" href="api_cpp.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  <div class="navbar-header-items__start">
+    
+      <div class="navbar-item">
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/logo_maxwell.png" class="logo__image only-light" alt="Logo image"/>
+    <script>document.write(`<img src="_static/logo_maxwell.png" class="logo__image only-dark" alt="Logo image"/>`);</script>
+  
+  
+</a></div>
+    
+  </div>
+  
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        MaxLab API Module Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="tutorial_index.html">
+                        Tutorial
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_python.html">
+                        Python API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_cpp.html">
+                        C/C++ API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="#">
+                        FAQ
+                      </a>
+                    </li>
+                
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="glossary.html">
+                        Glossary
+                      </a>
+                    </li>
+                
+                </div>
+            </div>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        MaxLab API Module Documentation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="tutorial_index.html">
+                        Tutorial
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_python.html">
+                        Python API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="api_cpp.html">
+                        C/C++ API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="#">
+                        FAQ
+                      </a>
+                    </li>
+                
+            <div class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More
+                </button>
+                <div class="dropdown-menu">
+                    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="glossary.html">
+                        Glossary
+                      </a>
+                    </li>
+                
+                </div>
+            </div>
+            
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumbs">
+  <ul class="bd-breadcrumbs" role="navigation" aria-label="Breadcrumb">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">FAQ</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="faq">
+<h1>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading">#</a></h1>
+<p>It is assumed that for every of the following examples the maxlab module is imported
+in the following way:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="kn">import</span> <span class="nn">maxlab</span> <span class="k">as</span> <span class="nn">mx</span>
+</pre></div>
+</div>
+<p>Also, given that the stimulation units are by default powered down,
+one need to first initialize the system into a defined state:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="n">mx</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+<span class="linenos">2</span><span class="n">mx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">Core</span><span class="p">()</span><span class="o">.</span><span class="n">enable_stimulation_power</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+</pre></div>
+</div>
+<section id="stimulation">
+<h2>Stimulation<a class="headerlink" href="#stimulation" title="Permalink to this heading">#</a></h2>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How do I select electrodes (recording and stimulation) from the electrode array?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">We here illustrate how to select electrodes 20, 30, 40 from
+the electrode array.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="n">electrodes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">]</span>
+<span class="linenos">2</span>
+<span class="linenos">3</span><span class="n">array</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="s1">&#39;stimulation&#39;</span><span class="p">)</span>
+<span class="linenos">4</span><span class="n">array</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="linenos">5</span><span class="n">array</span><span class="o">.</span><span class="n">clear_selected_electrodes</span><span class="p">()</span>
+<span class="linenos">6</span><span class="n">array</span><span class="o">.</span><span class="n">select_electrodes</span><span class="p">(</span> <span class="n">electrodes</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p class="sd-card-text">Other schemes are also possible. For example large consecutive
+blocks of electrodes or specific electrodes based on prior data
+analysis done e.g. in Matlab.</p>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How do I choose stimulation sites from the selected electrodes?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">After selecting the recording and stimulation electrodes, the next step involves choosing
+stimulation sites from the pre-selected electrodes. Assuming the electrodes are stored as a
+variable named <code class="docutils literal notranslate"><span class="pre">electrodes</span></code>, and if more than 32 stimulation electrodes are selected (the
+maximum number of stimulation channels), we proceed by randomly selecting a subset of 32
+stimulation electrodes and routing them accordingly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="kn">import</span> <span class="nn">random</span>
+<span class="linenos">2</span>
+<span class="linenos">3</span><span class="n">stimulation_electrodes</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">electrodes</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>
+<span class="linenos">4</span><span class="n">array</span><span class="o">.</span><span class="n">select_stimulation_electrodes</span><span class="p">(</span> <span class="n">stimulation_electrodes</span> <span class="p">)</span>
+<span class="linenos">5</span><span class="n">array</span><span class="o">.</span><span class="n">route</span><span class="p">()</span>
+</pre></div>
+</div>
+<p class="sd-card-text">If less than 32 stimulation electrodes are selected and they are saved in the
+variable <code class="docutils literal notranslate"><span class="pre">stimulation_electrodes</span></code>, we can directly use these electrodes as stimulation
+electrodes and random selection of the stimulation electrodes is required:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="n">array</span><span class="o">.</span><span class="n">select_stimulation_electrodes</span><span class="p">(</span> <span class="n">stimulation_electrodes</span> <span class="p">)</span>
+<span class="linenos">2</span><span class="n">array</span><span class="o">.</span><span class="n">route</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p class="sd-card-text">The more electrodes are selected, the more issues can occur.
+In particular, the number of electrodes selected cannot be larger
+than 32, which is the number of stimulation channels.</p>
+</div>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How do I connect the stimulation units to the stimulation electrodes?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">In order to connect the stimulation units to the stimulation electrodes saved under the
+name of <code class="docutils literal notranslate"><span class="pre">stimulation_electrodes</span></code>, we loop over the individual electrodes to connect
+them to the stimulation units:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="n">stimulation_electrodes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">]</span>
+<span class="linenos"> 2</span><span class="n">stim_buffer_to_electrode_mapping</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="linenos"> 3</span>
+<span class="linenos"> 4</span><span class="k">for</span> <span class="n">stim_el</span> <span class="ow">in</span> <span class="n">stimulation_electrodes</span><span class="p">:</span>
+<span class="linenos"> 5</span>    <span class="n">array</span><span class="o">.</span><span class="n">connect_electrode_to_stimulation</span><span class="p">(</span> <span class="n">stim_el</span> <span class="p">)</span>
+<span class="linenos"> 6</span>    <span class="n">channel</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">query_stimulation_at_electrode</span><span class="p">(</span> <span class="n">stim_el</span> <span class="p">)</span>
+<span class="linenos"> 7</span>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stim</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<span class="linenos"> 8</span>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No stimulation channel can connect to electrode: </span><span class="si">{</span><span class="n">stim_el</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="linenos"> 9</span>    <span class="k">else</span><span class="p">:</span>
+<span class="linenos">10</span>        <span class="n">stim_buffer_to_electrode_mapping</span><span class="p">[</span><span class="n">stim_el</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span>
+<span class="linenos">11</span>
+<span class="linenos">12</span><span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">stim_buffer_to_electrode_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">stim_buffer_to_electrode_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+<span class="linenos">13</span>    <span class="c1"># in this case multiple electrodes were connected to the same stim-buffer</span>
+<span class="linenos">14</span>    <span class="c1"># and thus cant be used together. In this case, just pick a neighboring electrode instead</span>
+<span class="linenos">15</span>    <span class="c1"># and redo this process</span>
+<span class="linenos">16</span>    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Multiple stimulation electrodes connected to same stimulation unit.&quot;</span><span class="p">)</span>
+<span class="linenos">17</span>
+<span class="linenos">18</span><span class="n">stimulation_units</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">stim_buffer_to_electrode_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="linenos">19</span><span class="n">array</span><span class="o">.</span><span class="n">download</span><span class="p">()</span>
+<span class="linenos">20</span><span class="n">mx</span><span class="o">.</span><span class="n">offset</span><span class="p">()</span>
+</pre></div>
+</div>
+<p class="sd-card-text">The conditional in the loop above checks if the variable <code class="docutils literal notranslate"><span class="pre">stim</span></code> is an empty string or not. As can be
+seen in the docstring of the function <code class="docutils literal notranslate"><span class="pre">query_stimulation_at_electrode()</span></code>, it returns either the index of
+the stimulation unit for a specific stimulation electrode, or an empty string. Hence, the conditional checks
+if the simulation electrode is indeed connected to a stimulation unit.</p>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How can I reduce the latency between pulse-trains?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">When creating a stimulation sequence like this</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">single_pulse</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">):</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="o">-</span><span class="n">amplitude</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="o">+</span><span class="n">amplitude</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">seq</span>
+
+<span class="n">seq</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+<span class="n">single_pulse</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">some_amplitude</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">send</span><span class="p">()</span>
+</pre></div>
+</div>
+<p class="sd-card-text">the bottleneck in terms of latency is the <code class="docutils literal notranslate"><span class="pre">for</span></code>-loop in python. The solution is to keep in mind that a
+<code class="docutils literal notranslate"><span class="pre">mx.Sequence</span></code> object can hold multiple pulses. We can thus write something like this</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">single_pulse</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">):</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="o">-</span><span class="n">amplitude</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="o">+</span><span class="n">amplitude</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">chip</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">seq</span>
+
+<span class="n">time_between_pulse_trains</span> <span class="o">=</span> <span class="mi">3000</span> <span class="c1">#us</span>
+<span class="n">seq</span> <span class="o">=</span> <span class="n">maxlab</span><span class="o">.</span><span class="n">Sequence</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">30</span><span class="p">):</span>
+    <span class="n">single_pulse</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">some_amplitude</span><span class="p">)</span>
+    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="n">time_between_pulse_trains</span> <span class="o">/</span> <span class="mi">50</span> <span class="p">))</span> <span class="c1"># 50us = 1/ 20&#39;000 s^-1 = 1 / sampling_freq</span>
+
+<span class="n">seq</span><span class="o">.</span><span class="n">send</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How do I send spike trains as stimulation pulses to multiple electrodes?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p class="sd-card-text">In order to run the code below, one first needs to select the stimulation
+electrodes and connect them to the stimulation units.</p>
+</div>
+<p class="sd-card-text">We first start by powering off all the stimulation units.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="n">all_stimulation_units</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>
+<span class="linenos">2</span>
+<span class="linenos">3</span><span class="k">for</span> <span class="n">stimulation_unit</span> <span class="ow">in</span> <span class="n">all_stimulation_units</span><span class="p">:</span>
+<span class="linenos">4</span>    <span class="n">stim</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">StimulationUnit</span><span class="p">(</span><span class="n">stimulation_unit</span><span class="p">)</span>
+<span class="linenos">5</span>    <span class="n">stim</span><span class="o">.</span><span class="n">power_up</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="linenos">6</span>    <span class="n">stim</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="linenos">7</span>    <span class="n">mx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">stim</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="sd-card-text">We will start by preparing a sequence of stimulation pulses with increasing amplitudes:
+10 bits (= 29 mV), 15 bits (= 43.5 mV), 20 bits (= 58 mV), and 25 bits (= 72.5 mV).
+# see doc for more info…</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="k">def</span> <span class="nf">append_stimulation_pulse</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">):</span>
+<span class="linenos"> 2</span>    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">mx</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="o">-</span><span class="n">amplitude</span><span class="p">)</span> <span class="p">)</span>
+<span class="linenos"> 3</span>    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+<span class="linenos"> 4</span>    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">mx</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="o">+</span><span class="n">amplitude</span><span class="p">)</span> <span class="p">)</span>
+<span class="linenos"> 5</span>    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">)</span>
+<span class="linenos"> 6</span>    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">mx</span><span class="o">.</span><span class="n">DAC</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">)</span>
+<span class="linenos"> 7</span>    <span class="k">return</span> <span class="n">seq</span>
+<span class="linenos"> 8</span>
+<span class="linenos"> 9</span><span class="n">amplitudes</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="linenos">10</span><span class="n">repetitions</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>  <span class="c1"># number of pulse repetitions</span>
+<span class="linenos">11</span><span class="n">seq</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Sequence</span><span class="p">()</span>
+<span class="linenos">12</span>
+<span class="linenos">13</span><span class="k">for</span> <span class="n">amplitude</span> <span class="ow">in</span> <span class="n">amplitudes</span><span class="p">:</span>
+<span class="linenos">14</span>    <span class="k">for</span> <span class="n">rep</span> <span class="ow">in</span> <span class="n">repetitions</span><span class="p">:</span>
+<span class="linenos">15</span>        <span class="n">append_stimulation_pulse</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">)</span>
+<span class="linenos">16</span>        <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">2000</span><span class="p">)</span> <span class="p">)</span>
+<span class="linenos">17</span>    <span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">mx</span><span class="o">.</span><span class="n">DelaySamples</span><span class="p">(</span><span class="mi">20000</span><span class="p">)</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p class="sd-card-text">As can be understood from the code above, the sequence can be of any length and amplitude
+combinations. However, in the case of this example, the same sequence will be sent
+to all stimulation units. We now are ready to deliver the pulses. This general steps are
+followed:</p>
+<ol class="arabic simple">
+<li><p class="sd-card-text">Power up one stimulation unit.</p></li>
+<li><p class="sd-card-text">Deliver a series of stimulation pulses.</p></li>
+<li><p class="sd-card-text">Power down the stimulation unit.</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span> <span class="nn">time</span>
+<span class="linenos"> 2</span>
+<span class="linenos"> 3</span><span class="n">stimulation_units</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+<span class="linenos"> 4</span>
+<span class="linenos"> 5</span><span class="k">for</span> <span class="n">stimulation_unit</span> <span class="ow">in</span> <span class="n">stimulation_units</span><span class="p">:</span>
+<span class="linenos"> 6</span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Power up stimulation unit &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">stimulation_unit</span><span class="p">))</span>
+<span class="linenos"> 7</span>    <span class="n">stim</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">StimulationUnit</span><span class="p">(</span><span class="n">stimulation_unit</span><span class="p">)</span>
+<span class="linenos"> 8</span>    <span class="n">stim</span><span class="o">.</span><span class="n">power_up</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">set_voltage_mode</span><span class="p">()</span><span class="o">.</span><span class="n">dac_source</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="linenos"> 9</span>    <span class="n">mx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">stim</span><span class="p">)</span>
+<span class="linenos">10</span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Send pulse&quot;</span><span class="p">)</span>
+<span class="linenos">11</span>    <span class="n">seq</span><span class="o">.</span><span class="n">send</span><span class="p">()</span>
+<span class="linenos">12</span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Power down stimulation unit &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">stimulation_unit</span><span class="p">))</span>
+<span class="linenos">13</span>    <span class="n">stim</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">StimulationUnit</span><span class="p">(</span><span class="n">stimulation_unit</span><span class="p">)</span><span class="o">.</span><span class="n">power_up</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="linenos">14</span>    <span class="n">mx</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">stim</span><span class="p">)</span>
+<span class="linenos">15</span>    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How do I determine which stimulation unit is used with each electrode?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">In order to determine which stimulation unit is used with each electrode, one needs to have
+the list of stimulation electrodes available and stored. We then can use the function
+<code class="docutils literal notranslate"><span class="pre">query_stimulation_at_electrode()</span></code> from the created <code class="docutils literal notranslate"><span class="pre">array</span></code> object as follow:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">electrode_to_query</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="o">.</span><span class="n">query_stimulation_at_electrode</span><span class="p">(</span><span class="n">electrode_to_query</span><span class="p">)</span>
+<span class="go">21</span>
+</pre></div>
+</div>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How do I activate the stimulation units in sequence while minimizing delays?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">To activate the stimulation units in sequence while minimizing delays, one follow
+these steps:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p class="sd-card-text">Power up all stimulation units,</p></li>
+<li><p class="sd-card-text">Disconnect all stimulation units from DACs</p></li>
+<li><p class="sd-card-text">Sequentially connect and disconnect stimulation units from DACs.</p></li>
+</ol>
+</div></blockquote>
+<p class="sd-card-text">The code is the following:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="n">all_stimulation_units</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>
+<span class="linenos"> 2</span>
+<span class="linenos"> 3</span><span class="k">for</span> <span class="n">stimulation_unit</span> <span class="ow">in</span> <span class="n">all_stimulation_units</span><span class="p">:</span>
+<span class="linenos"> 4</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Power up stimulation unit </span><span class="si">{</span><span class="n">stimulation_unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="linenos"> 5</span>    <span class="n">stim</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">StimulationUnit</span><span class="p">(</span><span class="n">stimulation_unit</span><span class="p">)</span>
+<span class="linenos"> 6</span>    <span class="n">stim</span><span class="o">.</span><span class="n">power_up</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">set_voltage_mode</span><span class="p">()</span><span class="o">.</span><span class="n">dac_source</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="linenos"> 7</span>
+<span class="linenos"> 8</span><span class="k">for</span> <span class="n">stimulation_unit</span> <span class="ow">in</span> <span class="n">all_stimulation_units</span><span class="p">:</span>
+<span class="linenos"> 9</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connecting stimulation unit </span><span class="si">{</span><span class="n">stimulation_unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="linenos">10</span>    <span class="n">stim</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">StimulationUnit</span><span class="p">(</span><span class="n">stimulation_unit</span><span class="p">)</span>
+<span class="linenos">11</span>    <span class="n">stim</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="linenos">12</span>    <span class="c1"># perform action on stimulation unit</span>
+<span class="linenos">13</span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Disconnecting stimulation unit </span><span class="si">{</span><span class="n">stimulation_unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="linenos">14</span>    <span class="n">stim</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+What issues might arise when powering down a stimulation unit?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">Powering down a stimulation unit is not recommended.</p>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How can I access all stimulation units simultaneously?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">If one wishes to access all  32 stimulation units simultaneously, one needs to
+connect all the units to one DAC. this can be done the following way:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="n">stimulation_units</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>
+<span class="linenos">2</span>
+<span class="linenos">3</span><span class="k">for</span> <span class="n">stimulation_unit</span> <span class="ow">in</span> <span class="n">stimulation_units</span><span class="p">:</span>
+<span class="linenos">4</span>    <span class="n">stim</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">StimulationUnit</span><span class="p">(</span><span class="n">stimulation_unit</span><span class="p">)</span>
+<span class="linenos">5</span>    <span class="n">stim</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">dac_source</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How can I change the stimulation pattern based on the recording? Is there a Python package for that?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">This question is part of the closed-loop C++ documentation and it is not doable in Python.</p>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How can I stop an ongoing stimulation?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">This is not possible: The only way is to shut down the device.</p>
+</div>
+</details></section>
+<section id="array-configuration-routing-etc">
+<h2>Array-configuration, routing, etc.<a class="headerlink" href="#array-configuration-routing-etc" title="Permalink to this heading">#</a></h2>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How do I design custom electrode configurations and utilize a custom configuration file?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">To design custom electrode configurations, we use the class <cite>Array</cite> and the following code, which
+saves the custom configuration into a file called <cite>myConfig.cfg</cite>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="n">array</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="s1">&#39;online&#39;</span><span class="p">)</span>
+<span class="linenos">2</span><span class="n">array</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="linenos">3</span><span class="n">array</span><span class="o">.</span><span class="n">select_electrodes</span><span class="p">(</span> <span class="p">[</span><span class="mi">11110</span><span class="p">,</span> <span class="mi">11111</span><span class="p">,</span> <span class="mi">11112</span><span class="p">]</span> <span class="p">)</span>
+<span class="linenos">4</span><span class="n">array</span><span class="o">.</span><span class="n">save_config</span><span class="p">(</span><span class="s2">&quot;myConfig.cfg&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="sd-card-text">In order to use the custom electrode configuration file, we can run the following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="n">array</span> <span class="o">=</span> <span class="n">mx</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="s1">&#39;stimulation&#39;</span><span class="p">)</span>
+<span class="linenos">2</span><span class="n">array</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span> <span class="s2">&quot;myConfig.cfg&quot;</span> <span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p class="sd-card-text">Currently, the configuration file doesn’t make the distinction between readout and
+stimulation electrodes. It is thus recommended to only save the readout electrodes in the
+file and manually select the stimulation electrodes, once the file has been loaded.</p>
+</div>
+</div>
+</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+How can I prevent multiple electrodes from routing to the same channel?<div class="sd-summary-down docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="sd-summary-up docutils">
+<svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">This can’t be done, as the routing is conducted automatically. However, if
+multiple electrodes are routed to the same channel, a workaround would be to
+pick electrodes next to the ones already picked: This way, the chances that
+the electrodes will again be routed to the same channel is minimized.</p>
+</div>
+</details></section>
+</section>
+
+
+                </article>
+              
+              
+              
+                <footer class="bd-footer-article">
+                  
+<div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item"><!-- Previous / next buttons -->
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="api_cpp.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">C/C++ API</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="glossary.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Glossary</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div></div>
+  
+</div>
+
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stimulation">Stimulation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#array-configuration-routing-etc">Array-configuration, routing, etc.</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
+    
+      © Copyright 2023, Jan Mueller.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.2.1.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.13.3.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

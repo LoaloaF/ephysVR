@@ -31,7 +31,8 @@ def _sweep_DAC(dirname, array, stim_unit, ampl_id, set_id, DAC_values, debug):
     for i, DAC_val in enumerate(DAC_values):
         fname = f"config_StimUnit{int(stim_unit):02d}_Ampl{ampl_id:04d}_Set{set_id}_DAC{DAC_val}"
         if i != 0:
-            start_saving(s, dir_name=dirname, fname=fname, channels=[ampl_id], legacy=debug)
+            channels_args = {'channels': [ampl_id]} if not debug else {'legacy': True}
+            start_saving(s, dir_name=dirname, fname=fname, **channels_args)
         time.sleep(.02)
         
         # Indicator 1
@@ -96,32 +97,46 @@ def _extract_DAC_transient_set(dirname, ampl_id, stim_unit, set_id, debug=False)
     # go through all files in the directory, skip those that do not match the set_id, ampl_id, stim_unit
     dac_transients_res = []
     for fname in sorted(os.listdir(dirname)):
+        print(fname)
         if not fname.endswith(".raw.h5"):
+            print("Skipping, not raw.h5")
             continue
         if (f"Set{set_id}_" not in fname) or ("DAC" not in fname):
+            print("Skipping, set_id or DAC missing", (f"Set{set_id}_" not in fname), ("DAC" not in fname), fname)
             continue
         if f"Ampl{ampl_id:04d}_" not in fname:
+            print("Skipping, ampl_id mismatch", ampl_id,  f"Ampl{ampl_id:04d}_", fname)
             continue
         if f"StimUnit{stim_unit:02d}_" not in fname:
+            print("Skipping, stim_unit mismatch")
             continue
         
+        print("Matched file:\n\n")
         # extract dac_val
-        _, _, _, DAC_val = _extract_fname_info(fname)
+        _, ampl_id, _, DAC_val = _extract_fname_info(fname)
         
         print(f"Processing {fname} ", ampl_id, stim_unit)
         data = read_raw_data(dirname, fname, convert2uV=True,
                              subtract_dc_offset=False,)
         print(data.shape)
         dac = read_stim_DAC(dirname, fname)
+        # just one row in the filet
+        if dac is None:
+            ampl_id_idx = 0
+        else:
+            ampl_id_idx = ampl_id
         
         # TODO didn't see proper peaks last time?
         from_t, to_t = 12_500, 20_000 # interval contains the transient
-        if dac.shape[0] < to_t:
+        if dac is not None and dac.shape[0] < to_t:
             print(f"WARNING! DAC trace too short {dac.shape[0]} < {to_t}, adjusting to available length")
             to_t = dac.shape[0]
             from_t = 0
         # from_t, to_t = 0, 10_000 # interval contains the transient
-        dac_transient = data[0, from_t:to_t].astype(float)
+        dac_transient = data[ampl_id_idx, from_t:to_t].astype(float)
+        # print(dac_transient)
+        # print(dac_transient.shape)
+        # exit()
         if dac is not None:
             dac = dac[from_t:to_t]
 
@@ -202,7 +217,7 @@ def char_stim_units(dirname, n_amplifiers=2, stim_units=list(range(32)), debug=F
 
                 # check if the transient is low enough, if yes, break - the exact number is hard to define
                 peak = results.peak_uV.abs().min()
-                if peak < 20_000:
+                if peak < 23_000:
                     print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} done, peak_uV: {peak} uV")
                     print(results.sort_values(by='peak_uV', key=abs, ascending=True).head(3))
                     if delta == 16:
@@ -215,6 +230,7 @@ def char_stim_units(dirname, n_amplifiers=2, stim_units=list(range(32)), debug=F
                         print(f"Recentering around {centered_around}, new delta={delta}")
                 
                 set_id += 1
+                # print(results.peak_uV, "std:", results.peak_uV.std())
                 peak_std = results.peak_uV.std()
                 if peak_std <30_000:
                     delta *= 4
@@ -230,7 +246,7 @@ def char_stim_units(dirname, n_amplifiers=2, stim_units=list(range(32)), debug=F
                     centered_around = int(best_row.DAC_val)
                     delta = max(16, delta//4) # should get smaaller while closing in on the best value
                 
-                if set_id > 6:
+                if set_id > 4:
                     print("Too many sets, stopping here.\n\n\n")
                     break
 
@@ -271,11 +287,11 @@ def eval_char_stim_units(dirname,  stim_units, debug=False):
         plt.xlabel("DAC value")
         plt.ylabel("Peak uV")
         plt.legend()
-        if debug:
-            plt.show()
         if not os.path.exists(os.path.join(dirname, "processed")):
             os.makedirs(os.path.join(dirname, "processed"), exist_ok=True)
         plt.savefig(os.path.join(dirname, "processed", f"StimUnit{stim_unit:02d}_characterization.png"))
+        if debug:
+            plt.show()
         plt.close()
         
     all_results = pd.DataFrame(all_results)
@@ -395,31 +411,33 @@ def eval_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, debug=False):
             
 def main():
     random.seed(42)
-    debug = True
+    debug = False
     
     nas_dir = device_paths()[0]
     # nas_dir = "/home/houmanjava/nas_imitation"
-    device_dir = "devices/headstage_devices/MEA1K11/recordings"
+    device_dir = "devices/headstage_devices/MEA1K22/recordings"
     # device_dir = "devices/well_devices/4983/recordings"
-    R = 1_000_000  # 1 MOhm
+    # R = 1_000_000  # 1 MOhm
+    R = 100_000  # 100 KOhm
     sine_ampl_DAC_units = 10 # in DAC units
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M")
-    rec_dir = f"{t}_{R=}_CharStimUnits"
+    rec_dir = f"{t}_{R=}_CharStimUnits2026"
+    rec_dir = "2026-03-10_18.58_R=100000_CharStimUnits2026"
     # rec_dir = "2025-09-23_17.00_R=1000000_CharStimUnits"
     # rec_dir = "2025-10-14_19.52_R=1000000_CharStimUnits"
-    # rec_dir = "2025-10-14_19.46_R=1000000_CharStimUnits"
+    # rec_dir = "2026-02-13_12.31_R=1000000_CharStimUnits2026"
     # take the newest directory
     # print(sorted(os.listdir(os.path.join(nas_dir, device_dir))))
     # rec_dir = sorted(os.listdir(os.path.join(nas_dir, device_dir)))[-1]
     full_path = os.path.join(nas_dir, device_dir, rec_dir)
 
-    n_amplifiers = 1
-    stim_units = list(range(32))#[0:16]
-    # stim_units = [0]
+    n_amplifiers = 2
+    # stim_units = [1,2,8,9,16,17,24,30]
+    stim_units = list(range(32))
     
     # Iterate over all stim units * n_amplifiers (samples) and sweep the DAC values
     # until we find the one that gives the lowest parasitic current (lowest transient peak)
-    char_stim_units(full_path, n_amplifiers=n_amplifiers, stim_units=stim_units, debug=debug)
+    # char_stim_units(full_path, n_amplifiers=n_amplifiers, stim_units=stim_units, debug=debug)
     
     # Evaluate the stim unit characterization results, aggreagting all sets,
     # fitting a curve and finding the minimum

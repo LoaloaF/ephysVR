@@ -143,14 +143,14 @@ def main():
     # fix seed
     np.random.seed(42)
     # implant_name = "4983"
-    headstage_name = "MEA1K11"
+    headstage_name = "MEA1K22"
     
     subdirs = [
         # f"devices/well_devices/{MEA1K08}/recordings/2025-05-09_10.14.37_invivo_imp_mode='voltage'_stimpulse='sine'_amplitude=10",
         # f"devices/headstage_devices/{implant_name}/recordings/2025-07-18_09.30.23_beforeGP_mode='voltage'_stimpulse='sine'_amplitude=10",
         # f"devices/headstage_devices/{implant_name}/recordings/2025-07-18_12.42.31_afterGP_mode='voltage'_stimpulse='sine'_amplitude=10",
         # f"devices/headstage_devices/{headstage_name}/recordings/2025-10-01_14.24.55_SC_postGPCheck_mode=\'voltage\'_amplitude=10",
-        f"devices/headstage_devices/{headstage_name}/recordings/2025-10-14_21.30.40_SC_bonded_13shank_tightnedd",
+        f"devices/headstage_devices/{headstage_name}/recordings//2026-03-16_15.27.00_SC_postTestbonding02_",
     ]
     output_dir = os.path.join(nas_dir, subdirs[-1], 'processed')
     output_fname = f"shortcuts_fristimpl_{headstage_name}.png"
@@ -158,7 +158,7 @@ def main():
 
     # el_config_S1D1650.raw.h5
     analyze_shorts(os.path.join(nas_dir, subdirs[0]), implant_name=headstage_name, 
-                    debug=True, deepdebug=False)
+                    debug=False, deepdebug=False)
     vis_shorts(os.path.join(nas_dir, subdirs[0]), 
                output_dir=output_dir, 
                output_fname=output_fname)

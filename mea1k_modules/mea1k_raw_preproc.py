@@ -26,6 +26,7 @@ def _get_recording_gain(path, fname):
     if MEA_OVERRIDE_GAIN is not None:
         Logger().logger.warning(f"Overriding gain with {MEA_OVERRIDE_GAIN}")
         gain = MEA_OVERRIDE_GAIN
+    print(f"Recording gain: {gain}")
     return gain
 
 def _get_recording_resolution(gain):

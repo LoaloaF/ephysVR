@@ -21,10 +21,10 @@ from mea1k_modules.mea1k_config_utils import stop_saving
 def main():
     # ======== PARAMETERS ========
     nas_dir = device_paths()[0]
-    subdir = "devices/headstage_devices/MEA1K11/recordings"
+    subdir = "devices/headstage_devices/MEA1K22/recordings"
     # rec_dir = "4thBond4Shank_rec2_VrefFPGAStim_ampl15"
-    rec_dir = "singlShankBadBatchNewEcoFlex_tight_rec3_VrefFPGAStim_ampl15"
-    rec_dir = "1Shank_rec2_VrefFPGAStim_ampl15"
+    rec_dir = "testBond4_ShubhamW1_14Shank_VrefFPGAStim_ampl15"
+    # rec_dir = "50Hz_lastBond_14shank"
     post_download_wait_time = .6
     rec_time = .5
     gain = 7

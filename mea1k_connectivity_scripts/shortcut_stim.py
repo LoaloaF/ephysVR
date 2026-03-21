@@ -58,12 +58,12 @@ def main():
     # ======== PARAMETERS ========
     # implant_name = "250205_MEA1K03_H1278pad4shankB5" # animal 10
     # implant_name = "241211_MEA1K06_H1278pad4shankB5" # animal 11
-    subdir = f"devices/headstage_devices/MEA1K11/recordings"
+    subdir = f"devices/headstage_devices/MEA1K22/recordings"
     # nas_dir = "/home/houmanjava/nas_imitation"
     nas_dir = device_paths()[0]
     
     post_download_wait_time = 1
-    rec_time = .4
+    rec_time = 1.2
     gain = 7
     amplitude = 10
     configs_basepath = os.path.join(nas_dir, "mea1k_configs")
@@ -74,7 +74,7 @@ def main():
     
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
     # rec_dir = f"{t}_SC_postGPCheck_{mode=}_{amplitude=}"
-    rec_dir = f"{t}_SC_bonded_1shank_bigFlexPress"
+    rec_dir = f"{t}_SC_postTestbonding02_"
     full_recdir = os.path.join(nas_dir, subdir, rec_dir)
     print(f"Recording path exists: {os.path.exists(full_recdir)} - ", full_recdir)
     
@@ -88,6 +88,7 @@ def main():
     print(f"Found {len(fnames)} configs in {configs_basepath}/{which_configs}")
     for i, config_fullfname in enumerate(sorted(fnames)):
         print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}", flush=True)
+        print(stim_seq)
         process_config(config_fullfname, full_recdir, rec_time, post_download_wait_time, 
                        s, stim_seq=stim_seq, mode=mode, )
         # if i>3:

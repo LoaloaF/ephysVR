@@ -53,6 +53,7 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
             debug = True if j <10 and debug else False
             m_ampl, _ = estimate_frequency_power(row, sampling_rate=EC.SAMPLING_RATE,
                                                  debug=debug, min_band=960, max_band=1040)
+                                                #  debug=debug, min_band=40, max_band=60)
             mean_ampl.append(m_ampl)
         
         data = pd.DataFrame(mean_ampl, index=data.index, columns=['ampl'])
@@ -105,6 +106,7 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     plt.imsave(fullfname.replace(".csv", "_inverted.png"), img)
     
 def create_implant_dir(sine_stim_recdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME):
+    print("Device name: ", IMPLANT_DEVICE_NAME)
     implant_dir = os.path.join(nas_dir, "devices", "implant_devices", IMPLANT_DEVICE_NAME)
     os.makedirs(os.path.join(implant_dir))
     os.makedirs(os.path.join(implant_dir, "recordings"))
@@ -122,8 +124,8 @@ def main():
     nas_dir = device_paths()[0]
     
     # bonding which electrode to which headstage
-    bonding_date = '251014'
-    HEADSTAGE_DEVICE_NAME = 'MEA1K11'
+    bonding_date = '251022'
+    HEADSTAGE_DEVICE_NAME = 'MEA1K22'
     ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
     # ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
     batch = 1
@@ -134,9 +136,9 @@ def main():
     rec_name = f'3rdBond4Shank_VrefFPGAStim_ampl15'
     rec_name = f'5thBond1Shank_rec4_VrefFPGAStim_ampl15-'
     rec_name = f'firstNewDevide8HalfShank_rec2_VrefFPGAStim_ampl15'
-    rec_name = f'singlShankBadBatchNewEcoFlex_rec2_VrefFPGAStim_ampl15'
-    rec_name = f'14Shank_rec4_8shank_VrefFPGAStim_ampl15'
-    input_ampl_mV = 10
+    rec_name = f'1Shank_rec1_extStim100mV_1kHz'
+    rec_name = f'testBond4_ShubhamW1_14Shank_VrefFPGAStim_ampl15'
+    input_ampl_mV = 5
     n_samples = 8_000 # where sine stim is visible
 
     subdir = f"{nas_dir}/devices/headstage_devices/{HEADSTAGE_DEVICE_NAME}/recordings/{rec_name}"
@@ -145,7 +147,7 @@ def main():
         exit()
     
     extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
-    vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2)
+    vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
     # create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
     
     

@@ -1,0 +1,64 @@
+# Build directories
+build/
+bin/
+obj/
+
+# Compiled files
+*.o
+*.a
+*.so
+*.exe
+process_raw_data
+process_spike_events
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.cmake
+
+# Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+*.egg
+
+# Data files (adjust as needed)
+*.h5
+*.raw
+*.dat
+*.bin
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Editor files
+*.kate-swp
+.*.swp
+
+# Custom config files (if you want to keep them private)
+# Uncomment if needed:
+# config_custom.py
+# my_experiment_config.py
