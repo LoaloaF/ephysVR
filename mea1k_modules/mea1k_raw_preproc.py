@@ -44,7 +44,8 @@ def _get_recording_version(path, fname):
             fmt = 'channel_subset'
         
         else:
-            print("Format not recognized, assuming logger format")        
+            Logger().logger.info("Could not determine recording format. "
+                                    "Assuming logger format.")
             fmt = 'logger'
     return fmt
 
@@ -159,17 +160,17 @@ def _read_mea1k_file(path, fname, dtype=np.float16, row_slice=slice(None),
                     col_slice=slice(None)):
     rec_file_fmt = _get_recording_version(path, fname)
     data_key = _get_data_key(rec_file_fmt)
-    print(f"Reading MEA1K ephys data (format: {rec_file_fmt}) "
-          f"casting to `{dtype}` with col slice {col_slice}, "
-          f"row slice {row_slice}...")
+    Logger().logger.debug(f"Reading MEA1K ephys data (format: {rec_file_fmt}) "
+                          f"casting to `{dtype}` with col slice {col_slice}, "
+                          f"row slice {row_slice}...")
 
     # read the MEA1K file
     start_time = time.time()
     with h5py.File(os.path.join(path, fname), 'r') as file:
         raw_data = np.array(file[data_key][row_slice, col_slice], dtype=dtype)
-    print(f"Done. Decompressed {raw_data.shape} in "
-          f"{time.time() - start_time:.2f} seconds: {raw_data}," 
-          f"min: {raw_data.min()}, max: {raw_data.max()}")
+    Logger().logger.debug(f"Done. Decompressed {raw_data.shape} in "
+                          f"{time.time() - start_time:.2f} seconds: min: "
+                          f"{raw_data.min()}, max: {raw_data.max()}")
     return raw_data
 
 def read_stim_DAC(path, fname, col_slice=slice(None)):
@@ -177,7 +178,7 @@ def read_stim_DAC(path, fname, col_slice=slice(None)):
         dac_data = _read_mea1k_file(path, fname, row_slice=1024, 
                                     col_slice=col_slice, dtype=np.int16)
     except IndexError:
-        print("ERROR. No DAC data found in file. Expected at row 1024.")
+        Logger().logger.error("No DAC data found in file. Expected at row 1024.")
         return None
     return dac_data
 
