@@ -16,87 +16,19 @@ from baseVR.base_functionality import device_paths
 from mea1k_modules.mea1k_visualizations import draw_mea1k
 
 
-# def _mea1k_el_pixel_table(MEA1K_EL_WIDTH_MICROMETER=5.45, MEA1K_EL_HEIGHT_MICROMETER=9.3):
-def _visualize_pad_alignment_debug(pad_id, pad_yx_data, pad_yx_world, pad_yx_pixels, 
-                                   pad_yx_center, els_under_pad, el_pixel_lookup, 
-                                   mea1k_connectivity_png, iteration):
-    """Debug visualization for pad alignment process."""
-    fig, ax = plt.subplots(figsize=(8, 8))
-    
-    # Compute zoom region around the pad  
-    margin = 50
-    y_min, y_max = pad_yx_center[0] - margin, pad_yx_center[0] + margin
-    x_min, x_max = pad_yx_center[1] - margin, pad_yx_center[1] + margin
-    
-    # Show background connectivity image in zoomed region
-    region = mea1k_connectivity_png[y_min:y_max, x_min:x_max]
-    ax.imshow(region, cmap='gray', alpha=0.3, extent=[x_min, x_max, y_max, y_min])
-    
-    # Plot pad pixels (rounded from world space)
-    ax.scatter(pad_yx_pixels[:, 1], pad_yx_pixels[:, 0], c='red', s=0.5, alpha=0.7, label='Pad pixels')
-    
-    # Plot median center
-    ax.plot(pad_yx_center[1], pad_yx_center[0], 'g+', markersize=15, markeredgewidth=0.5, label='Median center')
-    
-    # Plot detected electrodes
-    if els_under_pad:
-        el_coords = []
-        for (y, x), el_id in el_pixel_lookup.items():
-            if el_id in els_under_pad:
-                el_coords.append([y, x])
-        if el_coords:
-            el_coords = np.array(el_coords)
-            ax.scatter(el_coords[:, 1], el_coords[:, 0], c='orange', s=1, alpha=0.5, label=f'Electrode pixels (n_els={len(els_under_pad)})')
-        
-        # Draw MEA1k electrode centers and boundaries for detected electrodes
-        el_centers = {}
-        for el_id in els_under_pad:
-            el_pixels = []
-            for (y, x), eid in el_pixel_lookup.items():
-                if eid == el_id:
-                    el_pixels.append([y, x])
-            if el_pixels:
-                el_pixels = np.array(el_pixels)
-                el_center = el_pixels.mean(axis=0)
-                el_centers[el_id] = el_center
-                # Draw electrode as square (17.5x17.5 pixels)
-                el_half = 17.5 / 2
-                rect = plt.Rectangle((el_center[1] - el_half, el_center[0] - el_half), 17.5, 17.5,
-                                    color='cyan', fill=False, linewidth=0.2, alpha=0.6)
-                ax.add_patch(rect)
-                # Mark center
-                ax.plot(el_center[1], el_center[0], 'c.', markersize=2)
-                # Label electrode ID
-                ax.text(el_center[1], el_center[0], f'{el_id}', fontsize=5, 
-                       ha='center', va='center', color='cyan', alpha=0.7)
-    
-    # Draw pad circle with diameter
-    pad_radius = PAD_R
-    circle = plt.Circle((pad_yx_center[1], pad_yx_center[0]), pad_radius, 
-                        color='blue', fill=False, linewidth=0.3, alpha=0.8, label=f'Pad circle (d={2*pad_radius})')
-    ax.add_patch(circle)
-    
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_max, y_min)
-    ax.set_aspect('equal')
-    ax.set_title(f'Iteration {iteration}: Pad {pad_id} | Center: ({pad_yx_center[0]}, {pad_yx_center[1]}) | N_els: {len(els_under_pad)}')
-    ax.set_xlabel('X (pixel)')
-    ax.set_ylabel('Y (pixel)')
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.2, linewidth=0.3)
-    
-    plt.tight_layout()
-    plt.show()
+def _mea1k_el_pixel_table(MEA1K_EL_WIDTH_MICROMETER=5.45, MEA1K_EL_HEIGHT_MICROMETER=9.3):
+    code_dir = device_paths()[2]
+    if code_dir is None:
+        return None
+    cached_fullfname = os.path.join(code_dir, 'ephysVR', 'assets', "mea1k_el_pixel_table.pkl")
+    if os.path.exists(cached_fullfname):
+        return pd.read_pickle(cached_fullfname)
 
-
-# real size of electrodes is this, but images use 9x9, so we match with 9x9 too 
-# def _mea1k_el_pixel_table(MEA1K_EL_WIDTH_MICROMETER=5.45, MEA1K_EL_HEIGHT_MICROMETER=9.3):
-def _mea1k_el_pixel_table(MEA1K_EL_WIDTH_MICROMETER=9, MEA1K_EL_HEIGHT_MICROMETER=9):
     def mea1k_el_center_table_micrometer():
         el_i = 0
         all_els = {}
-        for y in np.arange(17.5/2, 2100, 17.5):
-            for x in np.arange(17.5/2, 3850, 17.5):
+        for y in np.arange(17.5/4, 2100, 17.5):
+            for x in np.arange(17.5/4, 3850, 17.5):
                 all_els[el_i] = (y, x)
                 el_i += 1
         mea1k = pd.DataFrame(all_els).T
@@ -105,7 +37,6 @@ def _mea1k_el_pixel_table(MEA1K_EL_WIDTH_MICROMETER=9, MEA1K_EL_HEIGHT_MICROMETE
         return mea1k
 
     all_el_pixels = []
-    print("Generating MEA1k electrode pixel table...")
     for el_i, (y, x) in mea1k_el_center_table_micrometer().iterrows():
         all_y = np.arange(y - MEA1K_EL_HEIGHT_MICROMETER/2,
                           y + MEA1K_EL_HEIGHT_MICROMETER/2, 1)
@@ -114,10 +45,11 @@ def _mea1k_el_pixel_table(MEA1K_EL_WIDTH_MICROMETER=9, MEA1K_EL_HEIGHT_MICROMETE
         el_i_yx = np.stack(np.meshgrid(all_y, all_x)).reshape(2, -1).round().astype(np.uint16)
         multiindex = pd.MultiIndex.from_arrays(el_i_yx, names=['y', 'x'])
         all_el_pixels.append(pd.Series([el_i]*len(el_i_yx.T), index=multiindex, name='el'))
+    pd.to_pickle(pd.concat(all_el_pixels), cached_fullfname)
     return pd.concat(all_el_pixels)
 
 
-def _align(mapping, mea1k_connectivity, alignment, mea1k_connectivity_png=None):
+def _align(mapping, mea1k_connectivity, alignment):
     # load once and convert to dict for O(1) pixel lookups: {(y, x): electrode_id}
     el_pixel_lookup = _mea1k_el_pixel_table().to_dict()
 
@@ -126,7 +58,7 @@ def _align(mapping, mea1k_connectivity, alignment, mea1k_connectivity_png=None):
     A = alignment.affine.affine_matrix
 
     pad_alignment = []
-    for iteration, (pad_id, row) in enumerate(mapping.iterrows()):
+    for pad_id, row in mapping.iterrows():
         # pixel coords in data space where this pad label sits
         pad_yx_data = np.stack(np.where(alignment.data == pad_id)).T  # (N, 2)
 
@@ -142,19 +74,12 @@ def _align(mapping, mea1k_connectivity, alignment, mea1k_connectivity_png=None):
         aligned_pad["pad_y_aligned"] = pad_yx_center[0]
         aligned_pad["pad_x_aligned"] = pad_yx_center[1]
 
-        # Find all electrodes that overlap with ANY pad pixel (per-pixel overlap check)
-        # For each pad pixel (y, x), look up which electrode (if any) it belongs to
+        # O(1) dict lookup per pixel instead of isin over the full MultiIndex
         els_under_pad = {el_pixel_lookup.get((y, x))
                          for y, x in map(tuple, pad_yx_pixels)}
-        els_under_pad.discard(None)  # Remove None entries (pad pixels not on any electrode)
+        els_under_pad.discard(None)
         mea1k_el_underpad = np.array(sorted(els_under_pad), dtype=int)
-        print(f"pad{pad_id:<4d}> -> n el:{len(mea1k_el_underpad):<4d}", end='...', flush=True)
-        
-        # Debug visualization for first 3 pads
-        if iteration < 3 and mea1k_connectivity_png is not None:
-            _visualize_pad_alignment_debug(pad_id, pad_yx_data, pad_yx_world, pad_yx_pixels,
-                                          pad_yx_center, els_under_pad, el_pixel_lookup,
-                                          mea1k_connectivity_png, iteration)
+        print(f"pad{pad_id} -> n el:{len(mea1k_el_underpad)}", end='...', flush=True)
 
         dat = [aligned_pad] * max(1, len(mea1k_el_underpad))
         aligned_pad = pd.concat(dat, axis=1).T.reset_index(drop=True)
@@ -171,7 +96,8 @@ def _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping, scale_up_pads, 
     pads_canvas = np.ones_like(mea1k_connectivity_png, dtype=np.int16) * -1
     for pad_id, row in mapping.iterrows():
         x, y = row[['pad_x', 'pad_y']]
-        cv2.circle(pads_canvas, (x, y), PAD_R, pad_id, -1)
+        pad_r = 18
+        cv2.circle(pads_canvas, (x, y), pad_r, pad_id, -1)
         pad_colors[pad_id] = (row[['pad_r', 'pad_g', 'pad_b']].values.astype(float) / 255.)
     pad_colors = DirectLabelColormap(color_dict=pad_colors)
     return viewer.add_labels(pads_canvas, colormap=pad_colors, name=layer_name)
@@ -191,15 +117,16 @@ def align_pads2mea1k(electrode_device_names, IMPLANT_DEVICE_NAME,
             nas_dir, 'devices', "electrode_devices", device_name,
             f"device_mapping_{device_name}.csv")
         mapping = pd.read_csv(mapping_fullfname, index_col=[0])
-        mapping.index = mapping.pad_id.values
         device_mappings.append((device_name, mapping))
 
     # --- assert pad_id and RGB uniqueness across all devices ---------------------
     all_mappings = pd.concat([m for _, m in device_mappings])
+    print(all_mappings)
 
     dup_ids = all_mappings.pad_id[all_mappings.pad_id.duplicated()]
     assert len(dup_ids) == 0, \
         f"Duplicate pad_ids found across devices: {sorted(dup_ids.tolist())}"
+    all_mappings.index = all_mappings.pad_id.values
 
     rgb_tuples = list(zip(all_mappings['pad_r'], all_mappings['pad_g'], all_mappings['pad_b']))
     dup_rgbs = [rgb for rgb in set(rgb_tuples) if rgb_tuples.count(rgb) > 1]
@@ -221,7 +148,16 @@ def align_pads2mea1k(electrode_device_names, IMPLANT_DEVICE_NAME,
     mea1k_connectivity = mea1k_connectivity[~mea1k_connectivity.index.duplicated(keep='first')]
     mea1k_connectivity = mea1k_connectivity.reindex(np.arange(26400))
     
-    
+    plt.hist(mea1k_connectivity.mea1k_connectivity, bins=50)
+    plt.axvline(CONNECTIVITY_THR, color='red', linestyle='dashed', 
+                label=f"Connectivity Threshold ({CONNECTIVITY_THR})")
+    plt.xlabel("Connectivity")
+    plt.ylabel("Count")
+    plt.title("Distribution of Connectivity Measures")
+    plt.legend()
+    plt.yscale('log')
+    plt.show()
+
     # --- build napari viewer, one layer per device -------------------------------
     viewer = napari.Viewer()
     viewer.add_image(mea1k_connectivity_png, name='Connectivity', colormap='gray_r', opacity=.5)
@@ -237,8 +173,7 @@ def align_pads2mea1k(electrode_device_names, IMPLANT_DEVICE_NAME,
     # --- compute pad→electrode mapping for every device --------------------------
     all_pad_alignments = []
     for mapping, alignment in alignments:
-        print(f"Aligning {len(mapping)} pads to MEA1k electrodes")
-        all_pad_alignments.append(_align(mapping, mea1k_connectivity, alignment, mea1k_connectivity_png))
+        all_pad_alignments.append(_align(mapping, mea1k_connectivity, alignment))
     pad_alignment = pd.concat(all_pad_alignments, axis=0).reset_index(drop=True)
 
     # --- rank electrodes under each pad by connectivity --------------------------
@@ -280,75 +215,41 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
                              IMPLANT_DEVICE_NAME, "bonding",
                              f'bonding_mapping_{IMPLANT_DEVICE_NAME}.csv')
     pad_alignment = pd.read_csv(fullfname)
-    
-    # plt.plot(pad_alignment.pad_id.sort_values().unique())
-    # plt.show()
 
     (fig, ax), els = draw_mea1k()
 
     pad_circles = []
-    seen_pad_ids = []
     for el_i, el_rec in enumerate(els):
         if el_i not in pad_alignment.mea1k_el.values:
             continue
-        #     print(f"EL{el_i} not under any pad")
-
         el_entry = pad_alignment[pad_alignment['mea1k_el'] == el_i].iloc[0]
-        mea1k_el_conn = el_entry.mea1k_connectivity.clip(0, 1)  # ensure between 0 and 1 for alpha
-        
-        # for all set color and alpha to baseline, see all
-        el_rec.set_alpha(.15)
-        el_rec.set_facecolor((1, 1, 1))
-        
-        # continue
-        print(f"pad_id: {el_entry.pad_id}, el_i: {el_i}, conn: {mea1k_el_conn:.3f}")
+        el_rec.set_alpha(min(1, el_entry.mea1k_connectivity/3))
         if pd.isna(el_entry.pad_id):
-            # print(f"EL{el_i} under pad_id NaN")
             continue
-        
-        # each electrod under a pad gets colored by its pad's RGB color, regardless of connectivity
-        col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['el_r', 'el_g', 'el_b']].values[0]
-        print(col)
-        # col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['pad_r', 'pad_g', 'pad_b']].values[0] / 255
-        el_rec.set_alpha(min(1, mea1k_el_conn+.2)) # set alpha to connectivity, see connectivity pattern
-        el_rec.set_facecolor(col)
-        
-        # col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['el_r', 'el_g', 'el_b']].values[0] / 255
-        # whiteness = np.clip(el_entry.mea1k_connectivity * 1, 0, 1)
-        # el_rec.set_facecolor((whiteness, whiteness, whiteness))
 
-        if el_entry.pad_id not in seen_pad_ids:
+        col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['pad_r', 'pad_g', 'pad_b']].values[0] / 255
+        whiteness = np.clip(el_entry.mea1k_connectivity * 1, 0, 1)
+        el_rec.set_facecolor((whiteness, whiteness, whiteness))
+
+        if (el_entry.connectivity_order == 1) and (el_entry.mea1k_connectivity > CONNECTIVITY_THR) and el_entry.notna()["shank_id"]:
+            el_rec.set_alpha(1)
+            el_rec.set_facecolor(col)
             pad_circles.append(plt.Circle((el_entry.pad_x_aligned, el_entry.pad_y_aligned),
-                                            PAD_R, color=col,
-                                            fill=False, linewidth=.5, alpha=.25))
-            seen_pad_ids.append(el_entry.pad_id)
-        # if (el_entry.connectivity_order == 1) and (el_entry.mea1k_connectivity > CONNECTIVITY_THR) and el_entry.notna()["shank_id"]:
-        if (mea1k_el_conn > CONNECTIVITY_THR) and el_entry["shank_id"]:
-        # if (el_entry.connectivity_order == 1):
-        # if True:
-            # el_rec.set_alpha(1)
-            # el_rec.set_facecolor(col)
-            pad_circles.append(plt.Circle((el_entry.pad_x_aligned, el_entry.pad_y_aligned),
-                                          PAD_R, color=col,
-                                          fill=False, linewidth=.5, alpha=1))
-            # # annotate el_entry with connectivity order
-            # # get x y of recatngle patch
-            # x,y = el_rec.get_xy()
-            # ax.text(x, y, f"{int(el_entry.connectivity_order)}",
-            #         fontsize=8, ha='center', va='center', color='white', alpha=0.8)
+                                          PAD_R*1.7, color=col,
+                                          fill=False, linewidth=.8, alpha=.5))
     [ax.add_patch(pc) for pc in pad_circles]
-    fig.savefig(fullfname.replace("csv", "png"), dpi=300, transparent=True,
+    fig.savefig(fullfname.replace("csv", "png"), dpi=300, transparent=False,
                 bbox_inches='tight', pad_inches=0)
     plt.show()
 
 
 CONNECTIVITY_THR = .7
-PAD_R = 15
+PAD_R = 18
 
 def main():
     nas_dir = device_paths()[0]
     # NewGen 2026 - combined device from two sub-devices
-    ELECTRODE_DEVICE_NAMES = ['S0844pad8shank', 'S0844pad6shank']  # combined = S1688pad14shank
+    ELECTRODE_DEVICE_NAMES = ['S0844pad6shank', 'S0844pad8shank']  # combined = S1688pad14shank
     HEADSTAGE_DEVICE_NAME = 'MEA1K22'
     date = '260320'
     batch = 1
@@ -356,7 +257,7 @@ def main():
     rec_dir_name = 'testBond4_ShubhamW1_14Shank_VrefFPGAStim_ampl15'
     connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices',
                                          IMPLANT_DEVICE_NAME, 'recordings', rec_dir_name)
-    # align_pads2mea1k(ELECTRODE_DEVICE_NAMES, IMPLANT_DEVICE_NAME, connectivity_rec_path)
+    align_pads2mea1k(ELECTRODE_DEVICE_NAMES, IMPLANT_DEVICE_NAME, connectivity_rec_path)
     plot_pad_alignment(IMPLANT_DEVICE_NAME)
 
 
