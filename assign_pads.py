@@ -281,6 +281,13 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
                              f'bonding_mapping_{IMPLANT_DEVICE_NAME}.csv')
     pad_alignment = pd.read_csv(fullfname)
     
+    print(pad_alignment, flush=True)
+    # how many pads are connected
+    n_pads = pad_alignment['pad_id'].nunique()
+    n_connected_pads = pad_alignment[pad_alignment['mea1k_connectivity'] > CONNECTIVITY_THR]['pad_id'].nunique()
+    print(f"Connected pads: {n_connected_pads}/{n_pads} ({n_connected_pads/n_pads:.1%})")
+    
+    
     # plt.plot(pad_alignment.pad_id.sort_values().unique())
     # plt.show()
 
@@ -301,16 +308,16 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
         el_rec.set_facecolor((1, 1, 1))
         
         # continue
-        print(f"pad_id: {el_entry.pad_id}, el_i: {el_i}, conn: {mea1k_el_conn:.3f}")
         if pd.isna(el_entry.pad_id):
             # print(f"EL{el_i} under pad_id NaN")
             continue
         
         # each electrod under a pad gets colored by its pad's RGB color, regardless of connectivity
         col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['el_r', 'el_g', 'el_b']].values[0]
-        print(col)
         # col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['pad_r', 'pad_g', 'pad_b']].values[0] / 255
         el_rec.set_alpha(min(1, mea1k_el_conn+.2)) # set alpha to connectivity, see connectivity pattern
+        
+        # color each electrode by its pad
         el_rec.set_facecolor(col)
         
         # col = pad_alignment[pad_alignment['mea1k_el'] == el_i][['el_r', 'el_g', 'el_b']].values[0] / 255
@@ -342,8 +349,8 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
     plt.show()
 
 
-CONNECTIVITY_THR = .7
-PAD_R = 15
+CONNECTIVITY_THR = .5
+PAD_R = 20
 
 def main():
     nas_dir = device_paths()[0]
@@ -353,7 +360,9 @@ def main():
     date = '260320'
     batch = 1
     IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_S1688pad14shankB{batch}"
-    rec_dir_name = 'testBond4_ShubhamW1_14Shank_VrefFPGAStim_ampl15'
+    
+    IMPLANT_DEVICE_NAME = "260413_MEA1K22_S1688pad14shankB5"
+    rec_dir_name = 'Bond2_r4BothHalfs_ShubhamW3_16Shank_Vref15'
     connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices',
                                          IMPLANT_DEVICE_NAME, 'recordings', rec_dir_name)
     # align_pads2mea1k(ELECTRODE_DEVICE_NAMES, IMPLANT_DEVICE_NAME, connectivity_rec_path)
