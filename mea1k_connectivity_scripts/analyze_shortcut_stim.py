@@ -1,6 +1,7 @@
 import os
 import sys
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -81,7 +82,7 @@ def analyze_shorts(subdir, implant_name, debug=False, deepdebug=False):
         stimulated = stimulated.sort_values(by=['tile', 'stim']).reset_index(drop=True)
         ratios = stimulated.groupby("tile").apply(
             lambda x: (x.sine_voltage_uV /x[x.stim].sine_voltage_uV.item()),
-            include_groups=False
+            # include_groups=False
         )
         
         # single tile case is turned into df instead of two-level series
@@ -97,6 +98,119 @@ def analyze_shorts(subdir, implant_name, debug=False, deepdebug=False):
     aggr_imp_data = pd.concat(aggr_imp_data)
     save_output(subdir, aggr_imp_data, "extracted_sine_voltages.csv")
 
+def analyze_single_stim(subdir, deepdebug=False):
+    L = Logger()
+    fnames, _ = get_hdf5_fnames_from_dir(subdir)
+    aggr_imp_data = []
+    for i, fname in enumerate(fnames):
+        L.logger.info(f"Config {i}/{len(fnames)}")
+        
+        stimulated = pd.read_csv(os.path.join(subdir, fname.replace(".raw.h5", ".csv")))
+        
+        stim_sample_ids = (14000, 22500)
+        data = read_raw_data(subdir, fname, convert2uV=True,
+                            subtract_dc_offset=True, 
+                            col_slice=slice(stim_sample_ids[0], stim_sample_ids[-1], None))
+    
+        mean_ampl = []
+        for j, row in enumerate(data):
+            m_ampl, phase = estimate_frequency_power(row.astype(float), 
+                                                 sampling_rate=EC.SAMPLING_RATE, 
+                                                 debug=deepdebug, 
+                                                 min_band=960, max_band=1040)
+            mean_ampl.append(m_ampl)
+        mean_ampl = np.array(mean_ampl)
+        
+        if "Unnamed: 0" in stimulated.columns:
+            stimulated.drop("Unnamed: 0", axis=1, inplace=True)
+            
+        stimulated['sine_voltage_uV'] = mean_ampl
+        
+        stim_row = stimulated[stimulated.stim]
+        if len(stim_row) == 0:
+            L.logger.warning(f"No stim electrode found in config {fname}")
+            continue
+            
+        stim_ampl = stim_row.sine_voltage_uV.values[0]
+        stimulated['tile_connectivity'] = stimulated['sine_voltage_uV'] / stim_ampl
+        stimulated['tile'] = 0 # Dummy tile for compatibility with visualization functions
+        
+        stimulated.index = pd.MultiIndex.from_product([[fname.replace(".raw.h5","")],
+                                                        stimulated.index], names=['config', 'el'])
+        aggr_imp_data.append(stimulated)
+
+    aggr_imp_data = pd.concat(aggr_imp_data)
+    save_output(subdir, aggr_imp_data, "extracted_sine_voltages.csv")
+
+def connected_islands(subdir, output_dir=None, output_fname=None):
+    data = pd.read_csv(os.path.join(subdir, "processed", "extracted_sine_voltages.csv"))
+    print(f"Total rows: {len(data)}")
+    
+    centers = data[(data.stim) & data.tile_connectivity.notna()]
+    center_shorts = data[(data.tile_connectivity > 0.8) & 
+                         np.isin(data.tile, centers.tile) &
+                         (data.tile_connectivity != np.inf) &
+                         (data.sine_voltage_uV > 100) # valid stimulation should have ampl > 100 uV
+                         ]
+    
+    # Build graph of connected electrodes
+    G = nx.Graph()
+    
+    # Add nodes with their coordinates
+    for _, row in center_shorts.iterrows():
+        if row.electrode not in G:
+            G.add_node(row.electrode, x=row.x, y=row.y)
+
+    # Add edges between center and its shorts
+    grouped = center_shorts.groupby(['config', 'tile'])
+    for (config, tile), group in grouped:
+        stims = group[group.stim]
+        shorts = group[~group.stim]
+        
+        if len(stims) == 0:
+            continue
+            
+        center_el = stims.iloc[0].electrode
+        for _, short_row in shorts.iterrows():
+            G.add_edge(center_el, short_row.electrode)
+
+    # Find connected components (islands)
+    islands = list(nx.connected_components(G))
+    islands = [island for island in islands if len(island) > 1] # Only keep actual shorts
+    print(f"Found {len(islands)} shorted islands.")
+    
+    (fig, ax), recs  = draw_mea1k(bg='white', el_color='#aaaaaa')
+    
+    # Cycles through a colormap for different islands
+    cmap = plt.cm.get_cmap('tab20')
+    
+    for i, island in enumerate(islands):
+        color = cmap(i % 20)
+        
+        # Get coordinates for all electrodes in this island
+        island_x = [G.nodes[el]['x'] + 8.75 for el in island]
+        island_y = [G.nodes[el]['y'] + 8.75 for el in island]
+        
+        # Scatter plot all electrodes in the island
+        ax.scatter(island_x, island_y, color=color, s=20, zorder=5, alpha=0.9)
+        
+        # Create a subgraph and draw its edges to clearly show connectivity
+        subgraph = G.subgraph(island)
+        for edge in subgraph.edges():
+            x0, y0 = G.nodes[edge[0]]['x'] + 8.75, G.nodes[edge[0]]['y'] + 8.75
+            x1, y1 = G.nodes[edge[1]]['x'] + 8.75, G.nodes[edge[1]]['y'] + 8.75
+            ax.plot([x0, x1], [y0, y1], color=color, alpha=0.5, linewidth=2, zorder=4)
+
+    if output_dir is not None and output_fname is not None:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        out_fullfname = os.path.join(output_dir, output_fname)
+        print("Saving island plot to ", out_fullfname)
+        fig.savefig(out_fullfname, dpi=300)
+    plt.show()
+    
+    
+    
 def vis_shorts(subdir, output_dir=None, output_fname=None):
     data = pd.read_csv(os.path.join(subdir, "processed", "extracted_sine_voltages.csv"))
     print(data)
@@ -146,22 +260,28 @@ def main():
     headstage_name = "MEA1K22"
     
     subdirs = [
-        # f"devices/well_devices/{MEA1K08}/recordings/2025-05-09_10.14.37_invivo_imp_mode='voltage'_stimpulse='sine'_amplitude=10",
-        # f"devices/headstage_devices/{implant_name}/recordings/2025-07-18_09.30.23_beforeGP_mode='voltage'_stimpulse='sine'_amplitude=10",
-        # f"devices/headstage_devices/{implant_name}/recordings/2025-07-18_12.42.31_afterGP_mode='voltage'_stimpulse='sine'_amplitude=10",
-        # f"devices/headstage_devices/{headstage_name}/recordings/2025-10-01_14.24.55_SC_postGPCheck_mode=\'voltage\'_amplitude=10",
-        f"devices/headstage_devices/{headstage_name}/recordings//2026-03-16_15.27.00_SC_postTestbonding02_",
+        f"devices/headstage_devices/{headstage_name}/recordings/2026-04-16_12.09.11_SC_16ShankW5Bond_Tight_beforeHooking",
+        f"devices/headstage_devices/{headstage_name}/recordings/2026-04-16_14.41.31_SC_SingleStim_260413_MEA1K22_S1688pad14shankB5",
+        f"devices/headstage_devices/{headstage_name}/recordings/2026-04-16_16.24.06_SC_SingleStim_rec2_260413_MEA1K22_S1688pad14shankB5/",
     ]
-    output_dir = os.path.join(nas_dir, subdirs[-1], 'processed')
-    output_fname = f"shortcuts_fristimpl_{headstage_name}.png"
     
-
-    # el_config_S1D1650.raw.h5
+    target_subdir = subdirs[0]
+    output_dir = os.path.join(nas_dir, target_subdir, 'processed')
+    output_fname = f"shortcuts_single_stim_{headstage_name}.png"
+    
+    # analyze_single_stim(os.path.join(nas_dir, target_subdir), deepdebug=False)
+    
+    
+    # # el_config_S1D1650.raw.h5
     analyze_shorts(os.path.join(nas_dir, subdirs[0]), implant_name=headstage_name, 
                     debug=False, deepdebug=False)
-    vis_shorts(os.path.join(nas_dir, subdirs[0]), 
+    
+    vis_shorts(os.path.join(nas_dir, target_subdir), 
                output_dir=output_dir, 
                output_fname=output_fname)
+    connected_islands(os.path.join(nas_dir, target_subdir), 
+                      output_dir=output_dir, 
+                      output_fname=f"connected_islands_single_stim_{headstage_name}.png")
     plt.show()
     
 if __name__ == "__main__":

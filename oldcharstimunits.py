@@ -41,18 +41,17 @@ def _sweep_DAC(dirname, array, stim_unit, ampl_id, set_id, DAC_values, debug):
         turn_on_stimulation_units([stim_unit], mode='small_current')
         time.sleep(.4)
         
-        # has no Indicator  on amplifier trace
+        # Indicator 2
         shift_DAC(DAC_val)
         time.sleep(.3)
-        
-        # Indicator 2
-        # has large effect on trace, but we don't care about it
+            
+        # Indicator 3
+        # has large effect on trace, what we care about
         array.connect_amplifier_to_ringnode(int(ampl_id))
         array.download()
         time.sleep(.3)
 
-        # Indicator 3: the dislocation we care about, varies over DAC values 
-        print(f"Connecting to R to measure offset...\n\n")
+        print(f"Turning on stim units...\n\n")
         array.connect_amplifier_to_stimulation(ampl_id)
         array.download()
         # usually no dislocation, but required for prv offset?
@@ -127,8 +126,8 @@ def _extract_DAC_transient_set(dirname, ampl_id, stim_unit, set_id, debug=False)
         else:
             ampl_id_idx = ampl_id
         
+        # TODO didn't see proper peaks last time?
         from_t, to_t = 12_500, 20_000 # interval contains the transient
-        # from_t, to_t = 0, data.shape[1] # full interval, to check other indicaters
         if dac is not None and dac.shape[0] < to_t:
             print(f"WARNING! DAC trace too short {dac.shape[0]} < {to_t}, adjusting to available length")
             to_t = dac.shape[0]
@@ -186,7 +185,6 @@ def _extract_DAC_transient_set(dirname, ampl_id, stim_unit, set_id, debug=False)
         
             plt.title(f"Raw data from {fname}")
             plt.legend(fontsize=6, ncol=2)
-            # plt.show()
     
     dac_transients_res = pd.DataFrame(dac_transients_res)
     fullfname = os.path.join(dirname, f"results_StimUnit{stim_unit:02d}_Ampl{ampl_id:04d}_Set{set_id}.csv")
@@ -195,201 +193,14 @@ def _extract_DAC_transient_set(dirname, ampl_id, stim_unit, set_id, debug=False)
     if debug:
         plt.show()
     return dac_transients_res
-
-def _fit_single_regression(df):
-    """Fits a single regression line and calculates R^2 and the residual nearest to y=0."""
-    df = df.dropna(subset=["DAC_val", "peak_uV"])
-    if len(df) < 2 or df["DAC_val"].nunique() < 2:
-        return None
-
-    x = df["DAC_val"].to_numpy(dtype=float)
-    y = df["peak_uV"].to_numpy(dtype=float)
-
-    # 1. Fit linear regression
-    slope, intercept = np.polyfit(x, y, 1)
-    y_pred = slope * x + intercept
-
-    # 2. Calculate general goodness of fit (R^2)
-    ss_res = np.sum((y - y_pred) ** 2)
-    ss_tot = np.sum((y - np.mean(y)) ** 2)
-    r_squared = np.nan if ss_tot == 0 else 1 - (ss_res / ss_tot)
-
-    # 3. Find the empirical point closest to y = 0
-    idx_closest_to_zero = np.argmin(np.abs(y))
-    x_zero_pt = x[idx_closest_to_zero]
-    y_zero_pt_actual = y[idx_closest_to_zero]
-    y_zero_pt_pred = y_pred[idx_closest_to_zero]
     
-    # Calculate the residual at that point
-    error_at_zero = abs(y_zero_pt_actual - y_zero_pt_pred)
-
-    return slope, intercept, r_squared, x_zero_pt, y_zero_pt_actual, y_zero_pt_pred, error_at_zero
-
-
-def eval_stim_unit_results(dirname, stim_unit_results, debug=False):
-    if not stim_unit_results:
-        return
-
-    # Extract ID for saving
-    stimunit_id = int(stim_unit_results[0]["stimunit_id"].iloc[0])
-
-    # Create figure with independent axes (sharex=False by default)
-    fig, ax = plt.subplots(nrows=2, figsize=(14, 10))
-    fig.suptitle(f"Characterization: Stimulation Unit {stimunit_id:02d}", fontsize=16, fontweight="bold")
-    
-    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    y_formatter = plt.matplotlib.ticker.StrMethodFormatter('{x:,.0f}')
-
-    # --- Top Plot: All Points (colored by set) ---
-    all_results = pd.concat(stim_unit_results, axis=0, ignore_index=True)
-    
-    # Target Box
-    ax[0].axhspan(-25000, 25000, color='gray', alpha=0.15, zorder=0, label="±25k uV Target Range")
-    
-    for i, res_df in enumerate(stim_unit_results):
-        if not res_df.empty:
-            amp_id = res_df["ampl_id"].iloc[0]
-            set_id = res_df["set_id"].iloc[0]
-            c = colors[i % len(colors)]
-            ax[0].scatter(res_df["DAC_val"], res_df["peak_uV"], s=30, alpha=0.3, color=c, 
-                          label=f"Ampl {amp_id} | Set {set_id}")
-            
-    ax[0].axhline(0, color='gray', linestyle='--', alpha=0.5)
-    ax[0].yaxis.set_major_formatter(y_formatter)
-
-    stats_all = _fit_single_regression(all_results)
-    best_dac = None  # To save to CSV later
-
-    if stats_all is not None:
-        slope, intercept, r_sq, x_0, y_0, y_pred_0, err_0 = stats_all
-        x_line = np.array([all_results["DAC_val"].min(), all_results["DAC_val"].max()])
-        
-        # Regression Line (Green)
-        ax[0].plot(x_line, slope * x_line + intercept, color="green", linestyle="--", 
-                   label=f"Fit All (R² = {r_sq:.3f})")
-                   
-        # Empirical Min Highlight (Red)
-        ax[0].axvline(x_0, color='red', linestyle='--', alpha=0.7, 
-                      label=f"Empirical Min (DAC: {x_0:.0f}, |Peak|: {abs(y_0):,.1f} uV)")
-        ax[0].scatter([x_0], [y_0], facecolors='none', edgecolors='red', s=200, linewidths=2, zorder=6)
-
-        # Fit Best DAC Highlight (Green)
-        if slope != 0:
-            x_cross_0 = -intercept / slope
-            best_dac = int(round(x_cross_0))
-            best_dac = max(0, min(1023, best_dac)) # Enforce hardware DAC limits
-            
-            y_pred_best = slope * best_dac + intercept
-            delta_dac = abs(x_0 - best_dac)
-            
-            ax[0].axvline(best_dac, color='green', linestyle='-.', alpha=0.7, 
-                          label=f"Fit 0-Cross (DAC: {best_dac}, Offset: {y_pred_best:,.1f} uV, Δ: {delta_dac:.0f})")
-            ax[0].scatter([best_dac], [y_pred_best], facecolors='none', edgecolors='green', s=200, linewidths=2, zorder=6)
-
-    ax[0].set_title("All Measured Points")
-    ax[0].set_ylabel("Peak [uV]")
-    ax[0].grid(True, axis='y', alpha=0.3)
-    ax[0].legend(fontsize=9, loc='center left', bbox_to_anchor=(1, 0.5))
-
-    # --- Bottom Plot: Current (Latest) Set Only ---
-    current_set = stim_unit_results[-1]
-    current_color = colors[(len(stim_unit_results) - 1) % len(colors)]
-
-    # Target Box
-    ax[1].axhspan(-25000, 25000, color='gray', alpha=0.15, zorder=0)
-
-    ax[1].scatter(current_set["DAC_val"], current_set["peak_uV"], s=50, alpha=0.9, 
-                  color=current_color, label="Current Set")
-    ax[1].axhline(0, color='gray', linestyle='--', alpha=0.5)
-    ax[1].yaxis.set_major_formatter(y_formatter)
-
-    stats_curr = _fit_single_regression(current_set)
-    if stats_curr is not None:
-        slope_c, intercept_c, r_sq_c, x_0c, y_0c, y_pred_0c, err_0c = stats_curr
-        x_line_c = np.array([current_set["DAC_val"].min(), current_set["DAC_val"].max()])
-        
-        # Regression Line (Green)
-        ax[1].plot(x_line_c, slope_c * x_line_c + intercept_c, color="green", linestyle="--", 
-                   label=f"Fit Current (R² = {r_sq_c:.3f})")
-        
-        # Empirical Min Highlight (Red)
-        ax[1].axvline(x_0c, color='red', linestyle='--', alpha=0.7, 
-                      label=f"Empirical Min (DAC: {x_0c:.0f}, |Peak|: {abs(y_0c):,.1f} uV)")
-        ax[1].scatter([x_0c], [y_0c], facecolors='none', edgecolors='red', s=200, linewidths=2, zorder=6)
-        
-        # Fit Best DAC Highlight (Green)
-        best_dac_c = None
-        if slope_c != 0:
-            x_cross_0c = -intercept_c / slope_c
-            best_dac_c = int(round(x_cross_0c))
-            best_dac_c = max(0, min(1023, best_dac_c))
-
-            y_pred_best_c = slope_c * best_dac_c + intercept_c
-            delta_dac_c = abs(x_0c - best_dac_c)
-
-            ax[1].axvline(best_dac_c, color='green', linestyle='-.', alpha=0.7, 
-                          label=f"Fit 0-Cross (DAC: {best_dac_c}, Offset: {y_pred_best_c:,.1f} uV, Δ: {delta_dac_c:.0f})")
-            ax[1].scatter([best_dac_c], [y_pred_best_c], facecolors='none', edgecolors='green', s=200, linewidths=2, zorder=6)
-
-    ax[1].set_title("Current Set Only")
-    ax[1].set_xlabel("DAC value")
-    ax[1].set_ylabel("Peak [uV]")
-
-    # Bottom Plot Specific Formatting (No x grid, no x ticks/labels)
-    ax[1].set_xticks([]) # Removes the ticks and labels completely
-    ax[1].grid(False, axis='x')
-    ax[1].grid(True, axis='y', alpha=0.3)
-    
-    ax[1].legend(fontsize=9, loc='center left', bbox_to_anchor=(1, 0.5))
-    
-    # adjust rect to make room for suptitle so it doesn't overlap with the top title
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-
-    # --- Saving Routine ---
-    os.makedirs(os.path.join(dirname, "processed"), exist_ok=True)
-    
-    # 1. Update/Save the live preview
-    plt.savefig('./live_figures/stim_unit_characterization_live.png', dpi=300)
-    
-    # 2. Save the explicit final image for the given Stim Unit
-    plot_path = os.path.join(dirname, "processed", f"StimUnit{stimunit_id:02d}_characterization.png")
-    plt.savefig(plot_path, dpi=300)
-
-    # 3. Aggreate standard DataFrame for downstream current_lsb evaluation
-    if best_dac is not None:
-        csv_path = os.path.join(dirname, "processed", "StimUnits_characterization.csv")
-        if os.path.exists(csv_path):
-            df_char = pd.read_csv(csv_path)
-        else:
-            df_char = pd.DataFrame(columns=["stimunit_id", "zero_current_DAC_code"])
-        
-        # Overwrite if exists, otherwise append
-        if stimunit_id in df_char["stimunit_id"].values:
-            df_char.loc[df_char["stimunit_id"] == stimunit_id, "zero_current_DAC_code"] = best_dac
-        else:
-            new_row = pd.DataFrame([{"stimunit_id": stimunit_id, "zero_current_DAC_code": best_dac}])
-            df_char = pd.concat([df_char, new_row], ignore_index=True)
-            
-        df_char = df_char.astype(int) # Standardize back to clean integer codes
-        df_char.sort_values("stimunit_id", inplace=True)
-        df_char.to_csv(csv_path, index=False)
-
-    if debug:
-        plt.show()
-        
-    plt.close(fig)
-
 def char_stim_units(dirname, n_amplifiers=2, stim_units=list(range(32)), debug=False):
-    # create processed directory if not exists
-    os.makedirs(os.path.join(dirname, "processed"), exist_ok=True)
     array = setup_stim_unit_characterization(dirname)
     
     for stim_unit in stim_units:
         # initial DAC sweep parameters
         centered_around = 512
-        delta = 256
-        plt.close('all')
-        stim_unit_results = []
+        delta = 64
         for which_amplifier in range(n_amplifiers):
             # iterate random mea1k el until we find the right stim unit + ampliifier
             ampl_id = find_stim_unit_amplifier(array, stim_unit=stim_unit, 
@@ -403,29 +214,45 @@ def char_stim_units(dirname, n_amplifiers=2, stim_units=list(range(32)), debug=F
                 _sweep_DAC(dirname, array, stim_unit, ampl_id, set_id, DAC_values, debug=debug)
                 results = _extract_DAC_transient_set(dirname, ampl_id, stim_unit, 
                                                     set_id, debug=debug)
-                stim_unit_results.append(results)
-                
-                # Pass dirname so it can save the CSV at every execution reliably
-                eval_stim_unit_results(dirname, stim_unit_results, debug=debug)
 
-                if delta == 16:
-                    print("Delta is already 16, and peak is <20mV, stopping here.\n\n\n")
-                    break
+                # check if the transient is low enough, if yes, break - the exact number is hard to define
+                peak = results.peak_uV.abs().min()
+                if peak < 23_000:
+                    print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} done, peak_uV: {peak} uV")
+                    print(results.sort_values(by='peak_uV', key=abs, ascending=True).head(3))
+                    if delta == 16:
+                        print("Delta is already 16, and peak is <20mV, stopping here.\n\n\n")
+                        break
+                    else:
+                        print(f"Peak is low enough, but delta={delta} > 16")
+                        delta = max(16, delta // 4)
+                        centered_around = int(results.iloc[results.peak_uV.abs().argmin()].DAC_val)
+                        print(f"Recentering around {centered_around}, new delta={delta}")
                 
-                # find the DAC value that gives the `lowest peak_uV
-                best_row = results.iloc[results.peak_uV.abs().argmin()]
-                print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} "
-                        f"peak_uV={best_row.peak_uV:.1f} uV at DAC"
-                        f" {best_row.DAC_val}, centering around it and reducing delta to 1/4")
-                centered_around = int(best_row.DAC_val)
-                delta = max(16, delta//4) # should get smaaller while closing in on the best value
-                print(f"Recentering around {centered_around}, new delta={delta}")
                 set_id += 1
+                # print(results.peak_uV, "std:", results.peak_uV.std())
+                peak_std = results.peak_uV.std()
+                if peak_std <30_000:
+                    delta *= 4
+                    print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} "
+                          f"done, peak std={peak_std}, low variance, increasing DAC range to {delta}")
+                
+                else:
+                    # find the DAC value that gives the `lowest peak_uV
+                    best_row = results.iloc[results.peak_uV.abs().argmin()]
+                    print(f"Stim unit {stim_unit} amplifier {ampl_id} set {set_id} "
+                          f"with high variance: {peak_std} - peak_uV={best_row.peak_uV:.1f} uV at DAC"
+                          f" {best_row.DAC_val}, centering around it and reducing delta to 1/4")
+                    centered_around = int(best_row.DAC_val)
+                    delta = max(16, delta//4) # should get smaaller while closing in on the best value
+                
+                if set_id > 4:
+                    print("Too many sets, stopping here.\n\n\n")
+                    break
 
 def eval_char_stim_units(dirname,  stim_units, debug=False):
     all_results = []
     for stim_unit in stim_units:
-        print(os.listdir(dirname))
         res_fullfnames = glob.glob(os.path.join(dirname, f"results_StimUnit{stim_unit:02d}_*.csv"))
         print(f"\nFound {len(res_fullfnames)} result files for stim unit {stim_unit}")
         
@@ -471,31 +298,24 @@ def eval_char_stim_units(dirname,  stim_units, debug=False):
     all_results.to_csv(os.path.join(dirname, "processed", "StimUnits_characterization.csv"), index=False)    
     print("\n\nAll results:\n", all_results)
 
-def char_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, n_amplifiers, 
-                     freq, ncycles, debug=False):
+def char_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, n_amplifiers, debug=False):
     array = setup_stim_unit_characterization(dirname)
     s = get_maxlab_saving()
     dac_settings = pd.read_csv(os.path.join(dirname, "processed", "StimUnits_characterization.csv"))
     
     for stim_unit in stim_units:
-        print(dac_settings.loc[dac_settings.stimunit_id==stim_unit])
-        dac_code = int(dac_settings.loc[dac_settings.stimunit_id==stim_unit].zero_current_DAC_code)
-        print("Creating sine wave sequence...", end=" ", flush=True)
-        sine_seq = create_stim_sine_sequence(dac_id=0, amplitude=sine_ampl_DAC_units, 
-                                                f=freq, ncycles=ncycles,
-                                                center_around=dac_code)
-        print("Done.")
-        
-        seq_duration = (ncycles / freq) + .5  # add .5s buffer
-        for i, which_amplifier in enumerate(range(n_amplifiers)):
+        for which_amplifier in range(n_amplifiers):
             ampl_id = find_stim_unit_amplifier(array, stim_unit=stim_unit, which_amplifier=which_amplifier)
 
-            # dac_code = 400
-            print(f"\n\nStim unit {stim_unit} amplifier {ampl_id} ({i+1}/ "
-                  f"{n_amplifiers}), zero current DAC code: {dac_code}")
+            print(dac_settings.loc[dac_settings.stimunit_id==stim_unit])
+            dac_code = int(dac_settings.loc[dac_settings.stimunit_id==stim_unit].zero_current_DAC_code)
+            print(f"\n\nStim unit {stim_unit} amplifier {ampl_id}, zero current DAC code: {dac_code}")
 
-            fname = f"config_StimUnit{int(stim_unit):02d}_Ampl{ampl_id:04d}_f{freq:04d}Hz_CurrentLSB"
-            # fname = f"config_StimUnit{int(stim_unit):02d}_Ampl{ampl_id:04d}_CurrentLSB"
+            sine_seq = create_stim_sine_sequence(dac_id=0, amplitude=sine_ampl_DAC_units, 
+                                                 f=1000, ncycles=400,
+                                                 center_around=dac_code)
+            
+            fname = f"config_StimUnit{int(stim_unit):02d}_Ampl{ampl_id:04d}_CurrentLSB"
             start_saving(s, dir_name=dirname, fname=fname, legacy=True)
             
             turn_on_stimulation_units([stim_unit], mode='small_current')
@@ -503,20 +323,18 @@ def char_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, n_amplifiers,
             array.connect_amplifier_to_ringnode(int(ampl_id))
             array.connect_amplifier_to_stimulation(ampl_id)
             array.download()
-            time.sleep(.1)
             
-            print(f"Stimulating ~~~~~~~ ({seq_duration:.1f}s)")
             sine_seq.send()
-            time.sleep(seq_duration)
+            time.sleep(0.5)
 
             turn_off_stimulation_units([stim_unit])
             array.disconnect_amplifier_from_stimulation(ampl_id)
             array.disconnect_amplifier_from_ringnode(ampl_id)
             stop_saving(s)
-            
-def eval_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, freq, ncycles, debug=False):
+
+def eval_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, debug=False):
     aggr = []
-    for i, fname in enumerate(sorted(os.listdir(dirname))):
+    for fname in sorted(os.listdir(dirname)):
         if not fname.endswith("_CurrentLSB.raw.h5"):
             continue
         stimunit_id = int(fname.split("_")[1].replace("StimUnit", ""))
@@ -526,16 +344,14 @@ def eval_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, freq, ncycles,
         data = read_raw_data(dirname, fname, convert2uV=True, )#row_slice=[ampl_id, ],)
         dac = read_stim_DAC(dirname, fname)
         
-        interv = 1500, 1500 + int((ncycles / freq) * 20_000) +8_000
-        # interv = 0, len(data[0])
+        interv = 1200, 9400
         zero_current_DAC_code = dac[interv[0]]
-        rng = max(1, freq//100) # allow 1% frequency deviation
         mean_ampl, phase_shift = estimate_frequency_power(data[ampl_id, interv[0]:interv[1]].astype(float), 
                                                           sampling_rate=20_000, 
-                                                          debug=debug, name=fname,
-                                                          min_band=freq-rng, max_band=freq+rng,
+                                                          debug=debug, 
+                                                          min_band=960, max_band=1040,
                                                           dac=dac[interv[0]:interv[1]].astype(float) if dac is not None else None)
-        aggr.append({
+        aggr.append(pd.Series({
             "stimunit_id": stimunit_id,
             "mean_amplitude_uV": mean_ampl,
             "zero_current_DAC": zero_current_DAC_code,
@@ -543,73 +359,48 @@ def eval_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, freq, ncycles,
             "sine_amplitude_DAC_units": sine_ampl_DAC_units,
             "LSB_small_current_nA": (mean_ampl / R) / (sine_ampl_DAC_units / 1_000),  # in nA
             "phase_shift_deg": phase_shift,
-        })
-    
-    # Aggregate to DataFrame before plotting
-    aggr = pd.DataFrame(aggr)
-    print(aggr)
-    aggr['median_amplitude_uV'] = aggr.groupby('stimunit_id')['mean_amplitude_uV'].transform('median')
-    aggr['median_LSB_nA'] = aggr.groupby('stimunit_id')['LSB_small_current_nA'].transform('median')
-    print(aggr)
+        }))
         
     fig, ax = plt.subplots(figsize=(14, 8), ncols=2, nrows=2, sharex=True)
     ax = ax.flatten()
     
-    unique_med = aggr.drop_duplicates('stimunit_id')
-    
-    # 1.) Zero current DAC code
-    ax[0].set_title("1.) Zero current DAC code")
+    ax[0].set_title("Mean Amplitude uV")
     ax[0].set_xlabel("Stim Unit ID")
-    ax[0].set_ylabel("Zero current DAC code")
+    ax[0].set_ylabel("Mean Amplitude [uV]")
     ax[0].set_xticks(stim_units)
-    ax[0].scatter(aggr['stimunit_id'], aggr['zero_current_DAC'], s=50, color='purple', alpha=0.6)
-    ax[0].tick_params(axis='x', which='both', rotation=90)
     ax[0].grid(True)
+    ax[0].set_ylim(0, 60_000)
+    ax[0].scatter([a.stimunit_id for a in aggr], [a.mean_amplitude_uV for a in aggr], s=50)
     
-    # 2.) Mean Amplitude
-    ax[1].set_title("2.) Mean Amplitude [uV]")
+    # Circular plot for phase shift
+    ax[1].set_title("Phase Shift (Circular)")
     ax[1].set_xlabel("Stim Unit ID")
-    ax[1].set_ylabel("Mean Amplitude [uV]")
+    ax[1].set_ylabel("Phase Shift [deg]")
     ax[1].set_xticks(stim_units)
-    ax[1].grid(True)
-    ax[1].set_ylim(0, 7000)
-    
-    ax[1].scatter(aggr['stimunit_id'], aggr['mean_amplitude_uV'], alpha=0.3, 
-                  color='blue', label='Measured', edgecolor='none', s=30)
-    ax[1].scatter(unique_med['stimunit_id'], unique_med['median_amplitude_uV'], color='blue', 
-                  s=200, marker='_', linewidths=2, zorder=5, label='Median')
-    ax[1].legend(fontsize=9)
+    # Convert degrees to radians for circular plot
+    phase_radians = np.deg2rad([a.phase_shift_deg for a in aggr])
+    ax[1].scatter([a.stimunit_id for a in aggr], np.mod(phase_radians, 2 * np.pi), s=50)
+    ax[1].set_yticks(np.deg2rad([0, 90, 180, 270, 360]))
+    ax[1].set_yticklabels(['0°', '90°', '180°', '270°', '360°'])
+    ax[1].set_ylim(0, 2 * np.pi)
     ax[1].tick_params(axis='x', which='both', rotation=90)
     
-    # Phase Shift
-    ax[2].set_title("Phase Shift (Circular)")
+    ax[2].set_title("LSB, small_current mode in [nA]")
     ax[2].set_xlabel("Stim Unit ID")
-    ax[2].set_ylabel("Phase Shift [deg]")
+    ax[2].set_ylabel("LSB [nA]")
     ax[2].set_xticks(stim_units)
-    phase_radians = np.deg2rad(aggr['phase_shift_deg'])
-    ax[2].scatter(aggr['stimunit_id'], np.mod(phase_radians, 2 * np.pi), s=50, color='green', alpha=0.6)
-    ax[2].set_yticks(np.deg2rad([0, 90, 180, 270, 360]))
-    ax[2].set_yticklabels(['0°', '90°', '180°', '270°', '360°'])
-    ax[2].set_ylim(0, 2 * np.pi)
+    ax[2].scatter([a.stimunit_id for a in aggr], [a.LSB_small_current_nA for a in aggr], s=50)
     ax[2].tick_params(axis='x', which='both', rotation=90)
-    ax[2].grid(True)
     
-    # 3.) LSB [nA]
-    ax[3].set_title(f"3.) LSB, small_current mode [nA]\n(Linear scaling by resistance R={R/1000:g}kΩ)")
+    ax[3].set_title("Zero current DAC code")
     ax[3].set_xlabel("Stim Unit ID")
-    ax[3].set_ylabel("LSB [nA]")
+    ax[3].set_ylabel("Zero current DAC code")
     ax[3].set_xticks(stim_units)
-    ax[3].scatter(aggr['stimunit_id'], aggr['LSB_small_current_nA'], alpha=0.3, 
-                  color='blue', label='Measured', edgecolor='none', s=30)
-    ax[3].scatter(unique_med['stimunit_id'], unique_med['median_LSB_nA'], color='blue', 
-                  s=200, marker='_', linewidths=2, zorder=5, label='Median')
+    ax[3].scatter([a.stimunit_id for a in aggr], [a.zero_current_DAC for a in aggr], s=50)
     ax[3].tick_params(axis='x', which='both', rotation=90)
-    ax[3].grid(True)
-    ax[3].legend(fontsize=9)
-
-    plt.tight_layout()
 
     result_fullfname = os.path.join(dirname, "processed", "smallcurrent_lsb_characterization.csv")
+    aggr = pd.DataFrame(aggr)
     aggr.to_csv(result_fullfname, index=False)
     # copy to devices/headstage_devices basedir
     aggr.to_csv(os.path.join(dirname, "..", "..", "smallcurrent_lsb_characterization.csv"), index=False)
@@ -621,46 +412,47 @@ def eval_current_lsb(dirname, R, sine_ampl_DAC_units, stim_units, freq, ncycles,
 def main():
     random.seed(42)
     debug = False
-    L = Logger()
-    L.init_logger(None, None, "DEBUG")
-    
     
     nas_dir = device_paths()[0]
-    # nas_dir = '/home/houmanjava/nas_imitation/'
-    # device_dir = "devices/well_devices/4983/recordings"
-    device_dir = "devices/headstage_devices/MEA1K22/recordings"
-    R = 100_000  # 1 MOhm
+    # nas_dir = "/home/houmanjava/nas_imitation"
+    # device_dir = "devices/headstage_devices/MEA1K22/recordings"
+    device_dir = "devices/well_devices/4983/recordings"
+    # R = 1_000_000  # 1 MOhm
+    R = 100_000  # 100 KOhm
     sine_ampl_DAC_units = 10 # in DAC units
-    freq = 1000  # in Hz
-    ncycles = 400
-    # freq = 100  # in Hz
-    # ncycles = 40
-    # freq = 10  # in Hz
-    # ncycles = 20
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M")
-    rec_dir = f"{t}_{R=}_CharStimUnits2026_newCode"
-    # rec_dir = '2026-04-07_17.09_R=100000_CharStimUnits2026'
-    # rec_dir = '2026-04-09_16.24_R=1000000_CharStimUnits2026_100nFinSeries'
-    
+    rec_dir = f"{t}_{R=}_CharStimUnits2026"
+    # rec_dir = "2026-03-10_18.58_R=100000_CharStimUnits2026"
+    # rec_dir = "2025-09-23_17.00_R=1000000_CharStimUnits"
+    # rec_dir = "2025-10-14_19.52_R=1000000_CharStimUnits"
+    # rec_dir = "2026-02-13_12.31_R=1000000_CharStimUnits2026"
+    # take the newest directory
+    # print(sorted(os.listdir(os.path.join(nas_dir, device_dir))))
+    # rec_dir = sorted(os.listdir(os.path.join(nas_dir, device_dir)))[-1]
     full_path = os.path.join(nas_dir, device_dir, rec_dir)
 
-    
+    n_amplifiers = 2
+    # stim_units = [1,2,8,9,16,17,24,30]
     stim_units = list(range(32))
     
-    n_amplifiers = 2
-    # Sweep the DAC values and continuously write the Best DAC fit to StimUnits_characterization.csv
+    # Iterate over all stim units * n_amplifiers (samples) and sweep the DAC values
+    # until we find the one that gives the lowest parasitic current (lowest transient peak)
     char_stim_units(full_path, n_amplifiers=n_amplifiers, stim_units=stim_units, debug=debug)
     
-
-    n_amplifiers = 6
-    # Calculate the Current LSB
-    char_current_lsb(full_path, R=R, sine_ampl_DAC_units=sine_ampl_DAC_units,
-                     stim_units=stim_units, n_amplifiers=n_amplifiers, freq=freq, 
-                     ncycles=ncycles, debug=debug)
+    # Evaluate the stim unit characterization results, aggreagting all sets,
+    # fitting a curve and finding the minimum
+    eval_char_stim_units(full_path, stim_units=stim_units, debug=debug)
     
-    # Evaluate the Final Result
+    # Now that we know the DAC value that gives 0 current for each stim unit,
+    # we can measure the actual current that corresponds to a certain DAC amplitude
+    # in small_current mode + R=1MOhm, which gives us the current LSB
+    char_current_lsb(full_path, R=R, sine_ampl_DAC_units=sine_ampl_DAC_units,
+                     stim_units=stim_units, n_amplifiers=n_amplifiers, debug=debug)
+    
+    # Evaluate the current LSB characterization results, this table is saved in 
+    # the headstage_devices directory and its needed for stimulation configuration
     eval_current_lsb(full_path, R=R, sine_ampl_DAC_units=sine_ampl_DAC_units, 
-                     stim_units=stim_units, freq=freq, ncycles=ncycles, debug=debug)
+                     stim_units=stim_units, debug=debug)
     
 if __name__ == "__main__":
     main()

@@ -82,6 +82,7 @@ def try_routing(els, return_array=False, stim_electrodes=None, randomize_routing
     array = setup_array(els, stim_electrodes=stim_electrodes, 
                         randomize_routing=randomize_routing)
     succ_routed = [m.electrode for m in array.get_config().mappings]
+    failed_routing = []
     if stim_electrodes is not None:
         print(f"Stimulation electrodes: {stim_electrodes}")
         # require: only one stim unit per stim electrode
@@ -194,13 +195,15 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100,
     t = np.linspace(0,1, int(EC.SAMPLING_RATE/f), endpoint=False)
     # Create a sine wave with a frequency of 1 kHz
     sine_wave = (amplitude * np.sin(t*2*np.pi)).astype(int)
-    for i in range(nreps):
-        for j in range(ncycles):
-            for ampl in sine_wave:
-                value = np.clip(center_around+ampl, 0, 1023)
-                # print(value, end=', ')
-                seq.append(maxlab.chip.DAC(dac_id, value))
-                seq.append(maxlab.system.DelaySamples(1))
+    
+    # Pre-calculate clipped values
+    clipped_values = np.clip(center_around + sine_wave, 0, 1023)
+    
+    total_iterations = nreps * ncycles
+    for _ in range(total_iterations):
+        for val in clipped_values:
+            seq.append(maxlab.chip.DAC(dac_id, val))
+            seq.append(maxlab.system.DelaySamples(1))
     return seq
 
 def init_fpga_sine_stim(t_period, amp_in_bits, periods=1):

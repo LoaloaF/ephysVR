@@ -74,7 +74,7 @@ def main():
     
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
     # rec_dir = f"{t}_SC_postGPCheck_{mode=}_{amplitude=}"
-    rec_dir = f"{t}_SC_postTestbonding02_"
+    rec_dir = f"{t}_SC_16ShankW5Bond_Tight_beforeHooking"
     full_recdir = os.path.join(nas_dir, subdir, rec_dir)
     print(f"Recording path exists: {os.path.exists(full_recdir)} - ", full_recdir)
     
@@ -93,6 +93,42 @@ def main():
                        s, stim_seq=stim_seq, mode=mode, )
         # if i>3:
         #     break
+
+def run_single_stim():
+    # ======== PARAMETERS ========
+    implant_name = "260413_MEA1K22_S1688pad14shankB5"
+    config_dirname = "260413_MEA1K22_S1688pad14shankB5_16.Apr_767El_SingleStimConfigs"
+    config_dirname = "260413_MEA1K22_S1688pad14shankB5_16.Apr_639El_SingleStimConfigs"
+    subdir = "devices/headstage_devices/MEA1K22/recordings"
+    nas_dir = device_paths()[0]
+    
+    post_download_wait_time = 1
+    rec_time = 1.2
+    gain = 7
+    amplitude = 100
+    configs_basepath = os.path.join(nas_dir, "devices", "implant_devices", implant_name, 'bonding', config_dirname)
+    mode = "voltage"
+    # ======== PARAMETERS ========
+    
+    t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+    rec_dir = f"{t}_SC_SingleStim_rec2_{implant_name}"
+    full_recdir = os.path.join(nas_dir, subdir, rec_dir)
+    print(f"Recording path exists: {os.path.exists(full_recdir)} - ", full_recdir)
+    
+    stim_seq = create_stim_sine_sequence(dac_id=0, amplitude=amplitude, f=1000, ncycles=400, 
+                                         nreps=1, voltage_conversion=mode=='voltage')
+
+    s = get_maxlab_saving()
+    reset_MEA1K(gain=gain, enable_stimulation_power=True)
+    
+    fnames = glob(os.path.join(configs_basepath, "*.cfg"))
+    print(f"Found {len(fnames)} configs in {configs_basepath}")
+    for i, config_fullfname in enumerate(sorted(fnames)):
+        print(f"\nConfig {i+1}/{len(fnames)}: {config_fullfname}", flush=True)
+        print(stim_seq)
+        process_config(config_fullfname, full_recdir, rec_time, post_download_wait_time, 
+                       s, stim_seq=stim_seq, mode=mode)
         
 if __name__ == "__main__":
-    main()
+    # main()
+    run_single_stim()

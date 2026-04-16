@@ -2,12 +2,14 @@ import os
 import sys
 from glob import glob
 import time
+import pandas as pd
 
 # to import logger, VR-wide constants and device paths
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from baseVR.base_logger import CustomLogger as Logger
 from baseVR.base_functionality import device_paths
 
+from mea1k_modules.mea1k_config_utils import create_stim_sine_sequence, try_routing, turn_on_stimulation_units
 from mea1k_modules.mea1k_config_utils import reset_MEA1K
 from mea1k_modules.mea1k_config_utils import get_maxlab_saving
 from mea1k_modules.mea1k_config_utils import get_maxlab_array
@@ -18,21 +20,24 @@ from mea1k_modules.mea1k_config_utils import start_saving
 from mea1k_modules.mea1k_config_utils import stop_saving
 
 
-def main():
+def rec_config_set():
     # ======== PARAMETERS ========
     nas_dir = device_paths()[0]
     subdir = "devices/headstage_devices/MEA1K22/recordings"
+    # subdir = "devices/well_devices/4983/recordings"
     # rec_dir = "4thBond4Shank_rec2_VrefFPGAStim_ampl15"
-    rec_dir = "testBond4_ShubhamW1_14Shank_VrefFPGAStim_ampl15"
+    rec_dir = "Bond2_r4BothHalfs_ShubhamW3_16Shank_Vref15"
     # rec_dir = "50Hz_lastBond_14shank"
     post_download_wait_time = .6
-    rec_time = .5
-    gain = 7
-    with_external_sine = True
+    rec_time = 15.5
+    gain = 512
+    with_external_sine = False
     external_sine_freq = 1000
     external_sine_amp_in_bits = 15 # 10 mV amplitude?
     configs_basepath = os.path.join(nas_dir, "mea1k_configs", '')
+    configs_basepath = os.path.join(nas_dir, "devices", 'implant_devices', '260413_MEA1K22_S1688pad14shankB5')
     which_configs = "all_parallel"
+    which_configs = "bonding"
     # which_configs = "4x4_tile_meshgrid_seed42"
     # ======== PARAMETERS ========
     
@@ -65,6 +70,10 @@ def main():
             end_fpga_sine_stim()
         array.close()
         stop_saving(s)
+    
+def main():
+    rec_config_set()
+    
 
 if __name__ == "__main__":
     main()

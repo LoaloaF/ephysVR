@@ -18,7 +18,7 @@ def _get_recording_gain(path, fname):
     if fmt == 'legacy':
         with h5py.File(os.path.join(path, fname), 'r') as file:
             gain = file['settings']['gain'][:][0].item()
-    elif fmt in ('routed', 'all_channels'):
+    elif fmt in ('routed', 'all_channels', 'channel_subset'):
         with h5py.File(os.path.join(path, fname), 'r') as file:
             gain = file['data_store/data0000/settings/gain'][:][0].item()
     elif fmt == 'logger':
@@ -41,6 +41,11 @@ def _get_recording_version(path, fname):
         elif 'data_store/data0000/groups/all_channels/raw' in file:
             fmt = 'all_channels'
         elif 'data_store/data0000/groups/channel_subset/raw' in file:
+            fmt = 'channel_subset'
+        
+        elif 'data_store/data0000/groups/' in file:
+            Logger().logger.warning("Unknown recording format with 'data_store/data0000/groups/'. "
+                                    "Assuming 'channel_subset' format.")
             fmt = 'channel_subset'
         
         else:
@@ -212,7 +217,7 @@ def read_raw_data(path, fname, convert2uV,
     if to_df and not isinstance(row_slice, pd.Index):
         raw_data_mapping, _ = get_recording_config(path, fname)
         # should already be in this order
-        raw_data = pd.DataFrame(raw_data, index=raw_data_mapping.index)
+        raw_data = pd.DataFrame(raw_data, index=raw_data_mapping.values)
         raw_data.index.name = 'el'
 
         # if rec_file_fmt != 'legacy':

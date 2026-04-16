@@ -31,7 +31,8 @@ def make_bonding_config(animal_name=None, implant_name=None):
                                               implant_name=implant_name)
     implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
     print(implant_mapping)
-
+    implant_mapping = implant_mapping[implant_mapping.shank_id > 8]
+    
     # first try to route the best connected electrodes under a pad, then try the next rank
     sel_which_rank = 1
     els = implant_mapping[(implant_mapping.connectivity_order==sel_which_rank) & 
@@ -186,6 +187,74 @@ def make_single_el2stimunit_configs(output_dirname, animal_name=None, implant_na
         
     
     
+def make_single_el_stim_configs(animal_name=None, implant_name=None, shank_subset=None, connectivity_threshold=0.8):
+    nas_dir = device_paths()[0]
+    
+    if animal_name is not None:
+        # get the bonding mapping for the animal
+        implant_name = animal_name2implant_device(animal_name)
+    
+    implant_mapping = get_raw_implant_mapping(animal_name=animal_name,
+                                              implant_name=implant_name)
+    implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
+    if shank_subset is not None:
+        implant_mapping = implant_mapping[implant_mapping.shank_id.isin(shank_subset)]
+    
+    # first try to route the best connected electrodes under a pad, then try the next rank
+    sel_which_rank = 1
+    els = implant_mapping[(implant_mapping.connectivity_order==sel_which_rank) & 
+                          (implant_mapping.mea1k_connectivity > connectivity_threshold)].mea1k_el.values
+    while True:
+        succ_routed, failed_routing, array = try_routing(els, randomize_routing=True,
+                                                         return_array=True)
+
+        if len(failed_routing) == 0:
+            print("Done base routing.")
+            break
+        sel_which_rank += 1
+        print(f"Trying alternative electrodes with connectivity rank {sel_which_rank}")
+        
+        # check which pad the failed electrodes are associated with
+        missing_pads = implant_mapping[implant_mapping.mea1k_el.isin(failed_routing)].pad_id
+        missing_pads = implant_mapping[implant_mapping.pad_id.isin(missing_pads)]
+        
+        # get the alternative electrodes with good enough connectivity
+        alt_els = missing_pads[missing_pads.connectivity_order==sel_which_rank].mea1k_el
+        rank_mask = missing_pads.connectivity_order == sel_which_rank
+        good_enough_connec_mask = missing_pads[rank_mask].mea1k_connectivity > connectivity_threshold
+        print(f"{sum(good_enough_connec_mask)} / {len(good_enough_connec_mask)} "
+              "alternative electrodes have good enough connectivity")
+        alt_els = alt_els[good_enough_connec_mask].values
+        els = succ_routed + alt_els.tolist()
+        
+    base_els = els
+    
+    day = datetime.datetime.now().strftime("%d.%b")
+    bond_dir = os.path.join(nas_dir, "devices", "implant_devices", implant_name, 'bonding')
+    
+    config_dirname = f"{animal_name if animal_name else implant_name}_{day}_{len(base_els)}El_SingleStimConfigs"
+    fulldirname = os.path.join(bond_dir, config_dirname)
+    if not os.path.exists(fulldirname):
+        os.makedirs(fulldirname)
+
+    print(f"Generating single stim configs in {fulldirname}")
+    for i, stim_el in enumerate(base_els):
+        _, failed_routing, array = try_routing(base_els, stim_electrodes=[stim_el], return_array=True)
+        if len(failed_routing) > 0:
+             print(f"Failed to route stim for el {stim_el}")
+             continue
+        print(f"Generating config for stim el {stim_el} ({i+1}/{len(base_els)})")
+             
+        fname = f"el_config_El{stim_el:05d}.cfg"
+        config_fullfname = os.path.join(fulldirname, fname)
+        
+        config_mapping = array_config2df(array)
+        config_mapping['stim'] = config_mapping.electrode == stim_el
+        config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
+        
+        array.save_config(config_fullfname)
+        array.close()
+
 def main():
     L = Logger()
     L.init_logger(None, None, "DEBUG")
@@ -194,14 +263,26 @@ def main():
     seed = 42
     np.random.seed(seed)
     
-    implant_name = "250917_MEA1K12_H1628pad1shankB5"
+    implant_name = "260413_MEA1K22_S1688pad14shankB5"
     animal_name = None
-    # make_bonding_config(animal_name=animal_name, implant_name=implant_name)
+    make_bonding_config(animal_name=animal_name, implant_name=implant_name)
 
-    output_dirname = os.path.join(nas_dir, "mea1k_configs", "single_el2stimunit_configs2",)
-    make_single_el2stimunit_configs(output_dirname=output_dirname,
-                                   animal_name=animal_name,
-                                   implant_name=implant_name)
+    # output_dirname = os.path.join(nas_dir, "mea1k_configs", "single_el2stimunit_configs2",)
+    # make_single_el2stimunit_configs(output_dirname=output_dirname,
+    #                                animal_name=animal_name,
+    #                                implant_name=implant_name)
+
+    # make single el stim configs for all electrodes with good enough connectivity, trying to keep the same stim electrode as much as possible across configs
+    make_single_el_stim_configs(animal_name=animal_name, implant_name=implant_name, 
+                                shank_subset=[1,2,3,4,5,6,7,8], connectivity_threshold=0)
+    # make_single_el_stim_configs(animal_name=animal_name, implant_name=implant_name, 
+    #                             shank_subset=[9,10,11,12,13,14], connectivity_threshold=0)
+
+
+
+
+
+
 
     # seed = 42
     # np.random.seed(seed)

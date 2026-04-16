@@ -1,203 +1,208 @@
+from scipy.signal import butter, sosfilt, sosfilt_zi, iirnotch, tf2sos
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy.signal import butter, filtfilt
-from scipy.signal import hilbert
-from scipy.fft import fft
 
-def bandpass_filter(signal, sampling_rate, lowcut, highcut, order=4):
-    nyquist = 0.5 * sampling_rate  # Nyquist frequency
-    low = lowcut / nyquist
-    high = highcut / nyquist
-    
-    # Create a Butterworth band-pass filter
-    b, a = butter(order, [low, high], btype='band')
-    
-    # Apply the filter to the signal using filtfilt for zero-phase filtering
-    filtered_signal = filtfilt(b, a, signal)
-    return filtered_signal
+# ── Filters ──────────────────────────────────────────────────────────────────
 
-def lowpass_filter(signal, sampling_rate, highcut, order=4):
-    nyquist = 0.5 * sampling_rate  # Nyquist frequency
-    high = highcut / nyquist
-    
-    # Create a Butterworth low-pass filter
-    b, a = butter(order, high, btype='low')
-    
-    # Apply the filter to the signal using filtfilt for zero-phase filtering
-    filtered_signal = filtfilt(b, a, signal)
-    return filtered_signal
+def _causal_sos(sos, signal):
+    """Apply an SOS filter causally, initialised to the first sample (no DC step)."""
+    zi = sosfilt_zi(sos) * signal[0]
+    out, _ = sosfilt(sos, signal, zi=zi)
+    return out
 
-def extract_average_amplitude(signal):
-    # Compute the analytic signal using the Hilbert transform
-    analytic_signal = hilbert(signal)
-    # Compute the envelope (magnitude of the analytic signal)
-    amplitude_envelope = np.abs(analytic_signal)
-    # Compute the average amplitude of the envelope
-    average_amplitude = np.mean(amplitude_envelope)
-    instantaneous_phase = np.angle(analytic_signal)
-    
-    return average_amplitude, amplitude_envelope, instantaneous_phase
 
-def estimate_frequency_power(signal, sampling_rate, min_band, max_band, dac=None, 
-                             debug=False):
-    m = signal.mean()
-    signal -= m
+def notch_filter(signal, sampling_rate, freq=50.0, Q=30.0):
+    """Causal notch. Q=30 → ~1.7 Hz bandwidth at 50 Hz."""
+    b, a = iirnotch(freq / (0.5 * sampling_rate), Q)
+    return _causal_sos(tf2sos(b, a), signal)
+
+
+def _causal_lowpass(signal, sampling_rate, highcut, order=4):
+    nyquist = 0.5 * sampling_rate
+    sos = butter(order, highcut / nyquist, btype='low', output='sos')
+    return _causal_sos(sos, signal)
+
+
+# ── Lock-in demodulation ─────────────────────────────────────────────────────
+
+def lock_in_extract(signal, ref_freq, sampling_rate, lp_cutoff):
+    """
+    Demodulate signal at ref_freq using a lock-in amplifier.
+
+    Multiplies by cos/sin references then causal-lowpass filters.
+    Returns amplitude envelope and instantaneous phase (radians).
+
+    lp_cutoff controls the noise/speed tradeoff:
+      lower  → smoother, slower to settle, better SNR
+      higher → faster onset, noisier
+    Settling time ≈ 2 / lp_cutoff  seconds  (2 time-constants).
+    """
+    t = np.arange(len(signal)) / sampling_rate
+    I = signal * np.cos(2 * np.pi * ref_freq * t)
+    Q = signal * np.sin(2 * np.pi * ref_freq * t)
+    I_lp = _causal_lowpass(I, sampling_rate, lp_cutoff)
+    Q_lp = _causal_lowpass(Q, sampling_rate, lp_cutoff)
+    amplitude = 2.0 * np.sqrt(I_lp**2 + Q_lp**2)
+    phase     = np.arctan2(Q_lp, I_lp)
+    return amplitude, phase
+
+
+# ── Onset detection ───────────────────────────────────────────────────────────
+
+def _detect_onset_offset(dac):
+    d  = np.diff(dac.astype(float))
+    mx, mn = d.max(), d.min()
+    rise = np.where(d >= mx * 0.5)[0]
+    fall = np.where(d <= mn * 0.5)[0]
+    start = int(rise[0]) if len(rise) else 0
+    end   = int(fall[-1]) if len(fall) else len(dac) - 1
+    return (start, end) if start < end else (0, len(dac) - 1)
+
+
+# ── Main estimation ───────────────────────────────────────────────────────────
+
+def estimate_frequency_power(signal, sampling_rate, min_band, max_band, name=None,
+                             dac=None, lp_cutoff=None, debug=False, dac2=None, dac3=None):
+    """
+    Estimate amplitude and phase shift at the stimulus frequency.
+
+    Everything goes through the lock-in:
+      - amplitude  = mean of lock-in envelope over the settled window
+      - phase shift = circular mean of (signal_phase − dac_phase)
+                      over the settled window
+
+    Parameters
+    ----------
+    min_band, max_band  Band edges [Hz].  Centre = lock-in reference frequency.
+                        Set min_band=0 for a lowpass scenario.
+    lp_cutoff           Lock-in lowpass cutoff [Hz].
+                        Default: max(ref_freq / 10, 2).
+    """
+    m      = signal.mean()
+    signal = signal.copy() - m
+
+    # 50 Hz notch before anything else
+    signal = notch_filter(signal, sampling_rate)
     
+    if not(min_band < 30 < max_band):
+    # high pass filter over 30 Hz to remove slow drifts (not part of lock-in, just for cleaner debug plots)
+        signal = signal - _causal_lowpass(signal, sampling_rate, highcut=30.0)
+
+    # Onset / offset
     if dac is not None:
-        start = np.where(np.diff(dac) > 1)[0][0]
-        end = np.where(np.diff(dac) < -1)[0][-1]
+        start, end = _detect_onset_offset(dac)
     else:
-        start, end = 0, len(signal)-1
+        start, end = 0, len(signal) - 1
     
-    # Compute the FFT of the signal
-    fft_result = np.fft.fft(signal)
-    # Compute the power spectrum
-    power_spectrum = np.abs(fft_result) ** 2
-    # Compute the corresponding frequencies
-    freqs = np.fft.fftfreq(len(signal), 1 / sampling_rate)
-    # Only keep the positive frequencies
-    positive_freqs = freqs[freqs >= 1]
+    # start, end = 0, 2000
+    # start, end = 1700, 2000
+    # fig, ax = plt.subplots(3, 1, figsize=(12, 7))
+    # ax[0].plot(signal[start:end])
+    # ax[0].plot(signal[start:end])
+    # ax0b = ax[0].twinx()
+    # # ax0b.plot(dac[start:end], color='green', alpha=0.6, label='DAC')
+    # # ax0b.set_ylabel('DAC units', color='green')
+    # # ax0b.tick_params(axis='y', labelcolor='green')
+    # ax[0].legend()
+    # print("Debug: Detected onset at sample {}, offset at sample {}".format(start, end))
+    # plt.savefig('./live_figures/debug_signal_onset.png')
+    # plt.close('all')
+    # exit()
 
-    if min_band == 0:
-        signal_filtered = lowpass_filter(signal, sampling_rate, max_band)
-    else:
-        signal_filtered = bandpass_filter(signal, sampling_rate, min_band, max_band)
-    mean_ampl, _, instantaneous_phase = extract_average_amplitude(signal_filtered[start:end])
+    # Lock-in reference and settling
+    ref_freq = (min_band + max_band) / 2.0 if min_band > 0 else max_band
+    if lp_cutoff is None:
+        lp_cutoff = max(ref_freq / 10.0, 2.0)
+    settle_n = min(int(2.0 * sampling_rate / lp_cutoff), (end - start) // 3)
 
-    # fifty_hz = np.where((positive_freqs >= 50 - 5) & (positive_freqs <= 50 + 5))[0]
-    # mean_ampl = np.log(np.mean(power_spectrum[freqs >= 1][fifty_hz]))
-    # print("Log Power at 50Hz: ", mean_ampl)
+    # Demodulate signal
+    seg_sig           = signal[start:end]
+    sig_amp, sig_phase = lock_in_extract(seg_sig, ref_freq, sampling_rate, lp_cutoff)
+    mean_ampl          = float(np.mean(sig_amp[settle_n:]))
 
+    # Demodulate DAC and compute phase shift
     mean_phase_shift = None
+    dac_amp = dac_phase = None
     if dac is not None:
-        _, _, instantaneous_phase_dac = extract_average_amplitude(dac[start:end])
-        # compute wrapped phase difference
-        phi_diff = (instantaneous_phase - instantaneous_phase_dac + np.pi) % (2*np.pi) - np.pi
-        mean_phase_shift = np.degrees(np.angle(np.mean(np.exp(1j*phi_diff))))  # circular mean
+        seg_dac = dac[start:end].astype(float)
+        seg_dac -= seg_dac.mean()
+        dac_amp, dac_phase = lock_in_extract(seg_dac, ref_freq, sampling_rate, lp_cutoff)
+        phi_diff         = sig_phase[settle_n:] - dac_phase[settle_n:]
+        mean_phase_shift = float(np.degrees(np.angle(np.mean(np.exp(1j * phi_diff)))))
 
     if debug:
-        fig, ax = plt.subplots(4, 1, figsize=(12, 6))
-        fig.subplots_adjust( hspace=.5)
+        fig, ax = plt.subplots(3, 1, figsize=(12, 7))
+        fig.subplots_adjust(hspace=0.5)
         fig.suptitle("Amplifier voltage trace")
-        
-        t = np.arange(len(signal))/sampling_rate *1000
-        ax[0].plot(t, signal, color='blue', alpha=.8, label='Signal')
+
+        t     = np.arange(len(signal)) / sampling_rate * 1000   # ms
+        t_seg = t[start:end]
+
+        # ── ax[0]: raw signal + DAC ───────────────────────────────────────
+        ax[0].plot(t, signal, color='blue', alpha=0.8, label='Signal (notched)')
+        ax[0].axvline(x=t[start], color='gray', linestyle='--', alpha=0.6, label='Onset')
+        ax[0].axvline(x=t[end],   color='gray', linestyle='-.',  alpha=0.6, label='Offset')
         ax[0].set_xlabel('Time [ms]')
-        ax[0].set_yticks([-10000, -1000, 0, 1000, 10000])
         ax[0].set_ylabel(f'Δ Potential\nfrom {m:.0f} uV')
         ax[0].grid(True)
-        [ax[0].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
-        ax[0].legend()
+        [ax[0].spines[s].set_visible(False) for s in ['top', 'right', 'left', 'bottom']]
         if dac is not None:
-            ax[0].plot(t, dac*10000 -5_000_000, color='green', alpha=.5, label='DAC signal')
+            ax0b = ax[0].twinx()
+            ax0b.plot(t, dac, color='green', alpha=0.6, label='DAC')
+            ax0b.set_ylabel('DAC units', color='green')
+            ax0b.tick_params(axis='y', labelcolor='green')
+            [ax0b.spines[s].set_visible(False) for s in ['top', 'right', 'left', 'bottom']]
+            lines, labels = ax[0].get_legend_handles_labels()
+            lb, lb2 = ax0b.get_legend_handles_labels()
+            ax[0].legend(lines + lb, labels + lb2, loc='upper right')
+        else:
             ax[0].legend()
-        
-        ax[1].plot(positive_freqs, power_spectrum[freqs >= 1], color='orange',
-                   label='Power Spectrum')
-        ax[1].axvline(x=1000, color='blue', linestyle='--', label='1KHz')
-        ax[1].set_xlabel('Frequency (Hz)')
-        ax[1].set_ylabel('Power')
-        ax[1].set_xlim(0, 1500)
-        # ax[1].set_ylim(0, 1e5//2)
+
+        # ── ax[1]: lock-in amplitude envelope ────────────────────────────
+        ax[1].plot(t_seg, sig_amp, color='red', alpha=0.9,
+                   label=f'Lock-in amplitude  (LP={lp_cutoff:.1f} Hz)')
+        ax[1].axhline(y=mean_ampl, color='k', linestyle='dashed',
+                      label=f'Mean (settled): {mean_ampl:.3f} uV')
+        # draw signal as well
+        ax[1].plot(t_seg, seg_sig, color='blue', alpha=0.5, label='Signal (seg)')
+        if settle_n < len(t_seg):
+            ax[1].axvline(x=t_seg[settle_n], color='orange', linestyle=':',
+                          label='Settle end')
+        ax[1].set_xlabel('Time [ms]')
+        ax[1].set_ylabel('Amplitude [uV]')
+        ax[1].sharex(ax[0])
         ax[1].grid(True)
-        [ax[1].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
-        ax[1].legend()
-        
-        
-        ax[2].plot(t, signal_filtered, color='blue', alpha=.5,
-                   label=f'1KHz Bandpass Filtered Signal')
-        ax[2].plot([t[0]-20,t[-1]+20], [mean_ampl,mean_ampl], color='k', 
-                   linestyle='dashed', label=f'Average Amplitude: {mean_ampl:.3f} uV')
-        ax[2].set_xlabel('Time [ms]')
-        ax[2].set_ylabel('Amplitude')
-        ax[2].set_ylabel(f'Δ Potential\nfrom {m:.3f} uV')
-        ax[2].set_yticks(ax[0].get_yticks())
-        ax[2].grid(True)
-        ax[2].sharex(ax[0])
-        [ax[2].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
+        [ax[1].spines[s].set_visible(False) for s in ['top', 'right', 'left', 'bottom']]
+        ax[1].legend(loc='upper right')
+
+        # ── ax[2]: instantaneous phase difference ─────────────────────────
         if dac is not None:
-            ax[2].set_title(f'Mean Phase Shift: {mean_phase_shift:.1f}°')
-            ax[2].axvline(x=t[start], color='gray', linestyle='--', label='Start')
-            ax[2].axvline(x=t[end], color='gray', linestyle='--', label='End')
+            phi_diff_full = np.degrees(np.angle(np.exp(1j * (sig_phase - dac_phase))))
+            ax[2].plot(t_seg, phi_diff_full, color='purple', alpha=0.7,
+                       label='Instantaneous phase diff')
+            ax[2].axhline(y=mean_phase_shift, color='k', linestyle='dashed',
+                          label=f'Circular mean: {mean_phase_shift:.1f}°')
+            if settle_n < len(t_seg):
+                ax[2].axvline(x=t_seg[settle_n], color='orange', linestyle=':',
+                              label='Settle end (excluded from mean)')
+            ax[2].set_ylim(-180, 180)
+            ax[2].set_ylabel('Phase diff [°]')
+            ax[2].set_title(f'Phase shift: {mean_phase_shift:.1f}°')
+        else:
+            ax[2].plot(t_seg, sig_amp, color='red', alpha=0.8, label='Lock-in amplitude')
+            ax[2].set_ylabel('Amplitude [uV]')
+
+        ax[2].set_xlabel('Time [ms]')
+        ax[2].sharex(ax[0])
+        ax[2].grid(True)
+        [ax[2].spines[s].set_visible(False) for s in ['top', 'right', 'left', 'bottom']]
         ax[2].legend()
         
-        if dac is not None:
-            ax[3].plot(t, dac, color='green', alpha=.8, label=f'DAC Signal')
-            ax[3].set_xlabel('Time [ms]')
-            ax[3].set_ylabel('DAC units')
-            ax[3].grid(True)
-            ax[3].sharex(ax[0])
-            [ax[3].spines[spine].set_visible(False) for spine in ['top', 'right', 'left', 'bottom']]
-            ax[3].legend()
+        if name is not None:
+            fig.suptitle(f"Config: {name}", fontsize=16)
+
         plt.savefig('./live_figures/debug_signal.png')
         plt.show()
+
     return mean_ampl, mean_phase_shift if dac is not None else None
-
-
-# def calculate_phase_shift(data, dac, sampling_rate=20000, freq=1000, debug=False):
-#     """
-#     Calculate the phase shift of each row in `data` with respect to the DAC signal.
-
-#     Parameters:
-#         data (ndarray): 2D array where each row is a signal.
-#         dac (ndarray): 1D array representing the DAC signal.
-#         sampling_rate (int): Sampling rate of the signals in Hz.
-#         freq (float): Frequency of the sinusoid in Hz (e.g., 1 kHz).
-#         debug (bool): If True, plot the calculation process for debugging.
-
-#     Returns:
-#         phase_shifts (ndarray): 1D array of phase shifts for each row in `data`.
-#     """
-#     n_samples = data.shape[1]
-#     t = np.arange(n_samples) / sampling_rate  # Time vector
-
-#     # Generate a reference sinusoid at the target frequency
-#     reference_sinusoid = np.sin(2 * np.pi * freq * t)
-
-#     # FFT of the DAC signal
-#     dac_fft = fft(dac)
-#     dac_freq_idx = int(freq * n_samples / sampling_rate)
-#     dac_phase = np.angle(dac_fft[dac_freq_idx])
-
-#     if debug:
-#         plt.figure(figsize=(12, 6))
-#         plt.subplot(2, 1, 1)
-#         plt.title("DAC Signal and Reference Sinusoid")
-#         plt.plot(t, dac, label="DAC Signal")
-#         plt.plot(t, reference_sinusoid, label="Reference Sinusoid", linestyle="dashed")
-#         plt.legend()
-#         plt.xlabel("Time (s)")
-#         plt.ylabel("Amplitude")
-
-#         plt.subplot(2, 1, 2)
-#         plt.title("FFT of DAC Signal")
-#         plt.plot(np.fft.fftfreq(n_samples, 1 / sampling_rate), np.abs(dac_fft))
-#         plt.axvline(freq, color="red", linestyle="dashed", label="1 kHz Component")
-#         plt.legend()
-#         plt.xlabel("Frequency (Hz)")
-#         plt.ylabel("Magnitude")
-#         plt.tight_layout()
-#         plt.show()
-
-#     # Calculate phase shifts for each row in data
-#     phase_shifts = []
-#     for i, row in enumerate(data):
-#         row_fft = fft(row)
-#         row_phase = np.angle(row_fft[dac_freq_idx])
-#         phase_shift = row_phase - dac_phase
-#         # Normalize phase shift to [-π, π]
-#         phase_shift = (phase_shift + np.pi) % (2 * np.pi) - np.pi
-#         phase_shifts.append(phase_shift)
-
-#         if debug :  # Plot the first 5 rows for debugging
-#             plt.figure(figsize=(12, 4))
-#             plt.title(f"Row {i} Signal and Phase Shift")
-#             plt.plot(t, row, label="Row Signal")
-#             plt.plot(t, dac, label="DAC Signal", linestyle="dashed")
-#             plt.legend()
-#             plt.xlabel("Time (s)")
-#             plt.ylabel("Amplitude")
-#             plt.show()
-
-#     return np.array(phase_shifts)

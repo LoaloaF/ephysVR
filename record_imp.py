@@ -69,10 +69,10 @@ def scatter_vis_impedance(aggr_df, output_dir=None):
     vmin = imp_kohm.min()
     vmax = 1100
     # sc = ax.scatter(aggr_df.connectivity, imp_kohm + 1, alpha=.3, s=20)
-    sc = ax.scatter(aggr_df.connectivity, imp_kohm + 1, c=imp_kohm, cmap='viridis', vmin=vmin, vmax=vmax, s=20)
-    plt.colorbar(sc, label='Impedance (kOhm)')
-    # sc = ax.scatter(aggr_df.connectivity, imp_kohm + 1, c=stimunit, cmap='tab20', s=20)
-    # plt.colorbar(sc, label='StimUnit Impedance (kOhm)')
+    # sc = ax.scatter(aggr_df.connectivity, imp_kohm + 1, c=imp_kohm, cmap='viridis', vmin=vmin, vmax=vmax, s=20)
+    # plt.colorbar(sc, label='Impedance (kOhm)')
+    sc = ax.scatter(aggr_df.connectivity, imp_kohm + 1, c=stimunit, cmap='tab20', s=20)
+    plt.colorbar(sc, label='StimUnit Impedance (kOhm)')
     
     ax.set_yscale('log')
     ax.set_xlabel('Connectivity (external Sine signal)')
@@ -82,6 +82,32 @@ def scatter_vis_impedance(aggr_df, output_dir=None):
     # if output_dir is not None:
     #     plt.savefig(os.path.join(output_dir, "all_imp_vs_connectivity_scatter.png"))
     # plt.show()
+    
+def stim_unit_wise_vis_impedance(aggr_df, output_dir=None):
+    aggr_df = aggr_df[aggr_df.impedance_Ohm > 0].copy()
+    aggr_df['imp_kohm'] = aggr_df.impedance_Ohm / 1000
+    
+    # Calculate mean impedance per stim unit and sort
+    mean_imp = aggr_df.groupby('stim_unit')['imp_kohm'].mean().sort_values()
+    ordered_stim_units = mean_imp.index.tolist()
+    ordered_stim_units = np.arange(32)
+    
+    fig, ax = plt.subplots(figsize=(16, 6))
+    
+    # Plot each stim unit's data with x-jitter
+    for x_pos, su in enumerate(ordered_stim_units):
+        subset = aggr_df[aggr_df.stim_unit == su]
+        jitter = np.random.normal(0, 0.15, size=len(subset))
+        ax.scatter(x_pos + jitter, subset.imp_kohm, alpha=0.6, s=15, c=subset.stim_unit, cmap='tab20', vmin=0, vmax=31)
+        
+    ax.set_xticks(range(len(ordered_stim_units)))
+    ax.set_xticklabels(ordered_stim_units)
+    ax.set_yscale('log')
+    ax.set_xlabel('Stim Unit (Sorted by Mean Impedance)')
+    ax.set_ylabel('Impedance (kOhm)')
+    plt.title('Stim Unit-wise Impedance')
+    plt.grid(True, axis='y', linestyle='--', alpha=0.5)
+    plt.savefig(f"./live_figures/stim_unit_wise_impedance.png")
 
 def hist_vis_impedance(aggr_df, output_dir=None):
     print(aggr_df)
@@ -134,6 +160,7 @@ def mea1k_vis_impedance(data, output_dir=None, cmap_scaler=1):
     data = data[data.index.duplicated(keep=False)==False]
     print(data)
     (fig,ax), el_recs = draw_mea1k()
+    conn_data, imp_data = [], []
     for el_i, el_recs in enumerate(el_recs):
         if el_i not in data.index:
             # print("missing", el_i, end=' ')
@@ -151,17 +178,27 @@ def mea1k_vis_impedance(data, output_dir=None, cmap_scaler=1):
         if data.loc[el_i].connectivity < .3:
             continue
         
+        xy = el_recs.get_xy()
+        # if not (((xy[0] > 1600) and (xy[0] < 2700)) and (xy[1] < 800)):
+        # # if not ((xy[0] > 2900) and (xy[1] > 1200)):
+        #     continue
+        # conn_data.append(data.loc[el_i].connectivity)
+        # imp_data.append(data.loc[el_i].impedance_Ohm)
+        
         # color by impedance
         imp = data.loc[el_i].impedance_Ohm
         color = cmap(norm(imp/600))
         el_recs.set_edgecolor(color)
         
-        xy = el_recs.get_xy()
         # annotate with stimulation unit
         stim_unit = int(data.loc[el_i].stim_unit)
-        # ax.text(xy[0]+3, xy[1]+3, f"{stim_unit:02d}", fontsize=4, color='gray')
+        ax.scatter([xy[0]], [xy[1]], alpha=0.6, s=15, c=[stim_unit], cmap='tab20', 
+                   vmin=0, vmax=31, edgecolors='none')
+        # add annotation
+        # ax.annotate(f"SU{stim_unit}", (xy[0]+20, xy[1]+20), fontsize=6, color='white', 
+        #             ha='center', va='center')
         
-        print(data.loc[el_i].connectivity)
+        # print(data.loc[el_i].connectivity)
         whiteness = np.clip(data.loc[el_i].connectivity*cmap_scaler, 0, 1)
         el_recs.set_facecolor((whiteness, whiteness, whiteness))
     fig.savefig("./live_figures/all_imp_vs_connectivity_CMOS.png", dpi=300, transparent=False,
@@ -206,7 +243,7 @@ def measure_impedance(full_recdir, rec_time, nas_dir, configs_basepath, stim_set
         test_el_entries = implant_mapping[(implant_mapping.mea1k_el.isin(all_mea1k_els))].sort_values(['mea1k_connectivity'], 
                                                                                                       ascending=[True])
         # top 100 and bottom 100 connectivity electrodes
-        test_el_entries = pd.concat([test_el_entries[test_el_entries.mea1k_connectivity>.1], 
+        test_el_entries = pd.concat([test_el_entries[test_el_entries.mea1k_connectivity>.4], 
                                      test_el_entries.iloc[-5:]])
         
         print(test_el_entries)
@@ -239,11 +276,9 @@ def measure_impedance(full_recdir, rec_time, nas_dir, configs_basepath, stim_set
                             s, dac_id, seq)
             ampl, phase_shift = _extract_sine_amplitude(full_recdir, 
                                                        os.path.basename(config_fullfname).replace(".cfg", ".raw.h5"),
-                                                       debug=True)
+                                                       debug=False)
             
             lsb = stim_settings.loc[stim_unit, "LSB_small_current_nA"].mean()
-            if lsb <5:
-                lsb = 5  # avoid too low LSB values
             print("LSB (small current) nA:", lsb)
             aggr.append(pd.Series({
                 "stim_unit": stim_unit,
@@ -276,31 +311,38 @@ def main():
     nas_dir = device_paths()[0]
     # implant_name = "250917_MEA1K12_H1628pad1shankB5"
     # implant_name = "250926_MEA1K12_H1278pad4shankB5"
-    # implant_name = "251014_MEA1K11_H1628pad1shankB1"
-    headstage_name = "MEA1K11"
+    implant_name = "260413_MEA1K22_S1688pad14shankB5"
+    headstage_name = "MEA1K22"
     # subdir = f"devices/implant_devices/{implant_name}/recordings"
     subdir = f"devices/headstage_devices/{headstage_name}/recordings"
     configs_basepath = f"mea1k_configs/single_el2stimunit_configs2"
     stimulater_settings_path = f"devices/headstage_devices/{headstage_name}/smallcurrent_lsb_characterization.csv"
     stim_settings = pd.read_csv(os.path.join(nas_dir, stimulater_settings_path)).set_index("stimunit_id", drop=True)
 
-    rec_dir = "3rdBond_imp_8shanks_beforeHooking_MondayNewCallibr"
+    rec_dir = "Bond2_ShubhamW3_16Shank_impedance"
     post_download_wait_time = .6
     rec_time = .5
     gain = 7
     dac_sine_amplitude = 10
     dac_id = 0
     # ======== PARAMETERS ========
-    
-    # implant_mapping = get_raw_implant_mapping(implant_name)
-    implant_mapping = pd.read_csv(os.path.join(nas_dir, subdir, 
-                                               "8Shank_B1_rec1_VrefFPGAStim_ampl15", 
-                                               "processed", "extr_connectivity.csv"))
-    implant_mapping = implant_mapping.rename(columns={"el":"mea1k_el",
-                                                    "connectivity":"mea1k_connectivity"})
-    print(implant_mapping)
+    # setup dir
     full_recdir = os.path.join(nas_dir, subdir, rec_dir)
     print(f"Recording path exists: {os.path.exists(full_recdir)} - ", full_recdir)
+    
+    
+    # proper way
+    fullfname = os.path.join(nas_dir, "devices", "implant_devices", implant_name, "bonding", f"bonding_mapping_{implant_name}.csv")
+    implant_mapping = pd.read_csv(fullfname)
+    # if not mapped yet
+    # implant_mapping = pd.read_csv(os.path.join(nas_dir, subdir, 
+    #                                            "Bond2_r4BothHalfs_ShubhamW3_16Shank_Vref15", 
+    #                                            "processed", "extr_connectivity.csv"))
+    # implant_mapping = implant_mapping.rename(columns={"el":"mea1k_el",
+    #                                                 "connectivity":"mea1k_connectivity"})
+    print(implant_mapping)
+    
+    
     
     # measure_impedance(full_recdir, rec_time, 
     #                   nas_dir, configs_basepath, stim_settings, implant_mapping,
@@ -309,8 +351,28 @@ def main():
     
     aggr_df = pd.read_csv(os.path.join(full_recdir, "processed", "all_impedance.csv"))
     # mea1k_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
+    # stim_unit_wise_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
+    
     # scatter_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
-    hist_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
+    # hist_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
+    # area_wise_imp(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
+    
+    imp = aggr_df.loc[:, ['electrode', 'impedance_Ohm',]].astype(int)
+    implant_mapping = pd.merge(implant_mapping, imp, left_on='mea1k_el', 
+                               right_on='electrode', how='left')
+    print(implant_mapping.columns)
+    print(implant_mapping)
+    # save the updated implant mapping with impedance values
+    # implant_mapping.to_csv(fullfname, index=False)
+    
+    
+    IMP_UPPER_THR = 200_000
+    n_pads = implant_mapping['pad_id'].nunique()
+    n_connected_pads = implant_mapping[implant_mapping['impedance_Ohm'] < IMP_UPPER_THR]['pad_id'].nunique()
+    print(f"Connected pads: {n_connected_pads}/{n_pads} ({n_connected_pads/n_pads:.1%})")
 
+    
+    
+    
 if __name__ == "__main__":
     main()

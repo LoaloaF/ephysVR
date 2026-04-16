@@ -45,21 +45,24 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
         print(f"Config {i} of {len(fnames)}")
         data = read_raw_data(subdir, fname, convert2uV=True, to_df=True,
                              col_slice=slice(0, n_samples))
-        data = data / 1000 # convert to mV
+        # data = data / 1000 # convert to mV        from scipy.signal import butter, sosfiltfilt        from scipy.signal import butter, sosfiltfilt
     
         print("Filtering...")
         mean_ampl = []
-        for j,row in enumerate(data.values):
+        for j,row in enumerate(data.astype(float).values):
             debug = True if j <10 and debug else False
             m_ampl, _ = estimate_frequency_power(row, sampling_rate=EC.SAMPLING_RATE,
                                                  debug=debug, min_band=960, max_band=1040)
                                                 #  debug=debug, min_band=40, max_band=60)
-            mean_ampl.append(m_ampl)
+            # scale to mV
+            mean_ampl.append(m_ampl/1000)
         
         data = pd.DataFrame(mean_ampl, index=data.index, columns=['ampl'])
         data['connectivity'] = data.ampl.values/input_ampl_mV 
         data['input_ampl_mV'] = input_ampl_mV
         data.index = pd.MultiIndex.from_product([[i],data.index], names=['config', 'el'])
+        print(data)
+        print(data.sort_values('connectivity', ascending=False).head())
         print(f"Done. n >80%: {(data.connectivity >.8).sum()}\n")
 
         all_data.append(data)
@@ -70,7 +73,7 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     fullfname = os.path.join(subdir, "processed", f"extr_connectivity.csv")
     data = pd.read_csv(fullfname)
     data.set_index('el', inplace=True)  
-    plt.hist(data['ampl'], bins=100)
+    plt.hist(data['connectivity'], bins=100)
     plt.show()
     plt.close()
     
@@ -124,11 +127,11 @@ def main():
     nas_dir = device_paths()[0]
     
     # bonding which electrode to which headstage
-    bonding_date = '251022'
+    bonding_date = '260413'
     HEADSTAGE_DEVICE_NAME = 'MEA1K22'
-    ELECTRODE_DEVICE_NAME = 'H1628pad1shank'
+    ELECTRODE_DEVICE_NAME = 'S1688pad14shank'
     # ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
-    batch = 1
+    batch = 5
     IMPLANT_DEVICE_NAME = f"{bonding_date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
     
     # sine stim recording parameters
@@ -137,8 +140,10 @@ def main():
     rec_name = f'5thBond1Shank_rec4_VrefFPGAStim_ampl15-'
     rec_name = f'firstNewDevide8HalfShank_rec2_VrefFPGAStim_ampl15'
     rec_name = f'1Shank_rec1_extStim100mV_1kHz'
-    rec_name = f'testBond4_ShubhamW1_14Shank_VrefFPGAStim_ampl15'
     rec_name = f'1Shank_newNew_rec1_VrefFPGAStim_ampl15'
+    rec_name = f'testBond4_r2_ShubhamW1_14Shank_VrefFPGAStim_ampl15'
+    rec_name = f'Bond2_r4BothHalfs_ShubhamW3_16Shank_Vref15'
+    
     
     # 4 white bonding maps, redraw with this new code and black background, they need _5mV.csv files
     # rec_name = f'bonding3_singleshank_B6_241207+2_ext5mV1Khz_rec2'
@@ -146,7 +151,7 @@ def main():
     # rec_name = f'25mVext_oneShankbatch2_press'
     # rec_name = f'bonding_4shank_B4_241207_ext5mV1Khz'
     
-    input_ampl_mV = 5
+    input_ampl_mV = 8
     n_samples = 8_000 # where sine stim is visible
 
     subdir = f"{nas_dir}/devices/headstage_devices/{HEADSTAGE_DEVICE_NAME}/recordings/{rec_name}"
@@ -154,8 +159,8 @@ def main():
         print(f"Error: {os.path.join(subdir)} does not exist.")
         exit()
     
-    extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
-    vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2)
+    # extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
+    # vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
     # create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
     
     
