@@ -7,43 +7,59 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.spatial import ConvexHull
+from scipy.interpolate import griddata
+
+from collections import deque
+import numpy as np
+import matplotlib.pyplot as plt
 
 import napari
+from itertools import product as iproduct
+
 
 # to import logger, VR-wide constants and device paths
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from baseVR.base_logger import CustomLogger as Logger
 from baseVR.base_functionality import device_paths
 
-def detect_wafer_pads(path, precomputed=False, save=False):
+## ── main functions ─────────────────────────────────────────────────────────────
+## 1. detect_interconnect_pads: detect wafer pads from the wafer image, 
+# and allow manual adjustment in Napari
+def detect_interconnect_pads(path, precomputed=False, save=False):
     fname_base = os.path.basename(path)
     circles_fullfname = f"{path}/detected_pads_{fname_base}.csv"
     if not precomputed:
+        full_fname = f'{path}/waferpic_{fname_base}.png'
+        if not os.path.exists(full_fname):
+            Logger().logger.error(f"Wafer image not found at {full_fname}")
+            exit(1)
         image = cv2.imread(f'{path}/waferpic_{fname_base}.png')
-        
+        print("Image shape: ", image.shape)
+
         # Convert the image to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (9, 9), 2)
 
         # Use the Hough Circle Transform to detect circles
         # smaller wafer pads
-        # circles = cv2.HoughCircles(blurred, 
-        #                         cv2.HOUGH_GRADIENT, 
-        #                         dp=1.4, 
-        #                         minDist=45, 
-        #                         param1=60, 
-        #                         param2=10, 
-        #                         minRadius=13, 
-        #                         maxRadius=27)
-        # large wafer pads
         circles = cv2.HoughCircles(blurred, 
                                 cv2.HOUGH_GRADIENT, 
                                 dp=1.4, 
-                                minDist=65, 
-                                param1=50, 
-                                param2=20, 
-                                minRadius=17, 
-                                maxRadius=33)
+                                minDist=45, 
+                                param1=60, 
+                                param2=10, 
+                                minRadius=13, 
+                                maxRadius=27)
+        # large wafer pads
+        # circles = cv2.HoughCircles(blurred, 
+        #                         cv2.HOUGH_GRADIENT, 
+        #                         dp=1.4, 
+        #                         minDist=65, 
+        #                         param1=50, 
+        #                         param2=20, 
+        #                         minRadius=17, 
+        #                         maxRadius=33)
 
         circles = np.round(circles[0, :]).astype("int")
         circles = np.array([(y, x) for (x, y, r) in circles])
@@ -67,544 +83,516 @@ def detect_wafer_pads(path, precomputed=False, save=False):
         print(circles.shape)
     return circles
 
+## 2. shank_ordered_interconnect_pads_fromtrace: BFS flood fill along the snake-trace, 
+# capturing wafer pads in order they are routed to polyimide elctrodes
+def shank_ordered_interconnect_pads_fromtrace(path, device_name, interconnect_pads, start_point, step_size=10, visualize=True):
+    """
+    BFS flood fill along a snake-trace, capturing wafer pads in order.
+    
+    Args:
+        path:        path to device folder (same convention as shank_ordered_interconnect_pads)
+        interconnect_pads:  (N,2) array of pad coordinates [row, col]
+        start_point: (row, col) starting coordinate
+        step_size:   BFS expansion steps per "wave" before checking for new pads
+        visualize:   show intermediate imshow plots (first 10 steps only) + final HSV order plot
+    
+    Returns:
+        DataFrame with columns [y, x, metal, depth, r, g, b, a], index=pad_id (capture order)
+    """
 
-def shank_ordered_wafer_pads(path, wafer_pads, visualize=True):
-    def detect_columns(fname):
-        # image has has little black ticks on the top of the png
-        image = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
-        row_mask = image[0,:] != 255
-        print("Found n columns: ", row_mask.sum())
-        locs = np.where(row_mask)[0]
-        return np.array([0, *locs, image.shape[1]])
-
-    def detect_rows(fname):
-        # image has has little black ticks on the left of the png
-        image = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
-        row_mask = image[:,0] != 255
-        print("Found n rows: ", row_mask.sum())
-        ylocs = [0, *np.where(row_mask)[0]]
-        return np.array(ylocs)
-
-    def detect_zones(fname):
-        # image has has diffferent gray tones in 8 different zones, border are black
-        zones_image = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
-        values = np.unique(zones_image)
-        print("Found n zones: ", len(values), values)
-        
-        zone_mask = np.zeros_like(zones_image, dtype=np.int16)
-        # go over unique colors in image mas
-        for i, value in enumerate(sorted(values)):
-            mask_val = i if value != 255 else -1
-            zone_mask[zones_image == value] = mask_val
-        return zone_mask
+    def detect_pad_trace(fname):
+        assert os.path.exists(fname), f"Trace image not found at {fname}"
+        trace_image = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
+        return (trace_image > 128).astype(bool)
+    
+    def detect_shorted_pads(fname):
+        assert os.path.exists(fname), f"Shorted pads image not found at {fname}"
+        trace_image = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
+        return (trace_image > 128).astype(bool)
 
     def detect_metallization(fname):
-        # image is black and white with black being the metalization layer 1
+        assert os.path.exists(fname), f"Metalization mask image not found at {fname}"
         image = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
-        metal_mask = ~image.astype(bool) # green metalization layer 1, mask=1 
-        return metal_mask                # purple metalization layer 2, mask=0
-        
-    def get_layout_dims(fname):
-        # simply the layout (+mask) image dim, 1 pixel == 1 um
-        image = cv2.imread(fname)
-        return image.shape[1], image.shape[0]
+        metal_mask = ~image.astype(bool)  # True = layer 1, False = layer 2
+        return metal_mask
     
-    fname_base = os.path.basename(path)
-    width, height = get_layout_dims(f'{path}/waferpic_{fname_base}.png')
-    layout_zone_mask = detect_zones(f"{path}/layout_zone_mask_{fname_base}.png")
-    metal_mask = detect_metallization(f"{path}/metal_mask_{fname_base}.png")
-    columns = detect_columns(f"{path}/columns_{fname_base}.png")
-    rows = detect_rows(f"{path}/rows_{fname_base}.png")
+    def generate_unique_colors(n: int, seed: int = 42, cmap: str = "hsv",
+                           cmap_lims: tuple = (0.0, 0.95)) -> np.ndarray:
+        np.random.seed(seed)
 
-    # define the layout zones and how pads are routed in each zone
-    layout_zone_map = OrderedDict({0: "bottom_left", 1: "bottom_left_side", # bottom left quadrant
-                                   2: "top_left_side", 3: "top_left",     # top left quadrant
-                                   4: "bottom_right", 5: "bottom_right_side",  # bottom right quadrant
-                                   6: "top_right_side", 7: "top_right"}) # top right quadrant
-    layout_zone_col_order = {"bottom_left": -1, "bottom_left_side": 1, # left to right, right to left
-                             "top_left_side": -1, "top_left": 1, # left to right, right to left
-                             "bottom_right": 1, "bottom_right_side": -1,  # right to left, left to right
-                             "top_right_side": 1, "top_right": -1} # right to left, left to right
-    
-    ordered_wafer_pads = []
-    # iterate over zones, columns, rows in the correct orders, and append the corresponding pads
-    for zone_id, zone_name in layout_zone_map.items():
-        print('--'*20)
-        ordered_zone_pads = []
-        
-        # get the wafer pads in the current zone
-        zone_mask = layout_zone_mask == zone_id
-        pads_mask = zone_mask[wafer_pads[:, 0], wafer_pads[:, 1]]
-        zone_circles = wafer_pads[pads_mask]
-        
-        # make a list of column starts and stop x-coordinates according to routing in that zome
-        if layout_zone_col_order[zone_name] == 1:
-            columns_idcs = np.arange(len(columns)-1)
-            iter_columns = zip(columns_idcs, zip(columns[:-1], columns[1:]))
-        elif layout_zone_col_order[zone_name] == -1:
-            columns_idcs = np.arange(len(columns)-1)[::-1]
-            iter_columns = zip(columns_idcs, (zip(reversed(columns[:-1]), reversed(columns[1:]))))
-        
-        # iter over columns in the zone
-        for col_i, (from_x, to_x) in iter_columns:
-            # get the circles in the current column
-            pads_in_col = zone_circles[(zone_circles[:, 1] > from_x) 
-                                        & (zone_circles[:, 1] < to_x)]
-            
-            # reverse the order for everything in top zones (routed bottom-up)
-            if 'side' not in zone_name:
-                # big blocks top and bottom left and roght aloways count top-down
-                sorted_indices = np.argsort(pads_in_col[:, 0])
-            else:
-                # side blocks always count bottom-up (reverse)
-                sorted_indices = np.argsort(pads_in_col[:, 0])[::-1]
-            pads_in_col = pads_in_col[sorted_indices]
-                
-            # get the metalization layer of the pads in the column
-            circles_metal_layer = metal_mask[pads_in_col[:, 0], pads_in_col[:, 1]].astype(int)
-            circles_metal_layer[circles_metal_layer == 0] = 2
-            
-            print(f'Zone {zone_name}, Column {col_i},  n={len(pads_in_col)},'
-                  f' y_order={np.arange(len(pads_in_col))} metal:{circles_metal_layer}')
-            # many columns are empty, skip them
-            if len(pads_in_col) > 0:
-                # collect characterisitcs of the pads in the column
-                n = len(pads_in_col)
-                y = pd.Series(pads_in_col[:, 0], name='y')
-                x_order = pd.Series(np.full(n, col_i), name='x_order')
-                y_order = pd.Series(np.arange(n), name='y_order')
-                x = pd.Series(pads_in_col[:, 1], name='x')
-                metal = pd.Series(circles_metal_layer, name='metal')
-                zone = pd.Series(np.full(n, zone_id), name='zone')
-                depth = pd.Series(np.full(n, 1), name='depth')
-                r = pd.Series(np.full(n, 1), name='r')
-                g = pd.Series(np.full(n, 1), name='g')
-                b = pd.Series(np.full(n, 1), name='b')
-                a = pd.Series(np.full(n, 1), name='a')
-                
-                ordered_zone_pads.append(pd.concat([y, x, metal, zone, y_order, 
-                                                    x_order, depth, r, g, b, a], 
-                                                    axis=1))
-        ordered_zone_pads = pd.concat(ordered_zone_pads, axis=0).reset_index(drop=True)
-        
-        # side zones are not column ordered, but row ordered - fix here
-        if 'side' in zone_name:
-            iter_rows = zip(reversed(rows[:-1]), reversed(rows[1:]))
+        colormap = plt.get_cmap(cmap, n)
+        raw = colormap(np.linspace(*cmap_lims, n))
+        colors = (raw[:, :3] * 255).round().astype(np.uint8)
 
-            reordered_zone_pads = []
-            # sample principle as for columns, but for rows
-            for (from_y, to_y) in iter_rows:
-                within_row = (ordered_zone_pads.y > from_y) & (ordered_zone_pads.y < to_y)
-                print(f"{zone_name} - Row {from_y} to {to_y}, n={within_row.sum()}")
-                reordered_zone_pads.append(ordered_zone_pads[within_row])
-                
-            # replace the column ordered pads with the row ordered pads
-            ordered_zone_pads = pd.concat(reordered_zone_pads, axis=0).reset_index(drop=True)
-        ordered_wafer_pads.append(ordered_zone_pads)
-    # concatenate all the ordered pads in zone order
-    ordered_wafer_pads = pd.concat(ordered_wafer_pads, axis=0).reset_index(drop=True)
-    ordered_wafer_pads.index.name = 'pad_id'
-    print(ordered_wafer_pads.groupby('metal').size())
-    print(ordered_wafer_pads)
-    print("--"*20, "\n\n")
-    
-    if visualize:
-        # Create n hdv colors for the pads (one for each pad)
-        colormap = plt.get_cmap('hsv', len(ordered_wafer_pads))
-        colors = [np.array((col[0]*255, col[1]*255, col[2]*255, 255)).round()
-                for col in colormap(np.linspace(0, 1, len(ordered_wafer_pads)))]
-        
-        # Create a canvas to draw the circles on to visualize the pad order
-        canvas = np.zeros([height, width, 4], dtype=np.uint8)
-        for i, row in ordered_wafer_pads.iterrows():
-            y, x = int(row['y']), int(row['x'])
-            # draw the pad with its hsv color
-            cv2.circle(canvas, (x, y), 20, colors[i].astype(float), -1)
-            offset = 14 if i < 1000 else 19
-            cv2.putText(canvas, f"{i}", (x-offset,y+5), cv2.FONT_HERSHEY_SIMPLEX, 
-                        0.5, (235,235,235,255), 1)
-            if i != 0:
-                # connxect y,x with previous y,x
-                cv2.arrowedLine(canvas, (prev_x, prev_y), (x, y), (255,255,255,255), 1)
-            prev_x, prev_y = x, y
-            
-        # draw the full lines of columns and rows, not just indices
-        col_row_canvas = np.zeros([height,width,4], dtype=np.uint8)
-        for row_i in rows:
-            col_row_canvas[row_i-1:row_i+1, :] = 255
-        for col_i in columns:
-            col_row_canvas[:, col_i-1:col_i+1] = 255
+        def _make_unique(arr: np.ndarray, max_val: int = 255) -> np.ndarray:
+            arr = arr.copy().astype(np.int16)   # int16 to avoid overflow arithmetic
 
-        viewer = napari.Viewer()
-        viewer.add_image(metal_mask, colormap='PiYG', opacity=.3,
-                         name='metallization layer (Green=1, Purple=2)',)
-        viewer.add_image(col_row_canvas, name='Columns and Rows', opacity=.2)
-        viewer.add_image(layout_zone_mask, name='Layout Zone', opacity=.25)
-        viewer.add_image(canvas, name='Detected Circles')
-        napari.run()
-    return ordered_wafer_pads
+            # Pre-build offsets sorted by L1 distance (nearest first).
+            # ±1 on each channel = 6 neighbours at dist 1, then dist 2, etc.
+            MAX_SEARCH = 12
+            offsets = sorted(
+                (o for o in iproduct(range(-MAX_SEARCH, MAX_SEARCH + 1), repeat=3)
+                if o != (0, 0, 0)),
+                key=lambda o: abs(o[0]) + abs(o[1]) + abs(o[2])
+            )
 
+            # "taken" maps color tuple -> index of owner; keepers own their slot.
+            taken: dict[tuple, int] = {}
+            _, unique_idx = np.unique(arr, axis=0, return_index=True)
+            for i in unique_idx:
+                taken[tuple(arr[i])] = i
 
-def get_device_info(path):
-    fname_base = os.path.basename(path)
-    print(f'{path}/info_{fname_base}.json')
-    with open(f'{path}/info_{fname_base}.json', 'r') as f:
-        device_info = json.load(f)
-    print(json.dumps(device_info, indent=4))
-    return device_info
+            dup_idx = np.setdiff1d(np.arange(len(arr)), unique_idx)
+            print(f"  Duplicates to resolve: {len(dup_idx)}")
 
+            for idx in dup_idx:
+                orig = tuple(arr[idx])
+                for (dr, dg, db) in offsets:
+                    candidate = (
+                        int(orig[0]) + dr,
+                        int(orig[1]) + dg,
+                        int(orig[2]) + db,
+                    )
+                    if all(0 <= c <= max_val for c in candidate) and candidate not in taken:
+                        taken[candidate] = idx
+                        arr[idx] = candidate
+                        break
+                else:
+                    raise RuntimeError(f"Could not place color at index {idx} "
+                                    f"within search radius {MAX_SEARCH}.")
 
-def make_unique(colors, max_col):
-    while True:
-        _, unique_idx = np.unique(colors, axis=0, return_index=True)
-        non_unique_idx = np.setdiff1d(np.arange(len(colors)), unique_idx)
+            return arr.astype(np.uint8)
 
-        print(f"Unique (of {len(colors)}): ", len(unique_idx), 
-               "Non-unique: ", len(non_unique_idx))
-        if len(unique_idx) == len(colors):
-            print("All unique")
-            break
+        return _make_unique(colors)
 
-        print("shifting non-unique")
-        non_u = colors[non_unique_idx]
-        shift_rgb_mask = (non_u!=max_col)
-        non_u[shift_rgb_mask] = non_u[shift_rgb_mask] + 1
-        colors[non_unique_idx] = non_u
-    return colors
+    # ── helper: check pads newly covered ──────────────────────────────────────
+    def collect_new_pads():
+        new = []
+        for pidx, (r, c) in enumerate(pad_rcs):
+            if pidx not in captured and 0 <= r < H and 0 <= c < W and visited[r, c]:
+                new.append(pidx)
+                captured.add(pidx)
+        return new
 
-def get_unique_grays(n, min_col, max_col):
-    grays = np.array([np.arange(min_col, max_col)]*3).T
-    if n > grays.shape[0]:
-        
-        incr_needed = (n // grays.shape[0]) +1
-        new_grays = []
-        for gr in grays:
-            for i in range(incr_needed):
-                idx, incr_by = i%3, i//3 +1
-                shifted_gr = gr.copy()
-                shifted_gr[idx] += incr_by
-                new_grays.append(shifted_gr)
-        grays = np.array(new_grays)
-    return grays[:n]
-        
-def integr_shank_geometries(wafer_pad2el, device_info):
-    def one_side_one_metal_el_distances(start, shank_info, right=False):
-        distances = []
-        print(f"\nSpacings {"right" if right else "left"} side:\n"
-              f"{shank_info['pad_um_center_distances']}")
+    # ── helper: one BFS wave of `step_size` pixel expansions ──────────────────
+    def bfs_wave(frontier):
+        for _ in range(step_size):
+            if not frontier:
+                break
+            next_frontier = deque()
+            while frontier:
+                r, c = frontier.popleft()
+                for dr, dc in neighbours:
+                    nr, nc = r + dr, c + dc
+                    if 0 <= nr < H and 0 <= nc < W and not visited[nr, nc] and trace_mask[nr, nc]:
+                        visited[nr, nc] = True
+                        if visualize:
+                            vis_canvas[nr, nc] = 128
+                        next_frontier.append((nr, nc))
+            frontier = next_frontier
+        return frontier
 
-        # iterate groups of electrodes in the shank with the same spacing
-        for group_info in shank_info['pad_um_center_distances']:
-            group_n_els = group_info['n_els']
-            el_dist = group_info['el_dist']
-            group_gap_left = group_info['gap_left']
-            group_gap_right = group_info['gap_right']
-            
-            if right:
-                group_top_gap = group_gap_right
-            else:
-                group_top_gap = group_gap_left
-            
-            start = distances[-1]+group_top_gap if len(distances) else start
-            end = start + (group_n_els//4) * (el_dist*4)
+    # fname_base = os.path.basename(path)
+    trace_mask = detect_pad_trace(f'{path}/routingorder_{device_name}.png')
+    shorted_pads_mask = detect_shorted_pads(f'{path}/routingshorts_{device_name}.png')
+    metal_mask = detect_metallization(f'{path}/metal_mask_{device_name}.png')
 
-            # append the spacings for the electrodes in the group, *4 because 
-            # we only look at one side and one metal
-            group_distances = list(np.arange(start, end, el_dist*4))
-            print("Group top gap: ", group_top_gap, "Start: ", start, "End: ", 
-                  end, 'n:', len(group_distances), ", last one: ", group_distances[-1])
-            distances.extend(group_distances)
-            
-            # excpetion for specifically long shanks, group 2, they need 20 um spacer at the bottom
-            if (all((right, group_n_els==72, el_dist==20, group_gap_left==140, group_gap_right==100),) or
-               all((not right, group_n_els==72, el_dist==20, group_gap_left==100, group_gap_right==140),)):
-                distances[-1] += 20
-            
-            
-        if not right and shank_info['n_electrode_pairs']%2 != 0:
-            # append the last el pair if the number of pairs is uneven
-            tip_dist = distances[-1]+el_dist*4 if shank_id<3 else distances[-1]+el_dist*2
-            print("Append one more for deepest electrode: ", tip_dist)
-            distances.append(tip_dist)
-        return np.array(distances)
- 
- 
-    shank_infos = device_info['shank_top_wafer_view_left2right']
-    shank_order = device_info['shank_routed_order']
-        
-    from_pad_m1, from_pad_m2 = 0, 0
-    # construct a new dataframe with added columns depth, shank, el_pair, color
-    updated_wafer_pad2el = []
-    # iterate over the shanks in the order they are routed
-    for i, shank_id in enumerate(shank_order):
-        shank_info = shank_infos[str(int(shank_id))]
-        shank_name = shank_info['shank_name']
-        n_pairs = shank_info['n_electrode_pairs']
-        print(f"\n\nShank {shank_id}: {shank_name}, n fibers: {n_pairs}")
-        
-        # shank 1 and 2 are on the left, then 3 starts bottom right again 
-        # -> therefore reset to half of all pads 
-        if shank_id == 3:
-            from_pad_m2 = len(wafer_pad2el[wafer_pad2el.metal==2])//2
-            from_pad_m1 = len(wafer_pad2el[wafer_pad2el.metal==1])//2
-            
-        # critical: slice n_pairs (n_fibers) for each metal layer starting
-        # where the previous shank left off. The routing order (row order in 
-        # dataframe) holds for both metal layers: they are too routed in the 
-        # same order. So iloc gives the correct order of pads for each metal
-        m1_pads = wafer_pad2el[wafer_pad2el.metal==1].iloc[from_pad_m1:from_pad_m1+n_pairs]
-        m2_pads = wafer_pad2el[wafer_pad2el.metal==2].iloc[from_pad_m2:from_pad_m2+n_pairs]
+    H, W = trace_mask.shape
+    print(f"Trace mask shape: {trace_mask.shape}, metal mask shape: {metal_mask.shape}, shorted pads mask shape: {shorted_pads_mask.shape}")
 
-        # assign the electrode pair number to each pad, egual for both metal layers
-        m1_pads['el_pair'] = np.arange(n_pairs)
-        m2_pads['el_pair'] = np.arange(n_pairs)
-        
-        # populate columns with constant value
-        m1_pads['shank_id'] = shank_info['shank_id']
-        m1_pads['shank_name'] = shank_info['shank_name']
-        m2_pads['shank_id'] = shank_info['shank_id']
-        m2_pads['shank_name'] = shank_info['shank_name']
-        
-        # first pad can be left or right, depending on the shank
-        first_el_dist = shank_info['pad_um_center_distances'][0]['el_dist']
-        leftstart = 0 if shank_info['least_deep_electrode_side'] == 'left' else first_el_dist*2
-        rightstart = 0 if shank_info['least_deep_electrode_side'] == 'right' else first_el_dist*2
+    # coordinate convention: start_point and interconnect_pads are (row, col)
+    sr, sc = start_point
+    start_rc = (sr, sc)
 
+    if not trace_mask[start_rc]:
+        raise ValueError(f"start_point {start_point} is not on the trace (mask is False there).")
 
-        # calc the spacings between polyimide electrodes along one side of the shank
-        left_side_depth = one_side_one_metal_el_distances(leftstart, shank_info)
-        print("One metal left n: ", len(left_side_depth))
-        # right side is the same as left but reversed and without appending tip for uneven
-        right_side_depth = one_side_one_metal_el_distances(rightstart, shank_info, right=True)[::-1]
-        print("One metal right n: ", len(right_side_depth))
-        left_right_el_pairs = [['left']*len(left_side_depth), ['right']*len(right_side_depth)]
-        # upper layer is the metallization starting at depth=0 (first)
-        upper_metal_depth = np.append(left_side_depth, right_side_depth)
-        print("One metal (upper) n: ", len(upper_metal_depth))
+    # pad_rcs: list of (row, col) for each pad
+    pad_rcs = [(int(p[0]), int(p[1])) for p in interconnect_pads]
 
+    # Fast lookup: pixel (row,col) -> pad index
+    pad_pixel_map = {}
+    for idx, (r, c) in enumerate(pad_rcs):
+        if 0 <= r < H and 0 <= c < W:
+            pad_pixel_map[(r, c)] = idx
 
-        # the 2nd metallization layer is shifted by the spacings of the polyimide electrodes
-        # but spacings differ for each group of electrodes
-        print("\nCalculate spacing delta for lower metal layer")
-        metal_el_shift_dist = []
-        for group_info in shank_info['pad_um_center_distances']:
-            group_n_els = group_info['n_els']
-            el_dist = group_info['el_dist']
-            # append the el_dist n times (n=group_n_els//4), 
-            # /4 because we only look at one side one metal
-            print(f"{el_dist} um x {group_n_els//4} times")
-            metal_el_shift_dist.extend([el_dist]*(group_n_els//4))
+    # ── BFS state ──────────────────────────────────────────────────────────────
+    visited = np.zeros((H, W), dtype=bool)
+    visited[start_rc] = True
 
-        if shank_info['n_electrode_pairs']%2 != 0:
-            print("Append one more for deepest electrode")
-            tip = [el_dist]
-        else:
-            tip = []
-
-        twosided_metal_el_shift_dist = np.array((*metal_el_shift_dist, *tip, 
-                                                 *metal_el_shift_dist[::-1]))
-        # shift the lower metal layer by the spacings of the groups
-        lower_metal_depth = upper_metal_depth.copy() + twosided_metal_el_shift_dist
-        print("Lower metal n: ", len(lower_metal_depth))
-
-        m1_pads['shank_side'] = np.append(*left_right_el_pairs)
-        m2_pads['shank_side'] = np.append(*left_right_el_pairs)
-        # concat two metal layers and sort by depth
-        if shank_info['least_deep_electrode_metal'] == 1:
-            m1_pads['depth'] = upper_metal_depth
-            m2_pads['depth'] = lower_metal_depth
-        else:
-            m2_pads['depth'] = upper_metal_depth
-            m1_pads['depth'] = lower_metal_depth
-        shank_electrodes = pd.concat([m1_pads, m2_pads], axis=0).sort_values('depth')
-        print("---"*20)
-        print(shank_electrodes)
-        
-        updated_wafer_pad2el.append(shank_electrodes)
-        # shift the pad layout indices for the next shank
-        from_pad_m1 += n_pairs
-        from_pad_m2 += n_pairs
-    updated_wafer_pad2el = pd.concat(updated_wafer_pad2el, axis=0)
-    # add not-connected pads to the dataframe
-    updated_wafer_pad2el = pd.concat([updated_wafer_pad2el, 
-                                      wafer_pad2el.drop(updated_wafer_pad2el.index)])
-    return updated_wafer_pad2el.sort_index()
-        
-        
-def assign_unqiue_colors(wafer_pad2el, device_info, visualize=True,
-                         save_visualization=None):
-    def draw_shank(ax, shank_electrodes, shank_info):
-        shank_name = shank_info['shank_name']
-        n_pairs = shank_info['n_electrode_pairs']
-        # ax.set_aspect('equal')
-        
-        # get the electrode pads for each metal layer
-        m1_pads = shank_electrodes[shank_electrodes.metal==1].sort_values('el_pair')
-        m2_pads = shank_electrodes[shank_electrodes.metal==2].sort_values('el_pair')
-        # the unique colors for the pads we assigned before
-        m1_colors = m1_pads.loc[:, ['r', 'g', 'b']].values/255
-        m2_colors = m1_pads.loc[:, ['r', 'g', 'b']].values/255
-        
-        # Plot the depth of electrodes on the shank in the assgiend color
-        rects = []
-        for _, row in m1_pads.iterrows():
-            x = row['el_pair']
-            y = -row['depth']
-            rects.append(plt.Rectangle((x-11/2, y-11/2), 11, 11, zorder=20,
-                                       color=row[['r', 'g', 'b']].values/255, lw=1))
-            rects.append(plt.Rectangle((x-11, y-11/2), 11/4, 11, zorder=20,
-                                       color='green', lw=1) )
-            ax.hlines(y, -30, 200, color='black', lw=1, alpha=.2)
-        for _, row in m2_pads.iterrows():
-            x = row['el_pair']
-            y = -row['depth']
-            rects.append(plt.Rectangle((x-11/2, y-11/2), 11, 11, zorder=20,
-                                       color=row[['r', 'g', 'b']].values/255, lw=1))
-            rects.append(plt.Rectangle((x-11, y-11/2), 11/4, 11, zorder=20,
-                                       color='purple', lw=1) )
-            ax.hlines(y, -30, 200, color='black', lw=1, alpha=.2)
-        [ax.add_patch(rect) for rect in rects]
-        
-        # plot the hook
-        hook_depth = shank_electrodes.depth.max() + shank_info['hook_to_deepest_el_distance_um']
-        ax.scatter(n_pairs//2, -hook_depth, marker='o', edgecolor='gray', 
-                   facecolor='none', alpha=.8, s=40)
-
-        ax.set_xlim(-30, 200)
-        ax.set_title(f"Shank {shank_id}:\n{shank_name}")
-        ax.set_xticks([])
-        # ax.(axis='y', zorder=0)
-        [sp.set_visible(False) for sp in ax.spines.values()]
-
-        # anntotions
-        annot = f'{shank_info["n_electrode_pairs"]} electrode pairs'
-        # number of electrode pairs (metal1+2)
-        if shank_info['n_electrode_pairs'] % 2 != 0:
-            annot += f' (uneven)'
-        else:
-            annot += f' (even)'
-            
-        # for debugging, the spacings between the electrode pairs, both sides, both metals
-        spacings = np.unique(np.diff(shank_electrodes.depth), return_counts=True)
-        spacings_str = '\n'.join([f"{c}x{s}um" for s, c in zip(*spacings)])
-        # Set the x-axis label with the annotation
-        annot += f"\nSpacings: {spacings_str}"
-        ax.set_xlabel(annot, fontsize=7, loc='left')
-        
-        if shank_id == 1:
-            ax.set_ylabel('Depth [um]')
-        if shank_info['least_deep_electrode_side'] == 'left':
-            txt = f"Left-Start: metal {shank_info['least_deep_electrode_metal']}"
-            ax.text(0, 140, txt, fontsize=7)
-        else:
-            txt = f"Right-Start: metal {shank_info['least_deep_electrode_metal']}"
-            ax.text(n_pairs, 140, txt, ha='right', fontsize=7)
-    
-    def make_unique_shank_colors(info, visualize=False):
-        shank_infos = [(shank_info['shank_id'], shank_info['n_electrodes'], 
-                        shank_info['colormap'], shank_info['colormap_lims']) 
-                        for shank_info in info.values()]
-
-        all_cols = []
-        all_cols_16 = []
-        all_cols_8 = []
-        for _, (_, n_el, cmap, cmap_lims) in enumerate(shank_infos):
-            colormap = plt.get_cmap(cmap, n_el)
-            colors = colormap(np.linspace(*cmap_lims, n_el))
-            
-            # make the colors initial colors
-            sc = 255
-            colors_uint8 = np.array([(col[0]*sc, col[1]*sc, col[2]*sc)
-                                    for col in colors]).round().astype(np.uint8)
-            sc = (2**16)-1
-            colors_uint16 = np.array([(col[0]*sc, col[1]*sc, col[2]*sc)
-                                        for col in colors]).round().astype(np.uint16)
-            all_cols.extend(colors)
-            all_cols_8.extend(colors_uint8) 
-            all_cols_16.extend(colors_uint16)
-        
-        # original colors in differnt formats
-        all_cols_16 = np.array(all_cols_16)
-        all_cols_8 = np.array(all_cols_8)
-        all_cols = np.array(all_cols)
-        
-        # make colors unique by shifting the non-unique ones by 1 until all are unique
-        all_cols_8 = make_unique(all_cols_8, max_col=255)
-        # all_cols_16 = make_unqiue(all_cols_16, max_col=65535)
-        
-        if visualize:
-            # check the colors of uint8, do they look unique
-            all_cols = all_cols_8.astype(float)/255
-            # Create the grid coordinates
-            x_coords, y_coords = np.meshgrid(np.arange(35), np.arange(35))
-            x_coords = x_coords.flatten()[:len(all_cols)]
-            y_coords = y_coords.flatten()[:len(all_cols)]
-            # Create the scatter plot with the grid pattern
-            plt.figure(figsize=(10, 10))
-            plt.scatter(x_coords, y_coords, c=all_cols, s=100)
-            plt.show()
-
-        # create a pandas dataframe with the colors with shank_id as index        
-        shank_ids, n_els = zip(*[(shank_info['shank_id'], shank_info['n_electrodes']) 
-                                    for shank_info in info.values()])
-        index = [[shank_id]*n_el for shank_id, n_el in zip(shank_ids, n_els)]
-        index = pd.Index(np.concatenate(index), name='shank_id')
-        colors = pd.DataFrame(all_cols_8, columns=['r', 'g', 'b'], index=index)
-        return colors
-
-    
-    # prepare the unique pad/polyimide electrode colors for later alignment
-    el_colors = make_unique_shank_colors(device_info['shank_top_wafer_view_left2right'], 
-                                        #  visualize=visualize)
-                                         visualize=False)
+    frontier = deque([start_rc])
+    ordered_pad_indices = []
+    captured = set()
 
     if visualize:
-        fig, axes = plt.subplots(ncols=4, figsize=(12,10), sharey=True, sharex=True)
-    for shank_id in wafer_pad2el.shank_id.unique():
-        if pd.isna(shank_id): continue
-        shank_electrodes = wafer_pad2el[wafer_pad2el.shank_id==shank_id].sort_values('depth')
-        shank_electrodes.loc[:, ('r', 'g', 'b')] = el_colors.loc[shank_id].values
+        vis_canvas = np.zeros((H, W), dtype=np.uint8)
+        vis_canvas[start_rc] = 128
 
-        if visualize:
-            shank_info = device_info['shank_top_wafer_view_left2right'][str(int(shank_id))]
-            print(shank_id)
-            print(shank_info)
-            draw_shank(axes[int(shank_id)-1], shank_electrodes, shank_info)
+    step_num = 0
+    neighbours = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # 4-connectivity
+
+    # ── main loop ─────────────────────────────────────────────────────────────
+    while frontier:
+        frontier = bfs_wave(frontier)
+        step_num += 1
+        new_pads = collect_new_pads()
+
+        if new_pads:
+            ordered_pad_indices.extend(new_pads)
+            if len(new_pads) > 1:
+                print(f"  ⚠  Step {step_num}: captured {len(new_pads)} pads at once "
+                      f"(indices {new_pads}). Consider reducing step_size.")
+
+            if visualize and step_num <= 100:
+                fig, ax = plt.subplots(figsize=(14, 4))
+                ax.imshow(vis_canvas, cmap='gray', origin='upper')
+                ax.scatter(interconnect_pads[:, 1], interconnect_pads[:, 0], color='white', s=5, label='All Pads')
+
+                for pidx in ordered_pad_indices[:-len(new_pads)]:
+                    r, c = pad_rcs[pidx]
+                    ax.scatter(c, r, color='lime', s=20, zorder=3)
+
+                for pidx in new_pads:
+                    r, c = pad_rcs[pidx]
+                    ax.scatter(c, r, color='red', s=60, zorder=4)
+                    ax.annotate(str(len(ordered_pad_indices) - len(new_pads) +
+                                    new_pads.index(pidx) + 1),
+                                (c, r), color='yellow', fontsize=6, ha='center')
+
+                ax.scatter(sc, sr, color='cyan', s=80, marker='*', zorder=5, label='Start')
+                ax.set_title(f"Step {step_num} — pad #{len(ordered_pad_indices)} captured "
+                             f"(wafer_pad index {new_pads[0]})")
+                ax.legend(fontsize=7)
+                plt.tight_layout()
+                plt.show()
+
+    # Pads never reached (off-trace or disconnected)
+    missed = [i for i in range(len(interconnect_pads)) if i not in captured]
+    if missed:
+        print(f"⚠  {len(missed)} pad(s) never reached by flood fill: indices {missed}")
+    print(f"\nDone. {len(ordered_pad_indices)} pads ordered in {step_num} BFS waves.")
+
+    # ── build output DataFrame (same format as shank_ordered_interconnect_pads) ──────
+    n = len(ordered_pad_indices)
+    rows_list, chain_head_list, cols_list, metal_list, shorted_list = [], [], [], [], []
     
-        # update the wafer_pad2el dataframe with the new colors
-        wafer_pad2el.loc[shank_electrodes.index] = shank_electrodes
+    prv_metal_i = {1: None, 2: None}
+    chain_head  = {1: None, 2: None}  # tracks root of current chain per metal layer
+    for i, pidx in enumerate(ordered_pad_indices):
+        r, c = pad_rcs[pidx]
+        rows_list.append(r)
+        cols_list.append(c)
+        metal_val = 1 if metal_mask[r, c] else 2
+        metal_list.append(metal_val)
+
+        if shorted_pads_mask[r, c]:
+            shorted_list.append(prv_metal_i[metal_val])   # previous same-metal pad (linked list)
+            chain_head_list.append(chain_head[metal_val]) # root of this chain
+            # chain_head does NOT update — we're still in the same chain
+        else:
+            shorted_list.append(-1)
+            chain_head_list.append(-1)        # this pad IS the root, no head needed
+            chain_head[metal_val] = i         # start a new chain rooted here
+        prv_metal_i[metal_val] = i           # always update previous
+    
+    # get colors unique over both devices, may be bonded toegther
+    colors = generate_unique_colors(n=n*2, seed=42, cmap='hsv', cmap_lims=(0.0, 0.95))
+    if device_name == 'S0844pad8shank':
+        colors = colors[:n]
+        ids = np.arange(n)
+    elif device_name == 'S0844pad6shank':
+        colors = colors[n:]
+        ids = np.arange(n, 2*n)
+    
+    ordered_interconnect_pads = pd.DataFrame({
+        'pad_y':     pd.Series(rows_list,              name='y'),
+        'pad_x':     pd.Series(cols_list,              name='x'),
+        'pad_id':    pd.Series(ids,                    name='pad_id'),
+        'pad_metal': pd.Series(metal_list,             name='metal'),
+        'pad_r':     pd.Series(colors[:, 0],  name='r'),
+        'pad_g':     pd.Series(colors[:, 1],  name='g'),
+        'pad_b':     pd.Series(colors[:, 2],  name='b'),
+        'pad_a':     pd.Series(np.ones(n, dtype=int)*255,  name='a'),
+        'shorted_to_prv_pad': pd.Series(shorted_list) != -1,
+        'shorted_to_pad':     pd.Series(shorted_list),      # points to previous (natural linked list)
+        'chain_head_pad':     pd.Series(chain_head_list),   # points to root (-1 if root itself)
+    })
+    print(ordered_interconnect_pads)
+    print(f"N pads: {len(ordered_interconnect_pads)}")
+    print(f"Unique non-shorted pads: {(ordered_interconnect_pads['shorted_to_pad'] == -1).sum()}")
+    print(f"Shorted pads: {(ordered_interconnect_pads['shorted_to_pad'] != -1).sum()}")
+    print("--" * 20, "\n\n")
+    
+    # important - mirror the x values over midline because devices id bonded upside down
+    midline = W // 2
+    ordered_interconnect_pads['pad_x'] = midline - (ordered_interconnect_pads['pad_x'] - midline)
+    
+    # ── final HSV order visualisation ─────────────────────────────────────────
+    if visualize and n > 0:
+        fig, ax = plt.subplots(figsize=(14, 4))
+        ax.imshow(trace_mask, cmap='gray', origin='upper', alpha=0.4)
+
+        if missed:
+            for pidx in missed:
+                r, c = pad_rcs[pidx]
+                ax.scatter(c, r, color='grey', s=10, zorder=2)
+
+        # Pad-coloured dots using assigned RGB values
+        pad_rgb = ordered_interconnect_pads[['pad_r', 'pad_g', 'pad_b']].to_numpy(dtype=float) / 255.0
+        ax.scatter(cols_list, rows_list, c=pad_rgb, s=30, zorder=3)
+
+        # Metal layer boxes: green=layer1(mask=1), purple=layer2(mask=2)
+        metal_arr = np.array(metal_list)
+        layer1_cols = [c for c, m in zip(cols_list, metal_arr) if m == 1]
+        layer1_rows = [r for r, m in zip(rows_list, metal_arr) if m == 1]
+        layer2_cols = [c for c, m in zip(cols_list, metal_arr) if m == 2]
+        layer2_rows = [r for r, m in zip(rows_list, metal_arr) if m == 2]
+
+        ax.scatter(layer1_cols, layer1_rows, facecolors='none', edgecolors='green',
+                   s=80, linewidths=1.2, zorder=4, label=f'Metal layer 1 (n={len(layer1_cols)})')
+        ax.scatter(layer2_cols, layer2_rows, facecolors='none', edgecolors='purple',
+                   s=80, linewidths=1.2, zorder=4, label=f'Metal layer 2 (n={len(layer2_cols)})')
         
-    # assign non-connected pads unique colors too (grays)
-    routed_mask = wafer_pad2el.shank_id.isna()
-    grays = get_unique_grays(routed_mask.sum(), min_col=3, max_col=252)
-    wafer_pad2el.loc[routed_mask, ('r', 'g', 'b')] = np.array(grays)
-    wafer_pad2el['pad_diameter_um'] = device_info['pad_diameter_um']
-    
-    if visualize:
-        if save_visualization is not None:
-            fname_base = os.path.basename(save_visualization)
-            plt.savefig(f"{save_visualization}/shank_geometry_{fname_base}.svg")
+        # Shorted pads: red crosses
+        shorted_pads = ordered_interconnect_pads[(ordered_interconnect_pads['shorted_to_pad'] != -1).values]
+        ax.scatter(shorted_pads['pad_x'], shorted_pads['pad_y'],
+                   color='k', marker='x', s=50, zorder=5, label=f'Shorted pads (n={(ordered_interconnect_pads["shorted_to_pad"] != -1).sum()})')
+        # connect shorted pads with red lines
+        for idx, row in shorted_pads.iterrows():
+            shorted_idx = row['shorted_to_pad']
+            if shorted_idx != -1:
+                ax.plot([row['pad_x'], ordered_interconnect_pads.loc[shorted_idx, 'pad_x']],
+                        [row['pad_y'], ordered_interconnect_pads.loc[shorted_idx, 'pad_y']],
+                        color='k', linewidth=0.8, zorder=4)
+
+        ax.scatter(sc, sr, color='cyan', s=100, marker='*', zorder=5, label='Start')
+        ax.set_title(f"Final pad capture order — {n} pads")
+        # add annotation for padid between 415 and 425
+        # for i in range(426):
+        #     r, c = pad_rcs[ordered_pad_indices[i]]
+        #     ax.annotate(str(i), (c, r), color='k', fontsize=10, ha='center', zorder=6)
+        ax.legend(fontsize=7)
+        plt.tight_layout()
         plt.show()
-    return wafer_pad2el
-    
+    return ordered_interconnect_pads
+
+# helper to load device info json, which has the shank geometries info we need for the next step
+def get_device_info(path):
+    assert os.path.exists(path), f"Device path not found at {path}"
+    fname_base = os.path.basename(path)
+    with open(f'{path}/info_{fname_base}.json', 'r') as f:
+        device_info = json.load(f, object_pairs_hook=OrderedDict)
+    return device_info
         
+# 3. connect_pad2polyimide_shanks: use the shank geometry info to connect 
+# the ordered wafer pads to the polyimide electrodes,
+def connect_pad2polyimide_shanks(interconnect_pads, device_info, visualize=True):
+    # get shank routing info, which has the shank_id, shank_name, ionp_pattern, 
+    # colormap and routed_order (left to right)
+    shank_routing_info = device_info['wafer_view_shanks_down_left2right']
+    # make sure shanks are ordered by their routing (wrt interconnect left to right)
+    shank_order = sorted(shank_routing_info.items(), 
+                        key=lambda x: x[1]['routed_order'])
+    shank_order = [item[1]['shank_id'] for item in shank_order]
+    shank_routing_info = {str(int(info['shank_id'])): info 
+                          for _, info in sorted(shank_routing_info.items(), 
+                                        key=lambda x: x[1]['routed_order'])}
+    
+    from_interc_pad_id = 0
+    pad2polyim_el, shank_ionp_pattern = [], []
+    for shank_info in shank_routing_info.values():
+        shank_id = shank_info['shank_id']
+        shank_name = shank_info['shank_name']
+        ionp_pattern_str = shank_info['ionp_pattern']
+        shank_cmap = shank_info['colormap']
+        shank_mirror = shank_info.get('mirror_el_leftright', False)
+        
+        # load ionp pattern info, and electrode infos
+        with open(f'{path}/shanks/{ionp_pattern_str}.json', 'r') as f:
+            detailed_shank_info = json.load(f)
+        n_electrodes = detailed_shank_info['electrodes']['n_electrodes']
+        # get the ionp strip pattern for drawing later
+        ionp_strips = detailed_shank_info['ionp_pattern']['strips']
+        shank_ionp_pattern.append([
+            (st['real_y_um']['start']*-1, st['real_y_um']['end']*-1) for st in ionp_strips.values()
+        ])
+        
+        el_locs = np.array([list(el.values()) for el 
+                            in detailed_shank_info['electrodes']['locations_um']])
+        # shank can be mirrored left-right, if so, invert x coordinates
+        if shank_mirror:
+            el_locs[:, 0] *= -1
+        # sort based on x, left to right, how they are routed
+        el_locs = el_locs[np.argsort(el_locs[:, 0])]
+        # depth is inverted, subtract max value
+        el_locs[:, 1] -= el_locs[:, 1].max()
+        
+        # map electrode depth using colormap
+        cmap = plt.get_cmap(shank_cmap)
+        el_colors = cmap(np.abs(el_locs[:, 1]) / np.abs(el_locs[:, 1]).max())
+        
+        pads_left = interconnect_pads.loc[from_interc_pad_id:]
+        # Simply skip ALL shorted pads — cross-shank shorts are handled by copy-back
+        pad_ids = pads_left[~pads_left['shorted_to_prv_pad']].index[:n_electrodes]
+        from_interc_pad_id = pad_ids[-1] + 1
+
+        print()
+        print(f"Shank {shank_id} ({shank_name}): assigning pads {pad_ids[0]} to {pad_ids[-1]} ")
+        print(f"  Pads left for next shanks: {len(interconnect_pads) - from_interc_pad_id}, non-shorted ones: {(interconnect_pads.loc[from_interc_pad_id:,'shorted_to_prv_pad'] == False).sum()}")
+        print(f"  Electrodes shape: {el_locs.shape}, pad_ids n: {len(pad_ids)}")
+        
+        if len(pad_ids) < n_electrodes:
+            Logger().logger.warning(f"Not enough pads left to assign for shank {shank_id} ({shank_name}). "
+                                    f"Pads needed: {n_electrodes}, pads available: {len(pad_ids)}. "
+                                    f"Assuming that these electrodes are not routed!")
+            el_locs = el_locs[:len(pad_ids)]
+            el_colors = el_colors[:len(pad_ids)]
+        
+        pad2polyim_el.append(pd.DataFrame(
+            {'shank_id': shank_id,
+             'shank_name': shank_name,
+             'shank_side': np.where(el_locs[:, 0] < 0, 'left', 'right'),
+             'el_depth': el_locs[:, 1],
+             'el_wafer_x': el_locs[:, 0],
+             'el_id': np.arange(el_locs.shape[0]) +shank_id*1000,
+             'el_r': el_colors[:, 0],
+             'el_g': el_colors[:, 1],
+             'el_b': el_colors[:, 2],
+            },
+            index=pad_ids,
+        ).rename_axis('pad_id'))
+
+    # put together the shanks again
+    pad2polyim_el = pd.concat(pad2polyim_el, axis=0)
+    
+    # add the shorted pads too, above just adds the first pad of the two+ shorted ones
+    # use it to find the second,third,... one and add a copy of the electrode
+    shorted_pads = interconnect_pads.loc[pad2polyim_el.index, 'shorted_to_pad']
+    shorted_pads = shorted_pads[shorted_pads != -1]
+    # All shorted pads not yet in pad2polyim_el (skipped during assignment, not cross-shank)
+    unassigned_shorted = interconnect_pads[
+        interconnect_pads['shorted_to_prv_pad'] &
+        ~interconnect_pads.index.isin(pad2polyim_el.index)
+    ]
+    # Their chain_head_pad tells us exactly which electrode assignment to replicate
+    missing_entries = pad2polyim_el.loc[unassigned_shorted['chain_head_pad']].copy()
+    missing_entries.index = unassigned_shorted.index
+
+    pad2polyim_el = pd.concat([pad2polyim_el, missing_entries], axis=0).sort_index()
+    pad2polyim_el.index.name = 'pad_id'
+    # join the two based on index (pad_id) fully overlaps
+    pad2polyim_el = interconnect_pads.join(pad2polyim_el, how='inner')
+    
+    if visualize:
+        # draw interconnect pads and polyimide electrodes in the same plot to check the mapping, draw with el_color
+        plt.figure(figsize=(14, 10))
+        plt.scatter(interconnect_pads.loc[pad2polyim_el.index,'pad_x'], 
+                    interconnect_pads.loc[pad2polyim_el.index,'pad_y'], 
+                    color=pad2polyim_el.apply(lambda row: (row.el_r, row.el_g, row.el_b), axis=1), s=65)
+        # add annotation for pad_id between 415 and 425
+        plt.gca().invert_yaxis()
+        # plt.axis('off')
+        plt.axis('equal')
+        plt.savefig(f'{path}/wafer_pads.svg')
+        plt.show()
+        
+        shanks = pad2polyim_el['shank_id'].unique()
+        n_shanks = len(shanks)
+        fig, axs = plt.subplots(1, n_shanks, figsize=(.5 * n_shanks, 3), sharey=True)
+        for i, shank_id in enumerate(shanks):
+            ax = axs[i]
+            shank_df = pad2polyim_el[pad2polyim_el['shank_id'] == shank_id]
+            
+            xs = (shank_df['el_wafer_x']).values
+            ys = shank_df['el_depth'].values
+            rs = shank_df['el_r'].values
+            gs = shank_df['el_g'].values
+            bs = shank_df['el_b'].values
+
+            # ── filled gradient interior ───────────────────────────────────────────
+            # dense grid over bounding box
+            x_grid, y_grid = np.meshgrid(
+                np.linspace(xs.min(), xs.max(), 300),
+                np.linspace(ys.min(), ys.max(), 300)
+            )
+            points = np.column_stack([xs, ys])
+
+            # interpolate each channel onto the grid
+            r_grid = griddata(points, rs, (x_grid, y_grid), method='linear')
+            g_grid = griddata(points, gs, (x_grid, y_grid), method='linear')
+            b_grid = griddata(points, bs, (x_grid, y_grid), method='linear')
+
+            # mask outside convex hull
+            hull = ConvexHull(points)
+            from matplotlib.path import Path
+            hull_path = Path(points[hull.vertices])
+            grid_pts  = np.column_stack([x_grid.ravel(), y_grid.ravel()])
+            inside    = hull_path.contains_points(grid_pts).reshape(x_grid.shape)
+
+            # build RGBA image, NaN outside hull → transparent
+            img = np.ones((*x_grid.shape, 4))
+            img[..., 0] = np.where(inside, r_grid, np.nan)
+            img[..., 1] = np.where(inside, g_grid, np.nan)
+            img[..., 2] = np.where(inside, b_grid, np.nan)
+            img[..., 3] = np.where(inside, 1.0,    0.0)
+            img = np.clip(img, 0, 1)
+
+            ax.imshow(img,
+                    extent=[xs.min(), xs.max(), ys.min(), ys.max()],
+                    origin='lower', aspect='auto', zorder=1)
+
+            # ── electrode dots on top ──────────────────────────────────────────────
+            ax.scatter(xs, ys,
+                    color=shank_df.apply(lambda row: (row.el_r, row.el_g, row.el_b), axis=1),
+                    s=10, zorder=2)
+
+            ax.set_title(f"{shank_id}")
+            # ax.xaxis.set_visible(False)
+            ax.set_yticks(np.array([-2000,-4000,-8000]))
+            ax.set_yticklabels(np.array([2,5,8]))
+            # y grid
+            ax.yaxis.grid(True, which='major', linestyle='--', alpha=0.5)
+            ax.set_xlim(-3000, 3000)
+            ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+            # turn off spines
+            [ax.spines[side].set_visible(False) for side in ['top', 'right', 'bottom', 'left']]
+            
+            # draw the ionp strip pattern as faint box in gray
+            ionp_strips = shank_ionp_pattern[i]
+            for start, end in ionp_strips:
+                patch = plt.Rectangle((-3000, start), 6000, end-start, facecolor='white', alpha=0.5, 
+                                      edgecolor='none', zorder=3)
+                ax.add_patch(patch)
+
+        plt.suptitle("Shank")
+        plt.ylim(-9000, 0)
+        plt.savefig(f'{path}/shank_geometries.svg')
+        plt.show()
+
+        
+    return pad2polyim_el
+
+# 4. finalize_and_save_pad2el: save the final mapping as csv and png, 
+# png is used for alignment of bonding
 def finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=True):
     print("==="*20)
     print(wafer_pad2el)
     print("==="*20)
+    print(wafer_pad2el)
     
-    width = device_info['padlayout_width_um']
-    height = device_info['padlayout_height_um']
-    pad_diam = device_info['pad_diameter_um']
+    width = 3850
+    height = 2100//2
+    pad_diam = 16
     canvas = np.zeros([height, width, 3], dtype=np.uint8)
     for i, row in wafer_pad2el.iterrows():
-        y, x = int(row['y']), int(row['x'])
-        col = np.array((row['r'], row['g'], row['b'])).astype(float)
-        cv2.circle(canvas, (x, y), int(pad_diam), col, -1)
+        y, x = int(row['pad_y']), int(row['pad_x'])
+        y += 10 # so it fits well on canvas, a constant offsset is irrelevant for alignemnt
+        col = np.array((row['pad_r'], row['pad_g'], row['pad_b'])).astype(float)
+        cv2.circle(canvas, (x, y), pad_diam, col, -1)
         if visualize:
             offset = 14 if i < 1000 else 19
             cv2.putText(canvas, f"{i}", (x-offset,y+5), cv2.FONT_HERSHEY_SIMPLEX, 
-                        0.5, (255,255,255,255), 1)
+                        0.5, (128,128,128,255), 1)
 
     if visualize:
         viewer = napari.Viewer()
@@ -621,22 +609,29 @@ def finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=True):
 
 if __name__ == "__main__":
     nas_dir = device_paths()[0]
-    device_name = "H1278pad4shank"
-    # device_name = "H1628pad1shank"
-    # device_name = "H1384pad4shank" # not done yet
+    device_name = "S0844pad8shank" 
+    # device_name = "S0844pad6shank" 
+    start_point = (85, 855) # the y,x coordinates of the first pad in the routing order, can be found in the routingorder pngs
     path = os.path.join(nas_dir, "devices", "electrode_devices", device_name)
-    print(path)
 
     # detect the pads using cv2.HoughCircles on um-scale image
-    detected_wafer_pads = detect_wafer_pads(path, precomputed=True, save=False)
-    # # order the pads x,y according in which order they are routed to the shanks
-    wafer_pad2el = shank_ordered_wafer_pads(path, detected_wafer_pads, visualize=False)
-    # # get the device info from the json file with ank info (n electrodes etc)
+    detected_interconnect_pads = detect_interconnect_pads(path, precomputed=True, save=False)
+    # use the snake-trace and BFS flood fill to order the pads in the routing order, 
+    # and also get info on metal layer and shorts    
+    interconnect_pads = shank_ordered_interconnect_pads_fromtrace(
+                path=path,
+                device_name=device_name,
+                interconnect_pads=detected_interconnect_pads,   # your (844,2) array
+                start_point=start_point,
+                step_size=6,
+                visualize=False
+            )
+    
+    # # get the device info from the json file with shank info (n electrodes etc)
     device_info = get_device_info(path)
-    # # add shank depth and metalization pairings to pad/polyimide electrode 
-    wafer_pad2el = integr_shank_geometries(wafer_pad2el, device_info)
-    # # assign unique colors to the pads/polyimide electrodes, 
-    wafer_pad2el = assign_unqiue_colors(wafer_pad2el, device_info, visualize=True,
-                                        save_visualization=path)
-    # # save the final pad2el mapping as csv and png
-    finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=True)
+    
+    wafer_pad2el = connect_pad2polyimide_shanks(interconnect_pads, device_info, 
+                                                visualize=True)
+    
+    # # # save the final pad2el mapping as csv and png
+    finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=False)
