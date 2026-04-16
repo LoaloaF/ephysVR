@@ -35,6 +35,7 @@ def detect_interconnect_pads(path, precomputed=False, save=False):
             Logger().logger.error(f"Wafer image not found at {full_fname}")
             exit(1)
         image = cv2.imread(f'{path}/waferpic_{fname_base}.png')
+        print("Image shape: ", image.shape)
 
         # Convert the image to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -197,6 +198,7 @@ def shank_ordered_interconnect_pads_fromtrace(path, device_name, interconnect_pa
     metal_mask = detect_metallization(f'{path}/metal_mask_{device_name}.png')
 
     H, W = trace_mask.shape
+    print(f"Trace mask shape: {trace_mask.shape}, metal mask shape: {metal_mask.shape}, shorted pads mask shape: {shorted_pads_mask.shape}")
 
     # coordinate convention: start_point and interconnect_pads are (row, col)
     sr, sc = start_point
@@ -320,6 +322,10 @@ def shank_ordered_interconnect_pads_fromtrace(path, device_name, interconnect_pa
     print(f"Unique non-shorted pads: {(ordered_interconnect_pads['shorted_to_pad'] == -1).sum()}")
     print(f"Shorted pads: {(ordered_interconnect_pads['shorted_to_pad'] != -1).sum()}")
     print("--" * 20, "\n\n")
+    
+    # important - mirror the x values over midline because devices id bonded upside down
+    midline = W // 2
+    ordered_interconnect_pads['pad_x'] = midline - (ordered_interconnect_pads['pad_x'] - midline)
     
     # ── final HSV order visualisation ─────────────────────────────────────────
     if visualize and n > 0:
@@ -448,6 +454,7 @@ def connect_pad2polyimide_shanks(interconnect_pads, device_info, visualize=True)
              'shank_side': np.where(el_locs[:, 0] < 0, 'left', 'right'),
              'el_depth': el_locs[:, 1],
              'el_wafer_x': el_locs[:, 0],
+             'el_id': np.arange(el_locs.shape[0]) +shank_id*1000,
              'el_r': el_colors[:, 0],
              'el_g': el_colors[:, 1],
              'el_b': el_colors[:, 2],
@@ -602,9 +609,9 @@ def finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=True):
 
 if __name__ == "__main__":
     nas_dir = device_paths()[0]
-    # device_name = "S0844pad8shank" 
-    device_name = "S0844pad6shank" 
-    start_point = (85, 855) # the x,y coordinates of the first pad in the routing order, can be found in the routingorder pngs
+    device_name = "S0844pad8shank" 
+    # device_name = "S0844pad6shank" 
+    start_point = (85, 855) # the y,x coordinates of the first pad in the routing order, can be found in the routingorder pngs
     path = os.path.join(nas_dir, "devices", "electrode_devices", device_name)
 
     # detect the pads using cv2.HoughCircles on um-scale image

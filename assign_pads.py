@@ -242,9 +242,10 @@ def align_pads2mea1k(electrode_device_names, IMPLANT_DEVICE_NAME,
     pad_alignment = pd.concat(all_pad_alignments, axis=0).reset_index(drop=True)
 
     # --- rank electrodes under each pad by connectivity --------------------------
-    ranks = (pad_alignment[['pad_id', 'mea1k_connectivity']]
-             .sort_values(['pad_id', 'mea1k_connectivity'], ascending=[True, False])
-             .groupby('pad_id').rank(ascending=False)
+    # --- rank polyimide electrodes connected to 1+ pads by connectivity --------
+    ranks = (pad_alignment[['el_id', 'mea1k_connectivity']]
+             .sort_values(['el_id', 'mea1k_connectivity'], ascending=[True, False])
+             .groupby('el_id').rank(ascending=False)
              .sort_index())
     pad_alignment['connectivity_order'] = ranks['mea1k_connectivity']
 
@@ -258,7 +259,7 @@ def align_pads2mea1k(electrode_device_names, IMPLANT_DEVICE_NAME,
              'pad_y_aligned', 'pad_x_aligned',
              'el_depth', 'shank_id', 'shank_side',
              'el_r', 'el_g', 'el_b',
-             'mea1k_el', 'mea1k_connectivity', 'connectivity_order']
+             'mea1k_el', 'el_id', 'mea1k_connectivity', 'connectivity_order']
     missing_els = np.setdiff1d(np.arange(26400), pad_alignment.mea1k_el)
     pad_alignment = pd.concat(
         [pad_alignment, pd.DataFrame({"mea1k_el": missing_els})], axis=0)
@@ -286,6 +287,9 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
     n_pads = pad_alignment['pad_id'].nunique()
     n_connected_pads = pad_alignment[pad_alignment['mea1k_connectivity'] > CONNECTIVITY_THR]['pad_id'].nunique()
     print(f"Connected pads: {n_connected_pads}/{n_pads} ({n_connected_pads/n_pads:.1%})")
+    # how many polyimide electrodes have good connectivity
+    n_connected_els = pad_alignment[pad_alignment['mea1k_connectivity'] > CONNECTIVITY_THR]['el_id'].nunique()
+    print(f"Connected electrodes: {n_connected_els}/{len(pad_alignment.el_id.unique())} ({n_connected_els/len(pad_alignment.el_id.unique()):.1%})")
     
     
     # plt.plot(pad_alignment.pad_id.sort_values().unique())
@@ -365,7 +369,7 @@ def main():
     rec_dir_name = 'Bond2_r4BothHalfs_ShubhamW3_16Shank_Vref15'
     connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices',
                                          IMPLANT_DEVICE_NAME, 'recordings', rec_dir_name)
-    # align_pads2mea1k(ELECTRODE_DEVICE_NAMES, IMPLANT_DEVICE_NAME, connectivity_rec_path)
+    align_pads2mea1k(ELECTRODE_DEVICE_NAMES, IMPLANT_DEVICE_NAME, connectivity_rec_path)
     plot_pad_alignment(IMPLANT_DEVICE_NAME)
 
 
