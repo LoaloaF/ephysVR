@@ -1,3 +1,4 @@
+from itertools import combinations
 import os
 import sys
 from glob import glob
@@ -6,17 +7,18 @@ import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap, LogNorm
 
 # to import logger, VR-wide constants and device paths
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from baseVR.base_logger import CustomLogger as Logger
 from baseVR.base_functionality import device_paths
 
-from mea1k_modules.mea1k_config_utils import start_saving, stop_saving
-from mea1k_modules.mea1k_config_utils import attampt_connect_el2stim_unit, create_stim_sine_sequence
-from mea1k_modules.mea1k_config_utils import turn_on_stimulation_units, turn_off_stimulation_units
-from mea1k_modules.mea1k_config_utils import shift_DAC, reset_MEA1K
-from mea1k_modules.mea1k_config_utils import get_maxlab_saving, get_maxlab_array
+# from mea1k_modules.mea1k_config_utils import start_saving, stop_saving
+# from mea1k_modules.mea1k_config_utils import attampt_connect_el2stim_unit, create_stim_sine_sequence
+# from mea1k_modules.mea1k_config_utils import turn_on_stimulation_units, turn_off_stimulation_units
+# from mea1k_modules.mea1k_config_utils import shift_DAC, reset_MEA1K
+# from mea1k_modules.mea1k_config_utils import get_maxlab_saving, get_maxlab_array
 
 from mea1k_modules.mea1k_raw_preproc import read_raw_data, read_stim_DAC
 from mea1k_modules.mea1k_post_processing import get_raw_implant_mapping
@@ -149,24 +151,317 @@ def hist_vis_impedance(aggr_df, output_dir=None):
     # if output_dir is not None:
     #     plt.savefig(os.path.join(output_dir, "all_imp_vs_connectivity_scatter.png"))
     # # plt.show()
+def vis_pad_imp_var(data):
+    def get_pad_stats(pad_data):
+        d = pad_data[pad_data.mea1k_connectivity > .6]
+        valid_stim_units = tuple(sorted(d['stim_unit'].dropna().unique()))
+        info =  [d['stim_unit'].nunique(), d['impedance_Ohm'].std()/1000, d.shape[0], valid_stim_units]
+        if info[2] == 1:
+            info[1] = 0
+        return pd.Series(info, index=['n_stimunits', 'imp_KOhm_std', 'n_mea1k_els', 'stimunits'])
+    
+    pad_info = data.groupby("pad_id").apply(get_pad_stats, include_groups=False)
+    
+    fig, ax = plt.subplots()
+    cmap = plt.get_cmap('viridis')
+    norm = plt.Normalize(vmin=0, vmax=300)
+    size_scaler = 4
+
+    def draw_group(group_key, group_df):
+        n_stimunits, n_mea1k_els = group_key
+        imp_std_kohm = group_df.imp_KOhm_std.mean()
+        ax.scatter(
+            [n_stimunits],
+            [n_mea1k_els],
+            s=group_df.shape[0] * size_scaler,
+            c=[imp_std_kohm],
+            cmap=cmap,
+            norm=norm,
+        )
         
+    for group_key, group_df in pad_info.groupby(['n_stimunits', 'n_mea1k_els']):
+        draw_group(group_key, group_df)
+    ax.set_ylabel("n MEA electrodes per pad")
+    ax.set_xlabel("n unqiue Stimunits per pad")
+    fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, label='Impedance Std (kOhm)')
+    plt.show()
+
+    pad_std_sorted = (
+        pad_info[['imp_KOhm_std', 'n_stimunits', 'stimunits']]
+        .dropna(subset=['imp_KOhm_std', 'n_stimunits', 'stimunits'])
+        # .loc[lambda d: d['imp_KOhm_std'] >= 20]
+        .reset_index()
+        .rename(columns={'index': 'pad_id'})
+    )
+    
+    expanded_data = []
+    for _, row in pad_std_sorted.iterrows():
+        for stim_unit in row['stimunits']:
+            expanded_data.append({
+                'pad_id': row['pad_id'],
+                'imp_KOhm_std': row['imp_KOhm_std'],
+                'stim_unit': stim_unit
+            })
+    expanded_df = pd.DataFrame(expanded_data)
+    
+    fig, ax = plt.subplots(figsize=(14, 5))
+    
+    if len(expanded_df) > 0:
+        stim_units_sorted = sorted(expanded_df['stim_unit'].unique())
+        
+        ax.violinplot(
+            [expanded_df[expanded_df['stim_unit'] == su]['imp_KOhm_std'].values for su in stim_units_sorted],
+            positions=stim_units_sorted,
+            widths=0.7,
+            showmeans=True,
+            showmedians=True
+        )
+        
+        jitter = np.random.normal(0, 0.15, size=len(expanded_df))
+        ax.scatter(
+            expanded_df['stim_unit'] + jitter,
+            expanded_df['imp_KOhm_std'],
+            s=20,
+            alpha=0.6,
+            edgecolors='black',
+            linewidth=0.5
+        )
+        
+        ax.set_xticks(stim_units_sorted)
+    
+    ax.set_xlabel('Stimulation Unit')
+    ax.set_ylabel('Impedance Std (kOhm)')
+    ax.set_title('Pad Impedance Std by Stim Unit (>=20 kOhm pads)')
+    plt.tight_layout()
+    plt.show()
+    
+    
+    # ── Pairwise stim-unit heatmaps ──────────────────────────────────────
+    # Unpack every pad's stim units into all C(n,2) pairs
+    pair_rows = []
+    print(pad_info)
+    print(pad_info['stimunits'].value_counts().sort_values().to_string())
+    for pad_id, row in pad_info.iterrows():
+        sus = [int(s) for s in row['stimunits'] if not pd.isna(s)]
+        std_val = row['imp_KOhm_std']
+        if pd.isna(std_val):
+            continue
+        # diagonal: pads with a single stim unit
+        if len(sus) == 1:
+            pair_rows.append({'su_i': sus[0], 'su_j': sus[0], 'imp_std': std_val})
+        # all unique pairs
+        for a, b in combinations(sorted(sus), 2):
+            pair_rows.append({'su_i': a, 'su_j': b, 'imp_std': std_val})
+
+    pair_df = pd.DataFrame(pair_rows)
+    print(pair_df)
+    if pair_df.empty:
+        return
+
+    n_su = 32
+    count_mat  = np.full((n_su, n_su), np.nan)
+    med_mat    = np.full((n_su, n_su), np.nan)
+    top50_mat  = np.full((n_su, n_su), np.nan)
+    bot50_mat  = np.full((n_su, n_su), np.nan)
+
+    for (i, j), grp in pair_df.groupby(['su_i', 'su_j']):
+        vals = grp['imp_std'].dropna()
+        if len(vals) == 0:
+            continue
+        n = len(vals)
+        med = vals.median()
+        top_half = vals[vals >= med]
+        bot_half = vals[vals <= med]
+
+        for mi, mj in [(i, j), (j, i)]:          # symmetric fill
+            count_mat[mi, mj]  = n
+            med_mat[mi, mj]    = med
+            top50_mat[mi, mj]  = top_half.median() if len(top_half) else np.nan
+            bot50_mat[mi, mj]  = bot_half.median() if len(bot_half) else np.nan
+
+    # Plot 2x2 grid
+    titles = ['Sample count', 'Median imp std (kΩ)',
+              'Median top-50% (high var)', 'Median bottom-50% (low var)']
+    matrices = [count_mat, med_mat, top50_mat, bot50_mat]
+    cmaps_list = ['inferno', 'viridis', 'viridis', 'viridis']
+    norms = [
+        None,                                        # auto for counts
+        plt.Normalize(vmin=0, vmax=300),
+        plt.Normalize(vmin=0, vmax=300),
+        plt.Normalize(vmin=0, vmax=300),
+    ]
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    for ax, mat, title, cmap_name, norm in zip(axes.flat, matrices, titles, cmaps_list, norms):
+        cm = plt.get_cmap(cmap_name).copy()
+        cm.set_bad(color='black')
+        kw = {'cmap': cm}
+        if norm is not None:
+            kw['norm'] = norm
+        im = ax.imshow(mat, **kw)
+        ax.set_title(title)
+        ax.set_xlabel('Stim Unit')
+        ax.set_ylabel('Stim Unit')
+        fig.colorbar(im, ax=ax, shrink=0.8)
+
+    fig.suptitle('Pairwise stim-unit impedance std under shared pads', fontsize=13)
+    plt.tight_layout()
+    plt.show()
+    
+    
+    
+    
+    
+    
+    # pad_info = pad_info[pad_info['n_stimunits'] <= 2]
+    # stimunit_relation = pad_info.groupby('stimunits').agg({"imp_KOhm_std": 'mean', 'n_mea1k_els': 'size'})
+    # matrix = np.full((32, 32), np.nan)
+    # for idx in stimunit_relation.index:
+    #     print(idx)
+    #     if len(idx) == 1:
+    #         if pd.isna(idx[0]):
+    #             continue
+    #         idx_i = int(idx[0])
+    #         matrix[idx_i,idx_i] = stimunit_relation.imp_KOhm_std[idx]
+    #     elif len(idx) == 2:
+    #         if pd.isna(idx[0]) or pd.isna(idx[1]):
+    #             continue
+    #         idx_i, idx_j = int(idx[0]), int(idx[1])
+    #         matrix[idx_i,idx_j] = stimunit_relation.imp_KOhm_std[idx]
+    #         matrix[idx_j,idx_i] = stimunit_relation.imp_KOhm_std[idx]
+    
+    # fig, ax = plt.subplots()
+    # matrix_cmap = cmap.copy()
+    # matrix_cmap.set_bad(color='black')
+    # im = ax.imshow(matrix, cmap=matrix_cmap, norm=norm)
+    # fig.colorbar(im, ax=ax, label='Impedance Std (kOhm)')
+    # plt.show()
+    
+    # for pad_id in data.pad_id.unique():
+    #     pad_data = 
+    
+    
+def create_impedance_colormap():
+    """
+    Create custom colormap for impedance visualization with log scale.
+    Maps impedance ranges with BRIGHT GREEN for good impedance.
+    
+    Impedance thresholds (kOhm) and their colors:
+    0-20 kOhm         -> WHITE (too low but neutral)
+    20-40 kOhm        -> Lime green (low)
+    40-140 kOhm       -> BRIGHT VIBRANT GREEN (BEST!)
+    140-340 kOhm      -> yellow/orange (decent)
+    340-800 kOhm      -> red (bad)
+    800+ kOhm         -> dark red (very bad)
+    """
+    # Custom colors for each range
+    thresholds_kohm = [10, 20, 40, 140, 340, 800, 1000]  # Extend to 1000 kOhm to show dark red
+    # RGB colors: WHITE -> pale greenish -> BRIGHT GREEN -> yellow -> red -> dark red -> dark red
+    colors_rgb = [
+        (1.0, 1.0, 1.0),    # 0-20 kOhm: WHITE
+        (0.9, 0.95, 0.7),   # 20-40 kOhm: Desaturated whitish-green
+        (0.0, 1.0, 0.0),    # 40-140 kOhm: BRIGHT GREEN (BEST!)
+        (1.0, 0.8, 0.0),    # 140-340 kOhm: yellow/orange
+        (1.0, 0.2, 0.0),    # 340-800 kOhm: red
+        (0.8, 0.0, 0.0),    # 800-1000+ kOhm: dark red (VERY BAD)
+        (0.8, 0.0, 0.0),    # 1000+ kOhm: dark red
+    ]
+    
+    # Convert to Ohm and normalize to 0-1 range using LOG scale
+    thresholds_ohm = [t * 1000 for t in thresholds_kohm]
+    vmin_log = np.log10(10000)     # Log of 10K Ohm
+    vmax_log = np.log10(1000000)   # Log of 1M Ohm (1000 kOhm)
+    norm_pos = [(np.log10(t) - vmin_log) / (vmax_log - vmin_log) for t in thresholds_ohm]
+    
+    # Clamp positions to 0-1 range
+    norm_pos = [max(0, min(1, p)) for p in norm_pos]
+    
+    # Build colormap dictionary with step transitions
+    cdict = {'red': [], 'green': [], 'blue': []}
+    for i, pos in enumerate(norm_pos):
+        color = colors_rgb[i]
+        
+        if i == 0:
+            # First color
+            cdict['red'].append((pos, color[0], color[0]))
+            cdict['green'].append((pos, color[1], color[1]))
+            cdict['blue'].append((pos, color[2], color[2]))
+        else:
+            # Step transition from previous color to current color
+            prev_color = colors_rgb[i-1]
+            cdict['red'].append((pos, prev_color[0], color[0]))
+            cdict['green'].append((pos, prev_color[1], color[1]))
+            cdict['blue'].append((pos, prev_color[2], color[2]))
+    
+    return LinearSegmentedColormap('impedance', cdict)
+
+
+def visualize_impedance_colormap():
+    """Create a figure showing the impedance colormap with labeled ranges (log scale)."""
+    cmap = create_impedance_colormap()
+    norm = LogNorm(vmin=10000, vmax=1000000)  # Log scale: 10K Ohm to 1M Ohm (shows dark red)
+    
+    fig, ax = plt.subplots(figsize=(14, 2))
+    
+    # Create a dummy image for the colorbar with log-spaced values
+    logvalues = np.logspace(4, 6, 256)  # 10K to 1M
+    im = ax.imshow(logvalues.reshape(1, -1), 
+                   cmap=cmap, norm=norm, aspect='auto')
+    ax.set_yticks([])
+    
+    # Create colorbar
+    cbar = fig.colorbar(im, ax=ax, orientation='horizontal', pad=0.1)
+    cbar.set_label('Impedance (Ohm) - Log Scale', fontsize=12, fontweight='bold')
+    
+    # Format colorbar ticks to show kOhm
+    cbar.ax.set_xticklabels([f'{int(t/1000)}k' for t in cbar.ax.get_xticks()])
+    
+    # Add range labels
+    ranges = [
+        (0, 20000, '0-20\nkOhm\nTOO LOW'),
+        (20000, 40000, '20-40\nkOhm\nLOW'),
+        (40000, 140000, '40-140\nkOhm\nBEST'),
+        (140000, 340000, '140-340\nkOhm\nDECENT'),
+        (340000, 800000, '340-800\nkOhm\nBAD'),
+    ]
+    
+    for vmin, vmax, label in ranges:
+        # For log scale, position is the log value
+        mid_log = np.log10((vmin + vmax) / 2)
+        mid_pos = (mid_log - np.log10(100)) / (np.log10(800000) - np.log10(100))
+        # ax.text(mid_pos, -0.8, label, transform=ax.transAxes, 
+        #         ha='center', va='top', fontsize=10, fontweight='bold')
+    
+    ax.set_xticks([])
+    fig.tight_layout()
+    plt.show()
+    
+    return fig
+
+
 def mea1k_vis_impedance(data, output_dir=None, cmap_scaler=1):
     data.set_index('electrode', inplace=True)
-    
-    # create a colormap from 0 to 1000, matplotlib colormap 
-    cmap = plt.get_cmap('viridis')
-    norm = plt.Normalize(vmin=0, vmax=1100)
-    print(data)
     data = data[data.index.duplicated(keep=False)==False]
+    
+    # Impedance colormap: 10K-1M Ohm with log scale, showing dark red for 800K+
+    cmap = create_impedance_colormap()
+    norm = LogNorm(vmin=10000, vmax=1000000)  # Log scale: 10K to 1M Ohm
+    
+    # Print actual data range
+    valid_data = data[data.impedance_Ohm > 0]
+    print(f"Impedance range: {valid_data['impedance_Ohm'].min():.0f} - {valid_data['impedance_Ohm'].max():.0f} Ohm "
+          f"({valid_data['impedance_Ohm'].min()/1000:.1f} - {valid_data['impedance_Ohm'].max()/1000:.1f} kOhm)")
+    print(f"Colormap (log scale): 0-20 kOhm (WHITE) | 20-40 (LIME) | 40-140 (BRIGHT GREEN-BEST) | 140-340 (orange) | 340-800 (red)")
     print(data)
     (fig,ax), el_recs = draw_mea1k()
     conn_data, imp_data = [], []
+    
     for el_i, el_recs in enumerate(el_recs):
         if el_i not in data.index:
             # print("missing", el_i, end=' ')
             # el_recs.set_edgecolor((.8,0,0))
             continue
-        if data.loc[el_i:el_i].connectivity.isna().any():
+        if data.loc[el_i:el_i].mea1k_connectivity.isna().any():
             # el_recs.set_edgecolor((.8,0,0))
             print("NaN", el_i, end=' ')
             continue
@@ -175,7 +470,7 @@ def mea1k_vis_impedance(data, output_dir=None, cmap_scaler=1):
             print("duplicate", el_i, end=' ')
             continue
         
-        if data.loc[el_i].connectivity < .3:
+        if data.loc[el_i].mea1k_connectivity < .3:
             continue
         
         xy = el_recs.get_xy()
@@ -187,27 +482,30 @@ def mea1k_vis_impedance(data, output_dir=None, cmap_scaler=1):
         
         # color by impedance
         imp = data.loc[el_i].impedance_Ohm
-        color = cmap(norm(imp/600))
+        color = cmap(norm(imp))
         el_recs.set_edgecolor(color)
         
         # annotate with stimulation unit
-        stim_unit = int(data.loc[el_i].stim_unit)
-        ax.scatter([xy[0]], [xy[1]], alpha=0.6, s=15, c=[stim_unit], cmap='tab20', 
-                   vmin=0, vmax=31, edgecolors='none')
+        # stim_unit = int(data.loc[el_i].stim_unit)
+        # ax.scatter([xy[0]], [xy[1]], alpha=0.6, s=15, c=[stim_unit], cmap='tab20', 
+        #            vmin=0, vmax=31, edgecolors='none')
         # add annotation
         # ax.annotate(f"SU{stim_unit}", (xy[0]+20, xy[1]+20), fontsize=6, color='white', 
         #             ha='center', va='center')
         
         # print(data.loc[el_i].connectivity)
-        whiteness = np.clip(data.loc[el_i].connectivity*cmap_scaler, 0, 1)
+        whiteness = np.clip(data.loc[el_i].mea1k_connectivity*cmap_scaler, 0, 1)
         el_recs.set_facecolor((whiteness, whiteness, whiteness))
     fig.savefig("./live_figures/all_imp_vs_connectivity_CMOS.png", dpi=300, transparent=False,
                 bbox_inches='tight', pad_inches=0)
-    if output_dir is not None:
-        fig.savefig(os.path.join(output_dir, "all_imp_vs_connectivity_CMOS.png"), 
-                    dpi=300, transparent=False,
-                    bbox_inches='tight', pad_inches=0)
-    # plt.show()
+    # if output_dir is not None:
+    #     fig.savefig(os.path.join(output_dir, "all_imp_vs_connectivity_CMOS.png"), 
+    #                 dpi=300, transparent=False,
+    #                 bbox_inches='tight', pad_inches=0)
+    plt.show()
+    
+    # Display colormap legend
+    visualize_impedance_colormap()
 
 def measure_impedance(full_recdir, rec_time, nas_dir, configs_basepath, stim_settings,
                       implant_mapping, gain, dac_sine_amplitude, dac_id):
@@ -309,6 +607,7 @@ def main():
     
     # ======== PARAMETERS ========
     nas_dir = device_paths()[0]
+    # nas_dir = './'
     # implant_name = "250917_MEA1K12_H1628pad1shankB5"
     # implant_name = "250926_MEA1K12_H1278pad4shankB5"
     implant_name = "260413_MEA1K22_S1688pad14shankB5"
@@ -317,9 +616,10 @@ def main():
     subdir = f"devices/headstage_devices/{headstage_name}/recordings"
     configs_basepath = f"mea1k_configs/single_el2stimunit_configs2"
     stimulater_settings_path = f"devices/headstage_devices/{headstage_name}/smallcurrent_lsb_characterization.csv"
-    stim_settings = pd.read_csv(os.path.join(nas_dir, stimulater_settings_path)).set_index("stimunit_id", drop=True)
+    # stim_settings = pd.read_csv(os.path.join(nas_dir, stimulater_settings_path)).set_index("stimunit_id", drop=True)
 
     rec_dir = "Bond2_ShubhamW3_16Shank_impedance"
+    # rec_dir = "Bond2_ShubhamW3_16Shank_impedance_rec2_LC"
     post_download_wait_time = .6
     rec_time = .5
     gain = 7
@@ -340,8 +640,15 @@ def main():
     #                                            "processed", "extr_connectivity.csv"))
     # implant_mapping = implant_mapping.rename(columns={"el":"mea1k_el",
     #                                                 "connectivity":"mea1k_connectivity"})
+    # print(implant_mapping)
+    # nas_dir = '~/local_data/implant_mapping.csv'
+    # save a backup of the implant mapping with impedance values
+    # implant_mapping.to_csv(nas_dir, index=False)
+    # implant_mapping = pd.read_csv(nas_dir)
     print(implant_mapping)
-    
+    np.random.seed(11)
+    # implant_mapping['stim_unit'] = np.random.randint(0,4, size=len(implant_mapping))
+    # exit()
     
     
     # measure_impedance(full_recdir, rec_time, 
@@ -350,18 +657,23 @@ def main():
     #                   dac_id=dac_id)
     
     aggr_df = pd.read_csv(os.path.join(full_recdir, "processed", "all_impedance.csv"))
-    # mea1k_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
+    imp = aggr_df.loc[:, ['electrode',  'stim_unit',]].astype(int)
+    implant_mapping = pd.merge(implant_mapping, imp, left_on='mea1k_el', 
+                               right_on='electrode', how='left')
+    
+    print(implant_mapping)
+    aggr_df.rename(columns={"connectivity": "mea1k_connectivity"}, inplace=True)
+    mea1k_vis_impedance(aggr_df.copy(), output_dir=os.path.join(full_recdir, "processed"))
+    merged = pd.merge(implant_mapping, aggr_df[['electrode', 'impedance_Ohm']], left_on='mea1k_el', right_on='electrode', how='left')
+    vis_pad_imp_var(merged)
     # stim_unit_wise_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
     
     # scatter_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
     # hist_vis_impedance(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
     # area_wise_imp(aggr_df, output_dir=os.path.join(full_recdir, "processed"))
     
-    imp = aggr_df.loc[:, ['electrode', 'impedance_Ohm',]].astype(int)
-    implant_mapping = pd.merge(implant_mapping, imp, left_on='mea1k_el', 
-                               right_on='electrode', how='left')
-    print(implant_mapping.columns)
-    print(implant_mapping)
+    # print(implant_mapping.columns)
+    # print(implant_mapping)
     # save the updated implant mapping with impedance values
     # implant_mapping.to_csv(fullfname, index=False)
     

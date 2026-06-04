@@ -257,12 +257,12 @@ def write_pattern_summary_to_json(
     if metadata is not None:
         summary["metadata"] = metadata
 
-    output_path = Path(output_fname)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", encoding="utf-8") as f:
-        json.dump(summary, f, indent=2)
+    # output_path = Path(output_fname)
+    # output_path.parent.mkdir(parents=True, exist_ok=True)
+    # with output_path.open("w", encoding="utf-8") as f:
+    #     json.dump(summary, f, indent=2)
 
-    print(f"Wrote pattern summary JSON: {output_path}")
+    # print(f"Wrote pattern summary JSON: {output_path}")
     return summary
     
 # Example usage
@@ -311,7 +311,8 @@ if __name__ == "__main__":
     }
 
     # file names
-    path = '/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/devices/electrode_devices/S0844pad6shank/shanks/'
+    nas_dir = '/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning' 
+    path = f"{nas_dir}/devices/electrode_devices/S0844pad6shank/shanks/"
     # input_basename = '96.dxf' if CONFIG['n_els'] == 96 else f"{CONFIG['n_els']}ch_shank.dxf"
     input_basename = f"{CONFIG['n_els']}.dxf"
     input_fname = f"{path}{input_basename}"

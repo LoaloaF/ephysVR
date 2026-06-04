@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import colorsys
 import matplotlib.colorbar as mcolorbar
 
-def draw_mea1k(bg='black', el_color='#111111', mapping=None, cmap_scaler=1):
+def draw_mea1k(bg='black', el_color='#111111', mapping=None, cmap_scaler=1, fast=False):
     fig, ax = plt.subplots(figsize=(3850/300, 2100/300), facecolor='none')
     fig.subplots_adjust(top=1, bottom=0, right=1, left=0)
     # fig.patch.set_facecolor('black')
@@ -24,6 +24,19 @@ def draw_mea1k(bg='black', el_color='#111111', mapping=None, cmap_scaler=1):
     else:
         colors = [el_color]*26400
 
+    if fast and mapping is not None:
+        # do scatter instead
+        # draw = mapping.sort_values('mea1k_el')
+        ax.scatter((mapping.mea1k_el % 220) * 17.5 + 17.5/4, (mapping.mea1k_el // 220) * 17.5 + 17.5/4, 
+                   c=mapping.mea1k_connectivity*cmap_scaler, s=4, marker='s', cmap='gray', vmin=0, vmax=1,
+                   edgecolors='none', alpha=1)
+        ax.set_ylim(2100, 0)
+        ax.set_xlim(0,3850)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_aspect('equal', adjustable='box')
+        return (fig, ax), None
+    
     i = 0
     recs = []
     for y in np.arange(0+17.5/4, 2100, 17.5):
@@ -32,8 +45,15 @@ def draw_mea1k(bg='black', el_color='#111111', mapping=None, cmap_scaler=1):
                                       edgecolor='none', alpha=.7))
             if mapping is not None:
                 # change color to connectivity
-                whiteness = np.clip(mapping.loc[i].mea1k_connectivity*cmap_scaler, 0, 1)
-                recs[-1].set_facecolor((whiteness, whiteness, whiteness))
+                recs[-1].set_facecolor((1, 1, 1))
+                conn = mapping[mapping['mea1k_el'] == i].mea1k_connectivity
+                if pd.isna(conn).all():
+                    print("Missing connectivity measurement for electrode", i)
+                    recs[-1].set_facecolor((0,0,0))
+                    recs[-1].set_edgecolor((.6, .6, 0)) # yellow
+                else:
+                    alpha = np.clip(conn.item()*cmap_scaler, 0, 1)
+                    recs[-1].set_alpha(alpha)
             i += 1
 
     [ax.add_patch(rec) for rec in recs]

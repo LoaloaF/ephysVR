@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch
 
 import napari
 from napari.utils import DirectLabelColormap
@@ -216,7 +217,7 @@ def align_pads2mea1k(electrode_device_names, IMPLANT_DEVICE_NAME,
     path = connectivity_fullfname.replace(".png", ".csv")
     mea1k_connectivity = pd.read_csv(path, index_col=[0]).sort_index()
     mea1k_connectivity.rename(columns={'connectivity': 'mea1k_connectivity'}, inplace=True)
-    mea1k_connectivity.drop("ampl", inplace=True, axis=1)
+    mea1k_connectivity.drop(["ampl", "input_ampl_mV"], inplace=True, axis=1)
     mea1k_connectivity.set_index('el', inplace=True)
     mea1k_connectivity = mea1k_connectivity[~mea1k_connectivity.index.duplicated(keep='first')]
     mea1k_connectivity = mea1k_connectivity.reindex(np.arange(26400))
@@ -241,13 +242,61 @@ def align_pads2mea1k(electrode_device_names, IMPLANT_DEVICE_NAME,
         all_pad_alignments.append(_align(mapping, mea1k_connectivity, alignment, mea1k_connectivity_png))
     pad_alignment = pd.concat(all_pad_alignments, axis=0).reset_index(drop=True)
 
+    # --- Remove ambiguous mea1k_el assignments (appearing under multiple pads) ---
+    print("\n--- Resolving ambiguous mea1k_el assignments ---")
+    valid_rows = pad_alignment['pad_id'].notna() & pad_alignment['mea1k_el'].notna()
+    pad_per_mea1k = pad_alignment[valid_rows].groupby('mea1k_el')['pad_id'].nunique()
+    ambiguous_mea1k_els = pad_per_mea1k[pad_per_mea1k > 1].index
+
+    if len(ambiguous_mea1k_els) > 0:
+        # Count how many high-connectivity electrodes are being excluded
+        ambiguous_rows = pad_alignment[pad_alignment['mea1k_el'].isin(ambiguous_mea1k_els)]
+        high_conn_excluded = (ambiguous_rows['mea1k_connectivity'] > CONNECTIVITY_THR).sum()
+        unique_high_conn_excluded = ambiguous_rows[ambiguous_rows['mea1k_connectivity'] > CONNECTIVITY_THR]['mea1k_el'].nunique()
+        
+        print(f"⚠️  Ambiguous assignments detected:")
+        print(f"   {len(ambiguous_mea1k_els)} mea1k_el appear under multiple pads")
+        print(f"   {len(ambiguous_rows)} total rows affected")
+        print(f"   {high_conn_excluded} rows with connectivity > {CONNECTIVITY_THR} excluded")
+        print(f"   {unique_high_conn_excluded} unique mea1k_el with connectivity > {CONNECTIVITY_THR} excluded")
+        
+        # Set pad_id and el_id to NaN for ambiguous assignments
+        mask = pad_alignment['mea1k_el'].isin(ambiguous_mea1k_els)
+        pad_alignment.loc[mask, 'pad_id'] = np.nan
+        pad_alignment.loc[mask, 'el_id'] = np.nan
+        # Also clear other pad/electrode specific fields
+        pad_cols_to_clear = ['pad_y', 'pad_x', 'pad_r', 'pad_g', 'pad_b', 'pad_metal', 
+                             'pad_y_aligned', 'pad_x_aligned', 'el_depth', 'shank_id', 
+                             'shank_side', 'el_r', 'el_g', 'el_b']
+        for col in pad_cols_to_clear:
+            if col in pad_alignment.columns:
+                pad_alignment.loc[mask, col] = np.nan
+        
+        # Drop duplicate ambiguous mea1k_el rows (keep first occurrence)
+        pad_alignment = pad_alignment[~(mask & pad_alignment.duplicated(subset=['mea1k_el'], keep='first'))]
     # --- rank electrodes under each pad by connectivity --------------------------
     # --- rank polyimide electrodes connected to 1+ pads by connectivity --------
-    ranks = (pad_alignment[['el_id', 'mea1k_connectivity']]
-             .sort_values(['el_id', 'mea1k_connectivity'], ascending=[True, False])
-             .groupby('el_id').rank(ascending=False)
-             .sort_index())
-    pad_alignment['connectivity_order'] = ranks['mea1k_connectivity']
+    # Create two separate connectivity rankings: pad_connectivity_rank and el_connectivity_rank
+    pad_alignment['pad_connectivity_rank'] = np.nan
+    pad_alignment['el_connectivity_rank'] = np.nan
+    
+    # pad_connectivity_rank: rank mea1k electrodes within each pad
+    valid_pad_rows = pad_alignment['pad_id'].notna() & pad_alignment['mea1k_connectivity'].notna()
+    if valid_pad_rows.any():
+        pad_ranks = (pad_alignment[valid_pad_rows]
+                     .sort_values(['pad_id', 'mea1k_connectivity'], ascending=[True, False])
+                     .groupby('pad_id')['mea1k_connectivity']
+                     .rank(method='first', ascending=False))
+        pad_alignment.loc[valid_pad_rows, 'pad_connectivity_rank'] = pad_ranks
+
+    # el_connectivity_rank: rank mea1k electrodes within each polyimide electrode
+    valid_el_rows = pad_alignment['el_id'].notna() & pad_alignment['mea1k_connectivity'].notna()
+    if valid_el_rows.any():
+        el_ranks = (pad_alignment[valid_el_rows]
+                    .sort_values(['el_id', 'mea1k_connectivity'], ascending=[True, False])
+                    .groupby('el_id')['mea1k_connectivity']
+                    .rank(method='first', ascending=False))
+        pad_alignment.loc[valid_el_rows, 'el_connectivity_rank'] = el_ranks
 
     # --- append electrodes not under any pad -------------------------------------
     under_pad_els = mea1k_connectivity.index.intersection(pad_alignment.mea1k_el)
@@ -259,7 +308,7 @@ def align_pads2mea1k(electrode_device_names, IMPLANT_DEVICE_NAME,
              'pad_y_aligned', 'pad_x_aligned',
              'el_depth', 'shank_id', 'shank_side',
              'el_r', 'el_g', 'el_b',
-             'mea1k_el', 'el_id', 'mea1k_connectivity', 'connectivity_order']
+             'mea1k_el', 'el_id', 'mea1k_connectivity', 'pad_connectivity_rank', 'el_connectivity_rank']
     missing_els = np.setdiff1d(np.arange(26400), pad_alignment.mea1k_el)
     pad_alignment = pd.concat(
         [pad_alignment, pd.DataFrame({"mea1k_el": missing_els})], axis=0)
@@ -275,7 +324,7 @@ def align_pads2mea1k(electrode_device_names, IMPLANT_DEVICE_NAME,
     pad_alignment.to_csv(fullfname, index=False)
 
 
-def plot_pad_alignment(IMPLANT_DEVICE_NAME):
+def plot_pad_alignment(IMPLANT_DEVICE_NAME, white_bg=False):
     nas_dir = device_paths()[0]
     fullfname = os.path.join(nas_dir, "devices", "implant_devices",
                              IMPLANT_DEVICE_NAME, "bonding",
@@ -292,10 +341,10 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
     print(f"Connected electrodes: {n_connected_els}/{len(pad_alignment.el_id.unique())} ({n_connected_els/len(pad_alignment.el_id.unique()):.1%})")
     
     
-    # plt.plot(pad_alignment.pad_id.sort_values().unique())
-    # plt.show()
+    plt.hist(pad_alignment['mea1k_connectivity'], bins=50)
+    plt.show()
 
-    (fig, ax), els = draw_mea1k()
+    (fig, ax), els = draw_mea1k(bg='white' if white_bg else 'black')
 
     pad_circles = []
     seen_pad_ids = []
@@ -309,7 +358,10 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
         
         # for all set color and alpha to baseline, see all
         el_rec.set_alpha(.15)
-        el_rec.set_facecolor((1, 1, 1))
+        if white_bg:
+            el_rec.set_facecolor((0.5, 0.5, 0.5))
+        else:
+            el_rec.set_facecolor((1, 1, 1))
         
         # continue
         if pd.isna(el_entry.pad_id):
@@ -333,44 +385,108 @@ def plot_pad_alignment(IMPLANT_DEVICE_NAME):
                                             PAD_R, color=col,
                                             fill=False, linewidth=.5, alpha=.25))
             seen_pad_ids.append(el_entry.pad_id)
-        # if (el_entry.connectivity_order == 1) and (el_entry.mea1k_connectivity > CONNECTIVITY_THR) and el_entry.notna()["shank_id"]:
+        # if (el_entry.el_connectivity_rank == 1) and (el_entry.mea1k_connectivity > CONNECTIVITY_THR) and el_entry.notna()["shank_id"]:
         if (mea1k_el_conn > CONNECTIVITY_THR) and el_entry["shank_id"]:
-        # if (el_entry.connectivity_order == 1):
-        # if True:
             # el_rec.set_alpha(1)
             # el_rec.set_facecolor(col)
             pad_circles.append(plt.Circle((el_entry.pad_x_aligned, el_entry.pad_y_aligned),
                                           PAD_R, color=col,
                                           fill=False, linewidth=.5, alpha=1))
+            # if el_entry.el_connectivity_rank == 1:
+            #     el_rec.set_facecolor('green')
+            #     el_rec.set_alpha(1)
+            #     el_rec.set_zorder(10)
+                
             # # annotate el_entry with connectivity order
             # # get x y of recatngle patch
             # x,y = el_rec.get_xy()
-            # ax.text(x, y, f"{int(el_entry.connectivity_order)}",
+            # ax.text(x, y, f"{int(el_entry.el_connectivity_rank)}",
             #         fontsize=8, ha='center', va='center', color='white', alpha=0.8)
     [ax.add_patch(pc) for pc in pad_circles]
-    fig.savefig(fullfname.replace("csv", "png"), dpi=300, transparent=True,
+    if white_bg:
+        fullfname = fullfname.replace(".csv", "_inverted.csv")
+    fig.savefig(fullfname.replace("csv", "png"), dpi=300, transparent=False,
                 bbox_inches='tight', pad_inches=0)
     plt.show()
 
+def plot_pad_shorts(IMPLANT_DEVICE_NAME, white_bg=False):
+    nas_dir = device_paths()[0]
+    
+    fullfname = os.path.join(nas_dir, "devices", "implant_devices",
+                             IMPLANT_DEVICE_NAME, "bonding",
+                             f"bonding_mapping_{IMPLANT_DEVICE_NAME}.csv")
+    pad_alignment = pd.read_csv(fullfname)
+    pads = pad_alignment.dropna(subset=['pad_id', 'pad_x_aligned', 'pad_y_aligned', 'el_id']).copy()
+    pads = pads.drop_duplicates(subset=['pad_id'])
+    shorted_el_ids = pads.groupby('el_id')['pad_id'].nunique().loc[lambda s: s > 1].index
+    pads = pads[pads['el_id'].isin(shorted_el_ids)].copy()
 
-CONNECTIVITY_THR = .5
+    base_colors = list(plt.cm.get_cmap('tab20').colors)
+    # spread colors to avoid adjacent similar shades from tab20
+    color_order = list(range(0, 20, 2)) + list(range(1, 20, 2))
+    contrast_colors = [base_colors[i] for i in color_order]
+    group_color = {
+        el_id: contrast_colors[i % len(contrast_colors)]
+        for i, el_id in enumerate(sorted(shorted_el_ids))
+    }
+
+    (fig, ax), els = draw_mea1k(bg='white' if white_bg else 'black')
+
+    conn_lookup = (pad_alignment[['mea1k_el', 'mea1k_connectivity']]
+                   .dropna(subset=['mea1k_el'])
+                   .drop_duplicates(subset=['mea1k_el'])
+                   .set_index('mea1k_el')['mea1k_connectivity'])
+    for el_i, el_rec in enumerate(els):
+        el_rec.set_alpha(.15)
+        if white_bg:
+            el_rec.set_facecolor((0.5, 0.5, 0.5))
+        else:
+            el_rec.set_facecolor((1, 1, 1))
+        if el_i in conn_lookup.index and pd.notna(conn_lookup.loc[el_i]):
+            el_rec.set_alpha(min(1, conn_lookup.loc[el_i] + .2))
+
+    for el_id, grp in pads.groupby('el_id'):
+        col = group_color[el_id]
+        ax.scatter(grp['pad_x_aligned'], grp['pad_y_aligned'], s=20, color=col, edgecolors='none', linewidths=0.3)
+
+        pts = grp[['pad_x_aligned', 'pad_y_aligned']].to_numpy()
+        for pair_i in range(len(pts)):
+            for pair_j in range(pair_i + 1, len(pts)):
+                x0, y0 = pts[pair_i]
+                x1, y1 = pts[pair_j]
+                rad = 0.2 if (pair_i + pair_j) % 2 == 0 else -0.2
+                arc = FancyArrowPatch((x0, y0), (x1, y1), arrowstyle='-',
+                                      connectionstyle=f"arc3,rad={rad}", linestyle=':',
+                                      linewidth=2, color=col, alpha=0.85)
+                ax.add_patch(arc)
+
+        # cx, cy = grp['pad_x_aligned'].mean(), grp['pad_y_aligned'].mean()
+        # ax.text(cx + 10, cy + 10, f"el_id={int(el_id)}", fontsize=7, color=col)
+
+    fig.savefig(fullfname.replace(".csv", "_shorts.png"), dpi=300, transparent=False,
+                bbox_inches='tight', pad_inches=0)
+    plt.show()
+
+CONNECTIVITY_THR = .15
 PAD_R = 20
 
 def main():
     nas_dir = device_paths()[0]
     # NewGen 2026 - combined device from two sub-devices
-    ELECTRODE_DEVICE_NAMES = ['S0844pad8shank', 'S0844pad6shank']  # combined = S1688pad14shank
-    HEADSTAGE_DEVICE_NAME = 'MEA1K22'
-    date = '260320'
-    batch = 1
-    IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_S1688pad14shankB{batch}"
+    ELECTRODE_DEVICE_NAMES = ['S0844pad8shank',]  # combined = S1688pad14shank
+    HEADSTAGE_DEVICE_NAME = 'MEA1K23'
+    date = '260602'
+    batch = 5
+    IMPLANT_DEVICE_NAME = f"{date}_{HEADSTAGE_DEVICE_NAME}_S844pad8shankB{batch}"
     
-    IMPLANT_DEVICE_NAME = "260413_MEA1K22_S1688pad14shankB5"
-    rec_dir_name = 'Bond2_r4BothHalfs_ShubhamW3_16Shank_Vref15'
+    # IMPLANT_DEVICE_NAME = "260413_MEA1K24_S1688pad14shankB5"
+    rec_dir_name = '2026-06-02_15.00_8Sh4SilverPaint_VRefFPGA_ampl15_PT1_1.7mm'
     connectivity_rec_path = os.path.join(nas_dir, 'devices', 'implant_devices',
                                          IMPLANT_DEVICE_NAME, 'recordings', rec_dir_name)
-    align_pads2mea1k(ELECTRODE_DEVICE_NAMES, IMPLANT_DEVICE_NAME, connectivity_rec_path)
-    plot_pad_alignment(IMPLANT_DEVICE_NAME)
+    # align_pads2mea1k(ELECTRODE_DEVICE_NAMES, IMPLANT_DEVICE_NAME, connectivity_rec_path)
+    # plot_pad_alignment(IMPLANT_DEVICE_NAME, white_bg=True)
+    plot_pad_shorts(IMPLANT_DEVICE_NAME)
+
 
 
 if __name__ == '__main__':
