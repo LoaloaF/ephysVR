@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 
 import datetime
 import numpy as np
@@ -20,7 +21,10 @@ from mea1k_modules.mea1k_config_utils import try_routing
 from mea1k_modules.mea1k_post_processing import animal_name2implant_device
 from mea1k_modules.mea1k_post_processing import get_raw_implant_mapping
 
-def make_bonding_config(animal_name=None, implant_name=None):
+from mea1k_modules.mea1k_visualizations import draw_mea1k
+
+def make_bonding_config(animal_name=None, implant_name=None, shank_subset=None,
+                        connectivity_threshold=0.6, route_every_pad=False):
     nas_dir = device_paths()[0]
     
     if animal_name is not None:
@@ -29,21 +33,28 @@ def make_bonding_config(animal_name=None, implant_name=None):
     
     implant_mapping = get_raw_implant_mapping(animal_name=animal_name,
                                               implant_name=implant_name)
-    implant_mapping = implant_mapping[implant_mapping.shank_id.notna()]
-    print(implant_mapping)
-    implant_mapping = implant_mapping[implant_mapping.shank_id > 8]
+    if shank_subset is not None:
+        implant_mapping = implant_mapping[implant_mapping.shank_id.isin(shank_subset)]
     
-    # first try to route the best connected electrodes under a pad, then try the next rank
     sel_which_rank = 1
-    els = implant_mapping[(implant_mapping.connectivity_order==sel_which_rank) & 
-                          (implant_mapping.mea1k_connectivity>.8)].mea1k_el.values
+    key = 'pad_connectivity_rank' if route_every_pad else 'el_connectivity_rank'
+    # first try to route the best connected electrodes under a pad, then try the next rank
+    els = implant_mapping[(implant_mapping[key] == sel_which_rank) & 
+                          (implant_mapping.mea1k_connectivity>connectivity_threshold)].mea1k_el.values.astype(int).tolist()
+    print(f"Routing MEA1K electrodes with connectivity > {connectivity_threshold}"
+          f" with {route_every_pad=}: n={len(els)}")
+
     while True:
         succ_routed, failed_routing, array = try_routing(els, randomize_routing=True,
                                                          return_array=True)
-
+        print(f"Successfully routed {len(succ_routed)} electrodes. Failed to "
+              f"route {len(failed_routing)} electrodes.")
         if len(failed_routing) == 0:
             print("Done.")
             break
+        # if len(succ_routed) != len(els):
+        #     print("Some electrodes failed to route. Retrying with randomization.")
+        #     continue
         sel_which_rank += 1
         print(f"Trying alternative electrodes with connectivity rank {sel_which_rank}")
         
@@ -52,11 +63,11 @@ def make_bonding_config(animal_name=None, implant_name=None):
         missing_pads = implant_mapping[implant_mapping.pad_id.isin(missing_pads)]
         
         # get the alternative electrodes with good enough connectivity
-        alt_els = missing_pads[missing_pads.connectivity_order==sel_which_rank].mea1k_el
-        rank_mask = missing_pads.connectivity_order == sel_which_rank
-        good_enough_connec_mask = missing_pads[rank_mask].mea1k_connectivity > .8
+        alt_els = missing_pads[missing_pads[key]==sel_which_rank].mea1k_el
+        rank_mask = missing_pads[key] == sel_which_rank
+        good_enough_connec_mask = missing_pads[rank_mask].mea1k_connectivity > connectivity_threshold
         print(f"{sum(good_enough_connec_mask)} / {len(good_enough_connec_mask)} "
-              "alternative electrodes have good enough connectivity")
+              f"alternative electrodes have good enough connectivity")
         alt_els = alt_els[good_enough_connec_mask].values
         els = succ_routed + alt_els.tolist()
 
@@ -86,14 +97,32 @@ def els_around_3x3_tile(center_el):
     tile_els = mea1k[tile_indices[0], tile_indices[1]].T.flatten()
     return tile_els
 
-def make_tile_shortcut_stim_config(config_dirname):
+def make_tile_shortcut_stim_config(config_dirname, stim_electrodes=np.arange(26400)):
     nas_dir = device_paths()[0]
     fulldirname = os.path.join(nas_dir, "mea1k_configs", config_dirname)
+    if not os.path.exists(fulldirname):
+        os.mkdir(fulldirname)
     canvas = np.zeros((120, 220))
-    mea1k_stim_els_left = np.arange(26400)
+    mea1k_stim_els_left = stim_electrodes.copy()
     
+    # --- RESUME LOGIC ---
+    config_i = 0
+    existing_csvs = glob.glob(os.path.join(fulldirname, "el_config_*.csv"))
+    if existing_csvs:
+        done_stims = []
+        for f in existing_csvs:
+            df = pd.read_csv(f)
+            done_stims.extend(df[df['stim'] == True]['electrode'].tolist())
+            config_i = max(config_i, int(os.path.basename(f).split('_')[2]) + 1)
+        mea1k_stim_els_left = np.setdiff1d(mea1k_stim_els_left, done_stims)
+        print(f"Resuming: {len(mea1k_stim_els_left)} stim electrodes left to process.")
+
+    if len(mea1k_stim_els_left) == 0:
+        print("All configurations are already completed!")
+        return
+    # --------------------
     config_routed_els, config_stim_els, config_el2tile_map = [], [], {}
-    config_i, tile_i, fail_counter = 0, 0, 0
+    tile_i, fail_counter = 0, 0
     while True:
         # attampt to route another 3x3 tile, with stim electrode in the center
         stim_el = np.random.choice(np.setdiff1d(mea1k_stim_els_left, config_routed_els))
@@ -159,7 +188,14 @@ def make_tile_shortcut_stim_config(config_dirname):
     plt.imshow(canvas)
     plt.show()
 
-def make_single_el2stimunit_configs(output_dirname, animal_name=None, implant_name=None):
+def make_tile_shortcut_stim_config_from_mask(config_dirname, mask_path):
+    # read png mask
+    mask = plt.imread(mask_path) < 0.5
+    stim_electrodes = np.arange(26400)[mask.flatten()]
+    print(f"Found {len(stim_electrodes)} (/26400) stim electrodes in the mask.")
+    make_tile_shortcut_stim_config(config_dirname=config_dirname, stim_electrodes=stim_electrodes)
+
+def make_single_el2stimunit_configs(output_dirname):
     if not os.path.exists(output_dirname):
         os.makedirs(output_dirname)
         
@@ -184,10 +220,24 @@ def make_single_el2stimunit_configs(output_dirname, animal_name=None, implant_na
         config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
         # save config in mea1k specific format
         arr.save_config(config_fullfname)
-        
     
+    # read back all csv files and combine them into one
+    all_csvs = glob.glob(os.path.join(output_dirname, "**", "*.csv"), recursive=True)
+    print(f"Found {len(all_csvs)} csv files in {output_dirname}. Combining them into one.")
+    data = []
+    for i,f in enumerate(sorted(all_csvs)):
+        print(f"Read {i+1}/{len(all_csvs)}", end='\r')
+        df = pd.read_csv(f)
+        df['config_fname'] = os.path.basename(f)
+        data.append(df)
+    all_configs = pd.concat(data, ignore_index=True).sort_values('electrode').reset_index(drop=True)
     
-def make_single_el_stim_configs(animal_name=None, implant_name=None, shank_subset=None, connectivity_threshold=0.8):
+    fullfname = os.path.join(output_dirname, '..', "el2stimunit.csv")
+    all_configs.to_csv(fullfname, index=False)
+    print(f"Saved all single_el2stimunit configs to {fullfname},\n{all_configs}")  
+
+def make_single_el_stim_configs(animal_name=None, implant_name=None, shank_subset=None, 
+                                connectivity_threshold=0.8, route_every_pad=False):
     nas_dir = device_paths()[0]
     
     if animal_name is not None:
@@ -202,8 +252,10 @@ def make_single_el_stim_configs(animal_name=None, implant_name=None, shank_subse
     
     # first try to route the best connected electrodes under a pad, then try the next rank
     sel_which_rank = 1
-    els = implant_mapping[(implant_mapping.connectivity_order==sel_which_rank) & 
-                          (implant_mapping.mea1k_connectivity > connectivity_threshold)].mea1k_el.values
+    key = 'pad_connectivity_rank' if route_every_pad else 'el_connectivity_rank'
+    # key = 'pad_impedance_rank' if route_every_pad else 'el_impedance_rank'
+    els = implant_mapping[(implant_mapping[key] == sel_which_rank) & 
+                          (implant_mapping.mea1k_connectivity > connectivity_threshold)].mea1k_el.values.astype(int)
     while True:
         succ_routed, failed_routing, array = try_routing(els, randomize_routing=True,
                                                          return_array=True)
@@ -219,14 +271,13 @@ def make_single_el_stim_configs(animal_name=None, implant_name=None, shank_subse
         missing_pads = implant_mapping[implant_mapping.pad_id.isin(missing_pads)]
         
         # get the alternative electrodes with good enough connectivity
-        alt_els = missing_pads[missing_pads.connectivity_order==sel_which_rank].mea1k_el
-        rank_mask = missing_pads.connectivity_order == sel_which_rank
+        alt_els = missing_pads[missing_pads[key] == sel_which_rank].mea1k_el
+        rank_mask = missing_pads[key] == sel_which_rank
         good_enough_connec_mask = missing_pads[rank_mask].mea1k_connectivity > connectivity_threshold
         print(f"{sum(good_enough_connec_mask)} / {len(good_enough_connec_mask)} "
               "alternative electrodes have good enough connectivity")
-        alt_els = alt_els[good_enough_connec_mask].values
+        alt_els = alt_els[good_enough_connec_mask].values.astype(int)
         els = succ_routed + alt_els.tolist()
-        
     base_els = els
     
     day = datetime.datetime.now().strftime("%d.%b")
@@ -239,7 +290,8 @@ def make_single_el_stim_configs(animal_name=None, implant_name=None, shank_subse
 
     print(f"Generating single stim configs in {fulldirname}")
     for i, stim_el in enumerate(base_els):
-        _, failed_routing, array = try_routing(base_els, stim_electrodes=[stim_el], return_array=True)
+        
+        succ_routed, failed_routing, array = try_routing(base_els, stim_electrodes=[stim_el], return_array=True)
         if len(failed_routing) > 0:
              print(f"Failed to route stim for el {stim_el}")
              continue
@@ -258,35 +310,66 @@ def make_single_el_stim_configs(animal_name=None, implant_name=None, shank_subse
 def main():
     L = Logger()
     L.init_logger(None, None, "DEBUG")
-    nas_dir = device_paths()[0]
-    
     seed = 42
     np.random.seed(seed)
     
-    implant_name = "260413_MEA1K22_S1688pad14shankB5"
+    # implant_name = "260413_MEA1K22_S1688pad14shankB5"
+    # implant_name = "260501_MEA1K24_S1688pad14shankB5"
+    # implant_name = "260602_MEA1K23_S844pad8shankB5"
+    # implant_name = "260611_MEA1K24_S1688pad14shankB5"
+    # implant_name = "260625_MEA1K23_S1688pad14shankB6"
+    implant_name = "260715_MEA1K24_S1688pad14shankB7"
     animal_name = None
-    make_bonding_config(animal_name=animal_name, implant_name=implant_name)
+    
+    # make_bonding_config(animal_name=animal_name, implant_name=implant_name,
+    #                     connectivity_threshold=0.15, route_every_pad=True,
+    #                     shank_subset=None, )
 
-    # output_dirname = os.path.join(nas_dir, "mea1k_configs", "single_el2stimunit_configs2",)
-    # make_single_el2stimunit_configs(output_dirname=output_dirname,
-    #                                animal_name=animal_name,
-    #                                implant_name=implant_name)
-
+    # needs to be only run once, is done for each 26400 electrodes
+    # output_dirname = os.path.join(nas_dir, "mea1k_configs", "single_el2stimunit_configs",)
+    # make_single_el2stimunit_configs(output_dirname=output_dirname)
+    
     # make single el stim configs for all electrodes with good enough connectivity, trying to keep the same stim electrode as much as possible across configs
     make_single_el_stim_configs(animal_name=animal_name, implant_name=implant_name, 
-                                shank_subset=[1,2,3,4,5,6,7,8], connectivity_threshold=0)
+                                shank_subset=[1,2,3,4,5,5,6,7,8], 
+                                connectivity_threshold=.4, route_every_pad=True) 
+    make_single_el_stim_configs(animal_name=animal_name, implant_name=implant_name, 
+                                shank_subset=[9,10,11,12,13,14], 
+                                # shank_subset=[1,2,3,4,5,5,6,7,8], 
+                                connectivity_threshold=.4, route_every_pad=True)
+    
+    # subdir = (f'{nas_dir}/devices/headstage_devices/MEA1K22/recordings/'
+    #           '2026-07-06_20.43.57_ShinTsuFlim_Try4_PT1_EcoFLexNewFilmSpringInteronnect/')
+    # make_single_el_stim_configs_from_shorts(subdir, output_dir=f'{nas_dir}/mea1k_configs/shorted_islands_configs',
+    #                                         rect_xy=(47*17.5, 45*17.5),
+    #                                         rect_wh=(25*17.5, 70*17.5))
+
+    # vis_mea1k_config(dirname=os.path.join(nas_dir, "devices", "implant_devices", implant_name, 'bonding'),
+                    #   config_fname="None_21.Apr_1337ElConfig.csv",
+    # vis_mea1k_config(dirname=os.path.join(nas_dir, "devices", "implant_devices", implant_name, 'bonding', '260413_MEA1K22_S1688pad14shankB5_21.Apr_554El_SingleStimConfigs'),
+    # vis_mea1k_config(dirname=os.path.join(nas_dir, "devices", "implant_devices", implant_name, 'bonding', '260413_MEA1K22_S1688pad14shankB5_21.Apr_783El_SingleStimConfigs'),
+    #                   config_fname="*.csv",
+    #                   implant_mapping=get_raw_implant_mapping(animal_name=animal_name, implant_name=implant_name))
+
+
+    # make_external_current_configs(animal_name=animal_name, implant_name=implant_name,
+    #                               fulldirname=os.path.join(nas_dir, "devices", "implant_devices", implant_name, 'bonding', 'external_current_configs'),
+    #                               min_els_per_config=0,
+    #                               max_el_per_pad=4, connectivity_threshold=0.2)
+    
+
     # make_single_el_stim_configs(animal_name=animal_name, implant_name=implant_name, 
-    #                             shank_subset=[9,10,11,12,13,14], connectivity_threshold=0)
-
-
-
-
-
-
+    #                             # shank_subset=[1,2,3,4,5,5,6,7,8], 
+    #                             connectivity_threshold=.5, route_every_pad=True)
 
     # seed = 42
     # np.random.seed(seed)
     # make_tile_shortcut_stim_config(config_dirname=f"3x3_stim_seed{seed}")
+    
+    # seed = 42
+    # np.random.seed(seed)
+    # make_tile_shortcut_stim_config_from_mask(config_dirname=f"3x3_islandsubset2_stim_seed{seed}",
+    #                                         mask_path="/home/houmanjava//Pictures/islands_mask.png")
     
 
 if __name__ == "__main__":

@@ -11,7 +11,6 @@ from baseVR.base_logger import CustomLogger as Logger
 # from baseVR.base_functionality import device_paths
 
 from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION, MEA_LOGGER_DEFAULT_GAIN, MEA_OVERRIDE_GAIN
-from mea1k_modules.mea1k_visualizations import adjust_saturation
 
 def _get_recording_gain(path, fname):
     fmt = _get_recording_version(path, fname)
@@ -24,9 +23,9 @@ def _get_recording_gain(path, fname):
     elif fmt == 'logger':
         gain = MEA_LOGGER_DEFAULT_GAIN
     if MEA_OVERRIDE_GAIN is not None:
-        Logger().logger.warning(f"Overriding gain with {MEA_OVERRIDE_GAIN}")
+        if gain != MEA_OVERRIDE_GAIN:
+            Logger().logger.warning(f"Inferred gain {gain}, but overriding with {MEA_OVERRIDE_GAIN}")
         gain = MEA_OVERRIDE_GAIN
-    print(f"Recording gain: {gain}")
     return gain
 
 def _get_recording_resolution(gain):
@@ -42,7 +41,6 @@ def _get_recording_version(path, fname):
             fmt = 'all_channels'
         elif 'data_store/data0000/groups/channel_subset/raw' in file:
             fmt = 'channel_subset'
-        
         elif 'data_store/data0000/groups/' in file:
             Logger().logger.warning("Unknown recording format with 'data_store/data0000/groups/'. "
                                     "Assuming 'channel_subset' format.")
@@ -52,6 +50,7 @@ def _get_recording_version(path, fname):
             Logger().logger.info("Could not determine recording format. "
                                     "Assuming logger format.")
             fmt = 'logger'
+    Logger().logger.debug(f"Determined recording format: {fmt}")
     return fmt
 
 def get_recording_config(path, fname):
@@ -102,7 +101,7 @@ def _ADC2voltage(data, gain, subtract_dc_offset):
     np.rint(data, out=data)
     # check overflow before casting
     if np.abs(data).max() > max_ampl_uV:
-        L.logger.warning(f"Overflow detected in data, casting to {dtype}...")
+        L.logger.debug(f"Overflow detected in data, casting to {dtype}...")
     data = data.astype(dtype)
     
     if L.logger.level == 10: # DEBUG
@@ -130,6 +129,8 @@ def _get_data_key(rec_file_fmt):
         data_key = 'data_store/data0000/groups/all_channels/raw'
     elif rec_file_fmt == 'logger':
         data_key = 'MEA1K_raw'
+    elif rec_file_fmt == 'routed':
+        data_key = 'data_store/data0000/groups/routed/raw'
     return data_key
 
 def _get_frame_nos_key(rec_file_fmt):
@@ -142,6 +143,8 @@ def _get_frame_nos_key(rec_file_fmt):
     elif rec_file_fmt == 'logger':
         data_key = 'SampleCounter'
         data_key = 'FrameCounter'
+    elif rec_file_fmt == 'routed':
+        data_key = 'data_store/data0000/groups/routed/frame_nos'
     return data_key
 
 def _get_frame_nos(path, fname):
@@ -178,10 +181,13 @@ def _read_mea1k_file(path, fname, dtype=np.float16, row_slice=slice(None),
                           f"{raw_data.min()}, max: {raw_data.max()}")
     return raw_data
 
-def read_stim_DAC(path, fname, col_slice=slice(None)):
+def read_stim_DAC(path, fname, col_slice=slice(None), adjust_delay=True):
     try:
         dac_data = _read_mea1k_file(path, fname, row_slice=1024, 
                                     col_slice=col_slice, dtype=np.int16)
+        # shift DAC data by 2 samples to account for the delay in the stimulator
+        if adjust_delay:
+            dac_data = np.concatenate((dac_data[:2], dac_data[:-2]))
     except IndexError:
         Logger().logger.error("No DAC data found in file. Expected at row 1024.")
         return None
@@ -217,6 +223,7 @@ def read_raw_data(path, fname, convert2uV,
     if to_df and not isinstance(row_slice, pd.Index):
         raw_data_mapping, _ = get_recording_config(path, fname)
         # should already be in this order
+        # raw_data = pd.DataFrame(raw_data, index=raw_data_mapping.index)
         raw_data = pd.DataFrame(raw_data, index=raw_data_mapping.values)
         raw_data.index.name = 'el'
 

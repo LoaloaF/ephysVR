@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 import math
 
+from baseVR.base_functionality import device_paths
+
 import maxlab
 import ephys_constants as EC
 
@@ -75,20 +77,23 @@ def setup_array(electrodes, stim_electrodes=None, randomize_routing=False):
     array.route()
     array.download()
     # maxlab.offset()
-    print("Done.")
+    print(f"Done. Routed {len(array.get_config().mappings)}/{len(electrodes)} electrodes.")
+    if len(array.get_config().mappings) != len(electrodes):
+        print(f"Warning: Not all electrodes were routed. Routed {len(array.get_config().mappings)}/{len(electrodes)} electrodes.")
     return array
 
 def try_routing(els, return_array=False, stim_electrodes=None, randomize_routing=False):
     array = setup_array(els, stim_electrodes=stim_electrodes, 
                         randomize_routing=randomize_routing)
     succ_routed = [m.electrode for m in array.get_config().mappings]
-    failed_routing = []
+    failed_routing = [int(el) for el in els if int(el) not in succ_routed]
+    # failed_routing = []
     if stim_electrodes is not None:
         print(f"Stimulation electrodes: {stim_electrodes}")
         # require: only one stim unit per stim electrode
         used_up_stim_units = []
-        failed_routing = []
-        succ_routed = []
+        # failed_routing = []
+        # succ_routed = []
         for el in stim_electrodes:
             success, used_up_stim_units = attampt_connect_el2stim_unit(el, array, used_up_stim_units,
                                                                        with_download=True)
@@ -104,7 +109,7 @@ def try_routing(els, return_array=False, stim_electrodes=None, randomize_routing
     return succ_routed, failed_routing
 
 def turn_on_stimulation_units(stim_units, dac_id=0, mode='voltage'):
-    print(f"Setting up stim units {len(stim_units)}...", end="", flush=True)
+    print(f"Setting up stim units {len(stim_units)} in ---!! --> {mode} <-- !!--- mode...", end="", flush=True)
     for stim_unit in stim_units:
         stim = maxlab.chip.StimulationUnit(str(stim_unit))
         stim.power_up(True)
@@ -175,27 +180,47 @@ def shift_DAC(DAC_val, dac_id=0):
     print(f"Shift DAC_id {dac_id} to {DAC_val}", )
     seq.send()
     del seq
-    
+
+def get_headstage_stim_settings(headstage_name):
+    nas_dir = device_paths()[0]
+    stimulater_settings_path = f"devices/headstage_devices/{headstage_name}/{headstage_name}_stimunit_characterization.csv"
+    if not os.path.exists(os.path.join(nas_dir, stimulater_settings_path)):
+        raise FileNotFoundError(f"Stimulator settings file not found: {os.path.join(nas_dir, stimulater_settings_path)}")
+    stim_settings = pd.read_csv(os.path.join(nas_dir, stimulater_settings_path)).set_index("stimunit_id", drop=True)
+    return stim_settings
+
+def get_zeroCurrentDAC_value(headstage_name, stimunit_id, stim_mode):
+    stim_settings = get_headstage_stim_settings(headstage_name)
+    dac_code = int(stim_settings.loc[stimunit_id, f"{stim_mode}_zero_current_DAC"])
+    return dac_code
+
+def get_zeroCurrent_centered_sine_sequences(headstage_name, stim_mode, 
+                                            stim_units=range(32), 
+                                            dac_id=0, amplitude=25, f=1000, 
+                                            ncycles=100):
+    stimunit_sequences = {}
+    print(f"Creating stim [{stim_mode}] sequences centered for each StimUnit...")
+    for stim_unit in stim_units:
+        zero_cur_dac_code = get_zeroCurrentDAC_value(headstage_name, stim_unit, stim_mode)
+        # zero_cur_dac_code += -10
+        print(f"StimUnit {stim_unit}: zero_current_DAC={zero_cur_dac_code}", end="\r")
+        seq = create_stim_sine_sequence(dac_id=dac_id, amplitude=amplitude, f=f, ncycles=ncycles,
+                                         nreps=1, center_around=zero_cur_dac_code)
+        stimunit_sequences[stim_unit] = seq
+    return stimunit_sequences
+
 def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100, 
                               nreps=1, voltage_conversion=False, 
-                              current_conversion=None, center_around=512,
-                              ):
+                              center_around=512,):
     if voltage_conversion:
         daq_lsb = float(maxlab.query_DAC_lsb_mV())
         print(f"DAQ LSB: {daq_lsb}")
-        amplitude = int(amplitude / daq_lsb)
-    
-    elif current_conversion is not None:
-        # current_conversion is in uA/bit
-        amplitude = int(amplitude / current_conversion)
-        print(f"Current conversion: {current_conversion} uA/bit, amplitude: {amplitude} bits")
-        
+        amplitude = int(amplitude / daq_lsb)    
     seq = maxlab.Sequence()
     # Create a time array, 50 us * 20kHz = 1000 samples, 1 khz exmaple
     t = np.linspace(0,1, int(EC.SAMPLING_RATE/f), endpoint=False)
     # Create a sine wave with a frequency of 1 kHz
-    sine_wave = (amplitude * np.sin(t*2*np.pi)).astype(int)
-    
+    sine_wave = np.round(amplitude * np.sin(t*2*np.pi)).astype(int)
     # Pre-calculate clipped values
     clipped_values = np.clip(center_around + sine_wave, 0, 1023)
     
@@ -204,6 +229,8 @@ def create_stim_sine_sequence(dac_id=0, amplitude=25, f=1000, ncycles=100,
         for val in clipped_values:
             seq.append(maxlab.chip.DAC(dac_id, val))
             seq.append(maxlab.system.DelaySamples(1))
+    seq.append(maxlab.chip.DAC(dac_id, center_around))  # return to center value
+    seq.append(maxlab.system.DelaySamples(1))
     return seq
 
 def init_fpga_sine_stim(t_period, amp_in_bits, periods=1):
@@ -242,7 +269,11 @@ def setup_stim_unit_characterization(dirname):
     return array
     
 def find_stim_unit_amplifier(array, stim_unit, which_amplifier=0):
-    for ampl_id in random.sample(range(1024), 1024):
+    # for ampl_id in random.sample(range(1024), 1024):
+    # shuffle the amplifiers to avoid always picking the same one
+    ampl_ids = list(range(1024))
+    random.shuffle(ampl_ids)
+    for ampl_id in ampl_ids:
         array.connect_amplifier_to_stimulation(ampl_id)
         connected_stim_unit = array.query_stimulation_at_amplifier(ampl_id)
         if connected_stim_unit == '':

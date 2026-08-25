@@ -10,13 +10,13 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from baseVR.base_logger import CustomLogger as Logger
 from baseVR.base_functionality import device_paths
 
-# import parent dir with general modules
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+# # import parent dir with general modules
+# sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 import ephys_constants as EC
 from mea1k_modules.mea1k_raw_preproc import read_raw_data
 from mea1k_modules.mea1k_visualizations import draw_mea1k
-from signal_helpers import estimate_frequency_power
+from mea1k_connectivity_scripts.signal_helpers import estimate_frequency_power
 
 def _get_hdf5_fnames_from_dir(subdir):
     fnames, ids = [], []
@@ -38,13 +38,18 @@ def _save_output(subdir, data, fname):
         os.makedirs(fullpath)
     data.to_csv(os.path.join(fullpath, fname))
 
-def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
+def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False, 
+                         min_band=960, max_band=1040):
     fnames, ids = _get_hdf5_fnames_from_dir(subdir)
     all_data = []
     for fname, i in zip(fnames, ids):
         print(f"Config {i} of {len(fnames)}")
-        data = read_raw_data(subdir, fname, convert2uV=True, to_df=True,
-                             col_slice=slice(0, n_samples))
+        try:
+            data = read_raw_data(subdir, fname, convert2uV=True, to_df=True,
+                                 col_slice=slice(0, n_samples))
+        except Exception as e:
+            print(f"Error occurred while reading {fname}: {e}")
+            continue
         # data = data / 1000 # convert to mV        from scipy.signal import butter, sosfiltfilt        from scipy.signal import butter, sosfiltfilt
     
         print("Filtering...")
@@ -52,17 +57,16 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False):
         for j,row in enumerate(data.astype(float).values):
             debug = True if j <10 and debug else False
             m_ampl, _ = estimate_frequency_power(row, sampling_rate=EC.SAMPLING_RATE,
-                                                 debug=debug, min_band=960, max_band=1040)
-                                                #  debug=debug, min_band=40, max_band=60)
+                                                 debug=debug, min_band=min_band, 
+                                                 max_band=max_band)
             # scale to mV
             mean_ampl.append(m_ampl/1000)
         
         data = pd.DataFrame(mean_ampl, index=data.index, columns=['ampl'])
         data['connectivity'] = data.ampl.values/input_ampl_mV 
+        data['ampl_mV'] = data.ampl.values
         data['input_ampl_mV'] = input_ampl_mV
         data.index = pd.MultiIndex.from_product([[i],data.index], names=['config', 'el'])
-        print(data)
-        print(data.sort_values('connectivity', ascending=False).head())
         print(f"Done. n >80%: {(data.connectivity >.8).sum()}\n")
 
         all_data.append(data)
@@ -73,7 +77,10 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     fullfname = os.path.join(subdir, "processed", f"extr_connectivity.csv")
     data = pd.read_csv(fullfname)
     data.set_index('el', inplace=True)  
-    plt.hist(data['connectivity'], bins=100)
+    plt.hist(data['ampl_mV'], bins=100)
+    plt.ylim(0, 1000)
+    plt.savefig(fullfname.replace(".csv", "_hist.png"), dpi=300, transparent=False, 
+                bbox_inches='tight', pad_inches=0)
     plt.show()
     plt.close()
     
@@ -120,6 +127,23 @@ def create_implant_dir(sine_stim_recdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT
     os.system(f"cp -r {sine_stim_recdir} {target}")
     print(f"Copied {sine_stim_recdir} to implant recordings dir")
 
+def get_connectivity_data(full_recdir):
+    fullfname = os.path.join(full_recdir, "processed", f"extr_connectivity.csv")
+    nas_dir = device_paths()[0]
+    data = pd.read_csv(fullfname)
+    data.rename(columns={"el": 'mea1k_el', "connectivity": 'mea1k_connectivity'}, inplace=True)
+    
+    if 'devices/implant_devices' in full_recdir:
+        # extract implant name from path
+        implant_name = full_recdir.split('devices/implant_devices/')[1].split('/')[0]
+        implant_mapping_fullfname = os.path.join(nas_dir, "devices", "implant_devices", implant_name, "bonding", 
+                            f"bonding_mapping_{implant_name}.csv")
+        implant_mapping = pd.read_csv(implant_mapping_fullfname)
+        data = pd.merge(data, implant_mapping[['mea1k_el', 'shank_id', 'pad_metal', 'pad_x_aligned', 'pad_y_aligned']], 
+                        on='mea1k_el', how='left')
+    return data
+
+
 def main():
     L = Logger()
     L.init_logger(None, None, "DEBUG")
@@ -127,31 +151,34 @@ def main():
     nas_dir = device_paths()[0]
     
     # bonding which electrode to which headstage
-    bonding_date = '260413'
+    bonding_date = '260703'
     HEADSTAGE_DEVICE_NAME = 'MEA1K22'
-    ELECTRODE_DEVICE_NAME = 'S1688pad14shank'
+    ELECTRODE_DEVICE_NAME = 'S844pad8shank'
     # ELECTRODE_DEVICE_NAME = 'H1278pad4shank'
-    batch = 5
+    batch = 1
     IMPLANT_DEVICE_NAME = f"{bonding_date}_{HEADSTAGE_DEVICE_NAME}_{ELECTRODE_DEVICE_NAME}B{batch}"
+    FROM_FREQ, TO_FREQ = 40, 60
+    FROM_FREQ, TO_FREQ = 960, 1040
     
-    # sine stim recording parameters
-    # rec_name = f'2ndBondTightened_VrefFPGAStim_ampl16'
-    rec_name = f'3rdBond4Shank_VrefFPGAStim_ampl15'
-    rec_name = f'5thBond1Shank_rec4_VrefFPGAStim_ampl15-'
-    rec_name = f'firstNewDevide8HalfShank_rec2_VrefFPGAStim_ampl15'
-    rec_name = f'1Shank_rec1_extStim100mV_1kHz'
-    rec_name = f'1Shank_newNew_rec1_VrefFPGAStim_ampl15'
-    rec_name = f'testBond4_r2_ShubhamW1_14Shank_VrefFPGAStim_ampl15'
-    rec_name = f'Bond2_r4BothHalfs_ShubhamW3_16Shank_Vref15'
+
+
     
+    rec_name = f'2026-07-03_09.20_JDesignFirstSoldered_ext10mV_PT1'
+    rec_name = f'2026-07-03_09.31_JDesignFirstSoldered_ext10mV_PT2'
+    rec_name = f'2026-07-03_09.38_JDesignFirstSoldered_ext10mV_PT3'
     
-    # 4 white bonding maps, redraw with this new code and black background, they need _5mV.csv files
-    # rec_name = f'bonding3_singleshank_B6_241207+2_ext5mV1Khz_rec2'
-    # rec_name = f'bonding5_4shank_B6_241211_ext5mV1Khz_silk_rec3'
-    # rec_name = f'25mVext_oneShankbatch2_press'
-    # rec_name = f'bonding_4shank_B4_241207_ext5mV1Khz'
+    rec_name = f'2026-07-07_12.52_ACF_Try5'
+    rec_name = f'2026-07-07_13.38_ACF_Try6'
+    rec_name = f'2026-07-07_13.42_ACF_Try6_PT2'
     
-    input_ampl_mV = 8
+    rec_name = f'2026-07-10_12.00_ACF_VRefAmpl15_Try7_PT1'
+    rec_name = f'2026-07-10_12.32_ACF_VRefAmpl15_Try8_PT1'
+    rec_name = f'2026-07-10_13.00_ACF_VRefAmpl15_Try9_PT1'
+    rec_name = f'2026-07-10_13.59_ACF_VRefAmpl15_Try9_PT1'
+    rec_name = f'2026-07-10_14.03_ACF_VRefAmpl15_Try9_PT1'
+    rec_name = f'2026-07-10_15.35_ACF_VRefAmpl15_Try9_PT1'
+    
+    input_ampl_mV = 10
     n_samples = 8_000 # where sine stim is visible
 
     subdir = f"{nas_dir}/devices/headstage_devices/{HEADSTAGE_DEVICE_NAME}/recordings/{rec_name}"
@@ -159,9 +186,10 @@ def main():
         print(f"Error: {os.path.join(subdir)} does not exist.")
         exit()
     
-    # extract_connectivity(subdir, input_ampl_mV, n_samples, debug=True)
-    # vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
-    # create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
+    extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False, 
+                         min_band=FROM_FREQ, max_band=TO_FREQ)
+    vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
+    create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
     
     
 if __name__ == "__main__":
