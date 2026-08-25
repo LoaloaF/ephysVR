@@ -429,7 +429,8 @@ def connect_pad2polyimide_shanks(interconnect_pads, device_info, visualize=True)
         
         # map electrode depth using colormap
         cmap = plt.get_cmap(shank_cmap)
-        el_colors = cmap(np.abs(el_locs[:, 1]) / np.abs(el_locs[:, 1]).max())
+        normalized_depths = np.abs(el_locs[:, 1]) / np.abs(el_locs[:, 1]).max()
+        el_colors = cmap(0.25 + 0.7 * normalized_depths)
         
         pads_left = interconnect_pads.loc[from_interc_pad_id:]
         # Simply skip ALL shorted pads — cross-shank shorts are handled by copy-back
@@ -605,12 +606,86 @@ def finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=True):
     cv2.imwrite(f"{path}/device_mapping_{fname_base}.png", canvas_bgr)
     wafer_pad2el.sort_index().to_csv(f"{path}/device_mapping_{fname_base}.csv")
     print(f"{path}/device_mapping_{fname_base}.csv")
+
+
+# 5. plot_pad_shorts: visualize shorted pads with real size preservation
+def plot_pad_shorts(wafer_pad2el, device_name=None, path=None):
+    """
+    Plot shorted pads with matplotlib tab20 colors. All circles outlined.
+    Shorted: alpha=1, unshorted: alpha=0.3.
     
+    Args:
+        wafer_pad2el: DataFrame with columns pad_x, pad_y, el_id
+        device_name: optional device name
+        path: optional path for saving SVG file
+    """
+    from matplotlib.patches import FancyArrowPatch
+    
+    pad_x_col = 'pad_x_aligned' if 'pad_x_aligned' in wafer_pad2el.columns else 'pad_x'
+    pad_y_col = 'pad_y_aligned' if 'pad_y_aligned' in wafer_pad2el.columns else 'pad_y'
+    
+    # Find shorted electrodes
+    shorted_el_ids = wafer_pad2el.groupby('el_id')['pad_id'].nunique().loc[lambda s: s > 1].index
+    is_shorted = wafer_pad2el['el_id'].isin(shorted_el_ids)
+    
+    # Generate tab20 colors with alternating order for contrast
+    base_colors = list(plt.cm.get_cmap('tab20').colors)
+    color_order = list(range(0, 20, 2)) + list(range(1, 20, 2))
+    contrast_colors = [base_colors[i] for i in color_order]
+    group_color = {
+        el_id: contrast_colors[i % len(contrast_colors)]
+        for i, el_id in enumerate(sorted(shorted_el_ids))
+    }
+    
+    fig, ax = plt.subplots(figsize=(3850/300, 2100/300), facecolor='none')
+    
+    # Draw unshorted pads (outlined, alpha=0.3)
+    unshorted = wafer_pad2el[~is_shorted]
+    if len(unshorted) > 0:
+        ax.scatter(unshorted[pad_x_col], unshorted[pad_y_col], s=55, 
+                   facecolors='none', edgecolors='black', linewidth=1, alpha=0.3, zorder=1)
+    
+    # Draw shorted pads (outlined) and connections
+    for el_id in sorted(shorted_el_ids):
+        grp = wafer_pad2el[wafer_pad2el['el_id'] == el_id]
+        pts = grp[[pad_x_col, pad_y_col]].to_numpy()
+        col = group_color[el_id]
+        
+        # Draw outlined circles for shorted pads
+        ax.scatter(grp[pad_x_col], grp[pad_y_col], s=55, 
+                   facecolors='none', edgecolors=col, linewidth=1, alpha=1, zorder=2)
+        
+        # Draw connections with same color
+        for i in range(len(pts)):
+            for j in range(i + 1, len(pts)):
+                arc = FancyArrowPatch(tuple(pts[i]), tuple(pts[j]), arrowstyle='-',
+                                     connectionstyle=f"arc3,rad={0.2 if (i+j)%2==0 else -0.2}",
+                                     linestyle=':', linewidth=1, color=col,
+                                     alpha=0.85, zorder=1.5)
+                ax.add_patch(arc)
+
+    ax.set_ylim(2100, 0)
+    ax.set_xlim(0,3850)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_aspect('equal', adjustable='box')
+    # remove spines
+    for side in ['top', 'right', 'bottom', 'left']:
+        ax.spines[side].set_visible(False)
+    
+    # Save as SVG if path provided
+    if path:
+        fname_base = os.path.basename(path)
+        svg_path = f'{path}/pad_shorts_{fname_base}.svg'
+        fig.savefig(svg_path, format='svg', dpi=300, bbox_inches='tight')
+        Logger().logger.info(f"Saved pad shorts plot to {svg_path}")
+    plt.show()
+
 
 if __name__ == "__main__":
     nas_dir = device_paths()[0]
     device_name = "S0844pad8shank" 
-    # device_name = "S0844pad6shank" 
+    device_name = "S0844pad6shank" 
     start_point = (85, 855) # the y,x coordinates of the first pad in the routing order, can be found in the routingorder pngs
     path = os.path.join(nas_dir, "devices", "electrode_devices", device_name)
 
@@ -631,7 +706,9 @@ if __name__ == "__main__":
     device_info = get_device_info(path)
     
     wafer_pad2el = connect_pad2polyimide_shanks(interconnect_pads, device_info, 
-                                                visualize=True)
+                                                visualize=False)
     
     # # # save the final pad2el mapping as csv and png
     finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=False)
+    
+    plot_pad_shorts(wafer_pad2el, device_name, path)
