@@ -1,0 +1,7 @@
+# Generated probe designs -- regenerate with `python3 -m electrode_bundle.batch`.
+# Kept out of git: ~27 MB per full run, rewritten every time, derived entirely from
+# electrode_bundle/design_sets.py + config.py.
+probe_designs_output/
+
+# WaferNesting run outputs (footprints, poses, wafer GDS) -- likewise regenerable.
+WaferNesting/runs/
