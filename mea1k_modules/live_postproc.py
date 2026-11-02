@@ -33,15 +33,17 @@ class LivePostproc(threading.Thread):
     """process_fn(rec_dir, fname, log) -> DataFrame or None (= failed), runs in the thread.
     summarize_fn(results_df, last_result) -> str, the live readout shown in status(), from
     all results so far and/or from the last processed recording.
-    Results from earlier runs (existing processed/X.csv) count in status() and finish()."""
+    Results from earlier runs (existing processed/X.csv) count in status() and finish().
+    match: only recordings with this in their name (rec_dir holds other recordings too)."""
     def __init__(self, rec_dir, process_fn, summarize_fn=None, name="postproc",
-                 reprocess=False):
+                 reprocess=False, match=None):
         super().__init__(daemon=True)
         self.rec_dir = rec_dir
         self.processed_dir = os.path.join(rec_dir, "processed")
         self.process_fn = process_fn
         self.summarize_fn = summarize_fn
         self.reprocess = reprocess
+        self.match = match
         self.live_log_fullfname = os.path.join(LIVE_FIG_DIR, f"{name}.log")
         self.rec_log_fullfname = os.path.join(self.processed_dir, f"{name}.log")
 
@@ -83,7 +85,7 @@ class LivePostproc(threading.Thread):
                            open(self.rec_log_fullfname, "a")]
         n_todo = 0
         for fname in sorted(os.listdir(self.rec_dir)):
-            if not fname.endswith(".raw.h5"):
+            if not fname.endswith(".raw.h5") or (self.match and self.match not in fname):
                 continue
             if os.path.exists(self._out_fullfname(fname)) and not self.reprocess:
                 self._already_done.append(fname)
