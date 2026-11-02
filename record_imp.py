@@ -15,20 +15,17 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from baseVR.base_logger import CustomLogger as Logger
 from baseVR.base_functionality import device_paths
 
-# from mea1k_modules.mea1k_config_utils import start_saving, stop_saving
-# from mea1k_modules.mea1k_config_utils import attampt_connect_el2stim_unit, create_stim_sine_sequence
-# from mea1k_modules.mea1k_config_utils import turn_on_stimulation_units, turn_off_stimulation_units
-# from mea1k_modules.mea1k_config_utils import shift_DAC, reset_MEA1K
-# from mea1k_modules.mea1k_config_utils import get_maxlab_saving, get_maxlab_array
+from mea1k_modules.mea1k_config_utils import start_saving, stop_saving
+from mea1k_modules.mea1k_config_utils import attampt_connect_el2stim_unit, create_stim_sine_sequence
+from mea1k_modules.mea1k_config_utils import turn_on_stimulation_units, turn_off_stimulation_units
+from mea1k_modules.mea1k_config_utils import shift_DAC, reset_MEA1K
+from mea1k_modules.mea1k_config_utils import get_maxlab_saving, get_maxlab_array
 
 from mea1k_modules.mea1k_raw_preproc import read_raw_data, read_stim_DAC
-from mea1k_modules.mea1k_post_processing import get_raw_implant_mapping
-from mea1k_connectivity_scripts.signal_helpers import estimate_frequency_power, extract_amplitude
-from mea1k_modules.mea1k_visualizations import draw_mea1k
-from mea1k_utils import cp_rec_dir_to_implant_dir
+from mea1k_connectivity_scripts.signal_helpers import extract_amplitude
 import mea1k_modules.mea1k_visualizations as vis
 
-from PicoRecorder import PicoRecorder
+from PicoRecorder import PicoRecorder, mv_to_current_uA, DEFAULT_SENSE_GAIN
 
 def _stimlate_electrode(config_fullfname, path, s, dac_id, seq, 
                         stim_mode, stim_settings, stim_sequence_DAC_amplitude,
@@ -115,7 +112,37 @@ def measure_impedance(full_recdir, nas_dir, configs_basepath, stim_mode,
                       dac_id, stim_units=list(range(32)), debug=False,
                       shank_subset=None, dac_offset=0, negative_ctrl=True,
                       every_pad=None, every_pi_el=False, connectivity_threshold=.6,
+                      electrode_sample_fraction=None,
                       skip_stimulation=False, skip_post_proc=False, rec_current_externally=False):
+    if electrode_sample_fraction is not None and not 0 <= electrode_sample_fraction <= 1:
+        raise ValueError("electrode_sample_fraction must be between 0 and 1 or None")
+
+    sampled_mea1k_els = None
+    if electrode_sample_fraction is not None:
+        eligible_entries = implant_mapping[
+            implant_mapping.mea1k_connectivity > connectivity_threshold
+        ]
+        if shank_subset is not None:
+            eligible_entries = eligible_entries[eligible_entries.shank_id.isin(shank_subset)]
+        if every_pad is not None:
+            eligible_entries = eligible_entries[eligible_entries.pad_connectivity_rank.isin(every_pad)]
+        elif every_pi_el:
+            eligible_entries = eligible_entries[eligible_entries.el_connectivity_rank == 1]
+
+        eligible_mea1k_els = eligible_entries.mea1k_el.to_numpy()
+        n_to_sample = int(len(eligible_mea1k_els) * electrode_sample_fraction)
+        sampled_mea1k_els = np.random.choice(
+            eligible_mea1k_els, size=n_to_sample, replace=False
+        )
+        print(
+            f"Electrodes above connectivity threshold ({connectivity_threshold}): "
+            f"{len(eligible_mea1k_els):,}\n{eligible_mea1k_els}"
+        )
+        print(
+            f"Randomly sampling {len(sampled_mea1k_els):,} electrodes "
+            f"({electrode_sample_fraction:.1%}) across all stim units."
+        )
+
     if not skip_stimulation:
         reset_MEA1K(gain=gain, enable_stimulation_power=True)
         s = get_maxlab_saving()
@@ -154,7 +181,8 @@ def measure_impedance(full_recdir, nas_dir, configs_basepath, stim_mode,
             
         print(test_el_entries)
         x,y = test_el_entries.mea1k_el %220, test_el_entries.mea1k_el //220
-        # test_el_entries = test_el_entries[y>=40]
+        # test_el_entries = test_el_entries[y<=40]
+        # test_el_entries = test_el_entries[x>=170]
 
         print(f"For StimUnit{stim_unit}, {len(test_el_entries):,} electrodes have connectivity > {connectivity_threshold}")
         
@@ -168,6 +196,11 @@ def measure_impedance(full_recdir, nas_dir, configs_basepath, stim_mode,
             assert 'el_connectivity_rank' in implant_mapping.columns, "el_connectivity_rank column not found in data"
             test_el_entries = test_el_entries[test_el_entries.el_connectivity_rank == 1]
             print(f"After filtering for every polyimide el, {len(test_el_entries):,} electrodes remain for StimUnit{stim_unit}")
+
+        if sampled_mea1k_els is not None:
+            test_el_entries = test_el_entries[
+                test_el_entries.mea1k_el.isin(sampled_mea1k_els)
+            ]
         
         if negative_ctrl:
             test_el_entries = pd.concat([test_el_entries, neg_ctrl_entries]).drop_duplicates()
@@ -206,8 +239,7 @@ def measure_impedance(full_recdir, nas_dir, configs_basepath, stim_mode,
                 pico_time_s = pico_data['time_s']
                 pico_voltage_mV = pico_data['mv']
                 # convert to current in uA
-                # 10K sense resistor, 100 amplfication, pico voltage in mV -> convert back to uA
-                pico_current_uA = pico_voltage_mV / 100 * 1000 / 10_000
+                pico_current_uA = mv_to_current_uA(pico_voltage_mV, DEFAULT_SENSE_GAIN)
 
                 if len(pico_time_s) < 2:
                     print("Picoscope data too short to estimate sampling rate.")
@@ -229,7 +261,6 @@ def measure_impedance(full_recdir, nas_dir, configs_basepath, stim_mode,
                         save_to_dir = os.path.join(full_recdir, "processed")
                     )
                     time.sleep(2)
-                    # 10K sense resisitor, 1000 amplfication, pico voltage in mV -> convert back to uA
                     ext_current_uA = pico_ampl
                     ext_current_imp = ampl / ext_current_uA
                     
@@ -286,20 +317,24 @@ def measure_impedance(full_recdir, nas_dir, configs_basepath, stim_mode,
         pico_rec.close()
 
 
-def get_all_stimunit_impedance_data(rec_dir):
+def get_all_stimunit_impedance_data(rec_dir, save_to_csv=True):
     processed_dir = os.path.join(rec_dir, "processed")
     all_files = glob(os.path.join(processed_dir, "stim_unit_*_impedance.csv"))
     dfs = []
     for file in sorted(all_files):
         df = pd.read_csv(file)
         dfs.append(df)
+    print(f"Found {len(dfs)} stim unit impedance files in {processed_dir}")
     if len(dfs) > 0:
         aggr_df = pd.concat(dfs, ignore_index=True)
+        if save_to_csv:
+            aggr_df.to_csv(os.path.join(processed_dir, "all_impedance.csv"), index=False)
         return aggr_df
     else:
         return pd.DataFrame()
 
 def main():
+    np.random.seed(42)
     L = Logger()
     L.init_logger(None, None, "WARNING")
     
@@ -307,15 +342,15 @@ def main():
     nas_dir = device_paths()[0]
     # headstage_name = "MEA1K22"
     # implant_name = "260611_MEA1K24_S1688pad14shankB5"
-    # headstage_name = "MEA1K24"
+    # headstage_name = "MEA1K23"
     # implant_name = "260602_MEA1K23_S844pad8shankB5"
-    headstage_name = "MEA1K23"
-    implant_name = "260625_MEA1K23_S1688pad14shankB6"
+    headstage_name = "MEA1K27"
+    # implant_name = "260625_MEA1K23_S1688pad14shankB6"
     # implant_name = "260715_MEA1K23_J1688pad2shankB1"
     # implant_name = "260703_MEA1K23_S844pad8shankB1"
     
-    subdir = f"devices/implant_devices/{implant_name}/recordings"
-    # subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+    # subdir = f"devices/implant_devices/{implant_name}/recordings"
+    subdir = f"devices/headstage_devices/{headstage_name}/recordings"
     configs_basepath = f"mea1k_configs/single_el2stimunit_configs"
     stimulater_settings_path = f"devices/headstage_devices/{headstage_name}/{headstage_name}_stimunit_characterization.csv"
     stim_settings = pd.read_csv(os.path.join(nas_dir, stimulater_settings_path)).set_index("stimunit_id", drop=True)
@@ -363,6 +398,49 @@ def main():
     # rec_name = f'2026-07-20_15.09_ACF_PIEl_VRefAmpl15_Try10_PT4'
     # rec_name = "2026-07-20_16.17_ACF_PIEl_VRefAmpl15_Try10_PT5_2mm"
     
+    rec_name = f'2026-08-28_20.05_3rdTry_ACF_J2_61umP_VRef15_PT1'
+    rec_name = f'2026-08-29_22.44_7thTry_ACF_J2_36umP_VRef15_PT1'
+    rec_name = f'2026-08-30_20.52_noACF_J2_61umP_VRef15_PT1'
+    rec_name = f'2026-08-30_21.15_noACF_J2_61umP_VRef15_PT1'
+
+    rec_name = f'2026-09-01_10.12_noACFTry2_J2_36umP_VRef15_PT1_1.9mm'
+    rec_name = f'2026-09-01_11.18_noACFTry2_J2_36umP_VRef15_PT3_1.8mmcorner'
+    
+    # rec_name = f'2026-09-02_15.28_noACFNoEcoFlexTry3_J2_61umP_VRef15_PT2'
+    # rec_name = "2026-09-02_16.33_noACFNoEcoFlexTry3_J2_61umP_VRef15_PT3"
+    
+    # rec_name = "2026-09-02_18.21_noACFTry4_J2_61umP_VRef15_PT2"
+    
+    rec_name = f'2026-09-04_09.55_J2_2x8x56umP_PT1_10mVFPGA'
+    rec_name = f'2026-09-08_11.59_2x8x56umP_PT3_10mVFPGA'
+    
+    rec_name = f'2026-09-08_12.09_2x8x56umP_PT4_10mVFPGA' # tiny tightenting of bottom right screw
+    rec_name = f'2026-09-08_12.30_2x8x56umP_PT4_10mVFPGA' # added more ringer
+
+    rec_name = f'2026-09-08_14.13_test_100k_35umP_PT2_10mVFPGA'
+    
+    rec_name = f'2026-09-11_12.59_test2_100k_35umP_PT2_2.8mm_10mVFPGA'
+    
+    rec_name = f'2026-09-11_22.25_test4_100k_61umP_PT4_2.6mm_10mVFPGA'
+
+    rec_name = f'2026-09-12_20.40_test8_100k_36umP_PT3_10mVFPGA'
+    
+    # rec_name = f"2026-09-12_00.17_test6_100k_61umP_PT2_10mVFPGA" 
+    
+    rec_name = f'2026-09-14_11.57_2x8x56umP_16`of16_100K_PT4_10mVFPGA'
+    
+    rec_name = f'2026-10-15_14.21_test10_100k_36umP_PT4_reSoldered_20mVFPGAExt'
+    
+    # rec_name = f'2026-11-01_20.17_test12_100k_36umP_56umPE_PT2_10mVFPGA' # bottom device only 4-5 electrodes? 
+    
+    
+    # rec_name = f'2026-10-21_14.45_test11_100k_36umP_PT1_10mVFPGA' 
+    # rec_name = f'2026-10-22_13.58_test11_100k_36umP_PT3_10mVFPGA' 
+    # rec_name = f'2026-10-22_15.21_test11_100k_36umP_PT4_10mVFPGA' 
+    
+    # rec_name = f'2026-10-25_17.03_test11_100k_36umP_PT7_10mVFPGA' # 
+    
+    
     # if not mapped yet, pseudo implant_mapping
     implant_mapping = pd.read_csv(os.path.join(nas_dir, subdir,
                                                rec_name, 
@@ -378,14 +456,47 @@ def main():
     
     
     
-    
     # rec_dir = f"{rec_name}_Imp_{stim_mode}_f{stim_sequence_frequency_Hz:04d}Hz"
     # rec_dir = f"2026-06-02_12.55_8Sh4SilverPaint_VRefFPGA_ampl15_PT1_1.9mm_Imp_large_current_f1000Hz_old"
     # rec_dir = f"test"
     
-    rec_dir = f'{t}_ACF_PIEl_Try10_PT5_2mm_Imp2'
     # rec_dir = f'{t}_ReEtched14ShankReGoldPlated_Imp2_PT2_LC'
     # rec_dir = f"{t}_JDesignFirstSoldered2_Imp11_Bottom_shiftAdjusted_PT5_LC"
+    # rec_dir = f'{t}_noACFTry2_J2_36Pads_PT3_1.8mmcornerRetightened_Imp'
+    # rec_dir = f'{t}_noACFTry4_J2_61Pad_PT2_Imp'
+    
+    # rec_dir = f'2026-10-25_17.14_test11_100k_36umP_PT7_Imp'
+    
+    # rec_dir = "2026-10-28_14.57_test11_100k_36umP_PT7_Imp"
+
+    # ---- consistent naming theme: {t}_{name}_{tightening_str}_<recording type> ----
+    # update name/tightening_str each session; recording type stays "Imp" for this script
+    
+    # name = "2x8x56umP"
+    # name = "test_100k_35umP_post64C_pressTest"
+    # tightening_str = "PT5" # tiny bit on left side again
+    
+    # name = "test6_100k_61umP"
+    # tightening_str = "PT2"
+    # name = "test4_100k_61umP"
+    # tightening_str = "PT5_2.6mm"
+    
+    # name = "test8_100k_36umP"
+    # tightening_str = "PT3"
+    
+    name = "2x8x56umP_1of16_100k"
+    tightening_str = "PT4"
+    
+    name = "test10_100k_36umP"
+    tightening_str = "PT4_resoldered"
+    
+    name = "test11_100k_36umP"
+    tightening_str = "PT7"
+    
+    name = "test12_100k_36umP_56umPE"
+    tightening_str = "PT2"
+
+    rec_dir = f'{t}_{name}_{tightening_str}_Imp_bottomCorner'
     
     measure_impedance(os.path.join(nas_dir, subdir, rec_dir), 
                     nas_dir, configs_basepath, 
@@ -394,20 +505,24 @@ def main():
                     dac_id=dac_id, 
                     stim_sequence_frequency_Hz=stim_sequence_frequency_Hz,
                     stim_sequence_ncycles=stim_sequence_ncycles,
-                    stim_units = list(range(32)),
+                    # stim_units = list(range(32)),
+                    stim_units = list(range(16,32)),
                     #   every_pi_el=True, 
                     dac_offset=0,
-                    negative_ctrl=True,
+                    negative_ctrl=False,
+                    electrode_sample_fraction=1,
                     # every_pad=range(10),
                     # shank_subset=[4,5,6,7], 
-                    connectivity_threshold=.5,
+                    connectivity_threshold=.4,
                     skip_stimulation=False,
                     skip_post_proc=False,
                     rec_current_externally=False,
-                    debug=debug,
+                    debug=False,
                     )
-
-    # cp_rec_dir_to_implant_dir(full_recdir, implant_name)
     
+    # cp_rec_dir_to_implant_dir(full_recdir, implant_name)
+    get_all_stimunit_impedance_data(os.path.join(nas_dir, subdir, rec_dir))
+    # exit()
+        
 if __name__ == "__main__":
     main()

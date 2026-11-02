@@ -1,0 +1,1162 @@
+
+# %%
+%load_ext autoreload
+%autoreload 2
+
+# %%
+import os
+import sys
+from glob import glob
+import time
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# to import logger, VR-wide constants and device paths
+sys.path.append(os.path.join('..',))
+sys.path.append(os.path.join('..', '..'))
+from baseVR.base_logger import CustomLogger as Logger
+from baseVR.base_functionality import device_paths
+
+import mea1k_modules.mea1k_visualizations as vis
+from mea1k_connectivity_scripts.analyze_extSine_connectivity import extract_connectivity, vis_connectivity, create_implant_dir, get_connectivity_data
+from mea1k_connectivity_scripts.analyze_shortcut_stim import plot_amplitude_ridges, connected_islands
+
+from mea1k_utils import load_impedance_data as load_impedance_data
+
+nas_dir = device_paths()[0]
+
+# %%
+L = Logger()
+L.init_logger(None, None, "WARNING")
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+# %%
+
+
+
+
+# %% [markdown]
+# ## MEA1K24 — 30-31 Aug (Sunday evening → Monday morning): large-pad IPA bond, "noACF"/"moACF"
+# Large-pad device, CMOS-PI-EcoFlex-Xpress, IPA — notes describe this under the "29.8" text
+# ("very strong response!") but the recordings themselves land 30-31 Aug; overnight impedance
+# ("oh boi it looked good... patchy") and the morning-after deterioration are in "31.8, 5th day".
+
+# %%
+"""MEA24 | 30-31 Aug | large-pad IPA bond, noACF/moACF"""
+
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_name = f'2026-08-30_20.52_noACF_J2_61umP_VRef15_PT1'
+rec_name = f'2026-08-30_21.15_noACF_J2_61umP_VRef15_PT1'
+rec_name = f'2026-09-01_08.43_noACF_J2_61umP_VRef15_PT1'
+
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+    
+# %%
+
+
+rec_dir = "2026-08-30_21.00_noACF_J2_61umP_PT1"
+rec_dir = "2026-08-30_21.22_noACF_J2_61umP_PT1"
+rec_dir = "2026-08-31_09.14_noACF_J2_61umP_PT1_Imp"
+
+aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+# aggr_df['mea1k_connectivity'] = np.nan
+# aggr_df.loc[~aggr_df['stim_unit'].isin([30])] = np.nan
+aggr_df.loc[aggr_df['phase_shift_deg']<20] = np.nan
+vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True, 
+                            ylims=(1_000, 2_000_000), skip_bottom=False, 
+                            color_by_metal=False, use_imp_connectivity=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %% [markdown]
+# ## MEA1K24 — 1-2 Sept (Monday onward): noACFTry2 pressure sweep + 24h deterioration timeline
+# notesACF.md "31.8, 5th day" / "2. Sept, 6th day": new assembly, smaller pads, EcoFlex 00-30.
+# Pressure ramp PT1 (2.2mm) → PT2 (1.9mm) → PT3 (1.8mmcorner), then the deliberate +1h...+24h
+# deterioration series at PT3, closing with the retightened +26h readout.
+
+# %%
+"""MEA24 | 1-2 Sept | noACFTry2 pressure sweep + 24h deterioration"""
+
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+rec_name = f'2026-09-01_10.12_noACFTry2_J2_36umP_VRef15_PT1_2.2mm'
+# rec_name = f'2026-09-01_10.43_noACFTry2_J2_36umP_VRef15_PT2_1.9mm'
+# rec_name = f'2026-09-01_11.18_noACFTry2_J2_36umP_VRef15_PT3_1.8mmcorner'
+
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+# %%
+# impedance readout at each pressure step (PT1 2.2mm -> PT3 1.8mmcorner), then the +Nh deterioration series
+rec_names = [
+    # "2026-09-01_10.18_noACFTry2_J2_36umP_PT1_2.2mm_Imp",
+    # "2026-09-01_10.49_noACFTry2_J2_36umP_PT2_1.9mm_Imp",
+    # "2026-09-01_11.24_noACFTry2_J2_36umP_PT3_1.8mmcorner_Imp",
+    # "2026-09-01_12.29_noACFTry2_J2_36umP_PT3_1.8mmcorner_Imp",
+    # "2026-09-01_14.47_noACFTry2_J2_36umP_PT3_1.8mmcorner_Imp",
+    # "2026-09-01_16.12_noACFTry2_J2_36umP_PT3_1.8mmcorner_Imp",
+    # "2026-09-01_18.17_noACFTry2_J2_36umP_PT3_1.8mmcorner_Imp",
+    # "2026-09-01_20.28_noACFTry2_J2_36umP_PT3_1.8mmcorner_Imp",
+    # "2026-09-01_23.41_noACFTry2_J2_36umP_PT3_1.8mmcorner_Imp",
+    # "2026-09-02_10.05_noACFTry2_J2_36umP_PT3_1.8mmcorner_Imp",
+    "2026-09-02_13.04_noACFTry2_J2_36umP_PT3_1.8mmcorner_Imp",
+    "2026-09-02_14.23_noACFTry2_J2_36umP_PT3_1.8mmcornerRetightened_Imp",
+
+    "2026-09-04_07.52_noACFTry2_J2_61umP_PT3_retightened_Imp",
+]
+
+labels = [
+    # "PT1, 2.2mm",
+    # "PT2, 1.9mm",
+    # "PT3, 1.8mmcorner",
+    # "PT3, +1h",
+    # "PT3, +3h",
+    # "PT3, +5h",
+    # "PT3, +7h",
+    # "PT3, +9h",
+    # "PT3, +11h",
+    # "PT3, +20h",
+    "PT3, +24h",
+    "PT3 retightened, +26h",
+    "PT3 retightened, +3d",
+]
+
+data = []
+for rec_name in rec_names:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_name, nas_dir, subdir, )
+    # aggr_df['mea1k_connectivity'] = np.nan
+    # aggr_df.loc[~aggr_df['stim_unit'].isin([30])] = np.nan
+    # aggr_df.loc[aggr_df['phase_shift_deg']<20] = np.nan
+    data.append(aggr_df)
+    vis.plot_impedance_analysis(rec_name, aggr_df, log_scale=True, 
+                                ylims=(1_000, 2_000_000), skip_bottom=True, 
+                                color_by_metal=False, use_imp_connectivity=True)
+    # plt.show()
+
+# %%
+
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %% [markdown]
+# ## MEA1K23 — 2 Sept, Day 6 (Wednesday): noACFNoEcoFlexTry3 → noACFTry4 — current best bond
+# notesACF.md "2. Sept, 6th day": Capton-tape-only attempt showed a strange pattern and was
+# cancelled; EcoFlex 00-30 added (noACFTry4) gave "best result yet" — diagonal low-imp pattern
+# matching the pillar-height profile. The Imp series below (PT2, +4h, +14h) is still running.
+
+# %%
+"""MEA23 | 2 Sept | noACFNoEcoFlexTry3 -> noACFTry4 (current best)"""
+
+
+headstage_name = "MEA1K23"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+rec_name = f'2026-09-02_15.28_noACFNoEcoFlexTry3_J2_61umP_VRef15_PT2'
+rec_name = "2026-09-02_16.27_noACFNoEcoFlexTry3_J2_61umP_VRef15_PT2"
+rec_name = "2026-09-02_16.33_noACFNoEcoFlexTry3_J2_61umP_VRef15_PT3"
+
+rec_name = "2026-09-02_18.12_noACFTry4_J2_61umP_VRef15_PT1"
+rec_name = "2026-09-02_18.21_noACFTry4_J2_61umP_VRef15_PT2"
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+# %%
+# noACFTry4 impedance over time: PT2, +4h, +14h (still running as of 3 Sept)
+rec_names = [
+    # "2026-09-02_15.35_noACFNoEcoFlexTry3_J2_61umP_PT2_Imp",
+    # "2026-09-02_16.36_noACFNoEcoFlexTry3_J2_61umP_PT3_Imp",
+    '2026-09-02_18.29_noACFTry4_J2_61umP_PT2_Imp',
+    '2026-09-02_21.50_noACFTry4_J2_61umP_PT2_Imp',
+    '2026-09-03_08.46_noACFTry4_J2_61umP_PT2_Imp'
+]
+
+labels = [
+    "PT2",
+    "PT2, +4h",
+    "PT2, +14h",
+]
+
+data = []
+for rec_name in rec_names:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_name, nas_dir, subdir, )
+    # aggr_df['mea1k_connectivity'] = np.nan
+    # aggr_df.loc[~aggr_df['stim_unit'].isin([30])] = np.nan
+    # aggr_df.loc[aggr_df['phase_shift_deg']<20] = np.nan
+    data.append(aggr_df)
+    vis.plot_impedance_analysis(rec_name, aggr_df, log_scale=True, 
+                                ylims=(1_000, 2_000_000), skip_bottom=False, 
+                                color_by_metal=False, use_imp_connectivity=True)
+    plt.show()
+# %%
+
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+# %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %% [markdown]
+# ## MEA1K23 — 4-8 Sept (Friday → Tuesday): 2x8x56umP, 35umP, 61umP — PT
+# first real device tested in ringer solution, shown in meeiting on tuesday 8 Sept. 
+# Retightened on 8 Sept, then added more ringer. gold to ringer interface deteriorated, solder?
+
+
+headstage_name = "MEA1K23"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+# rec_name = f'2026-09-04_09.55_J2_2x8x56umP_PT1_10mVFPGA' # first time
+rec_name = f'2026-09-08_11.41_2x8x56umP_PT2_10mVFPGA'  # after h meeting, verg good, but left side off
+# rec_name = f'2026-09-08_11.59_2x8x56umP_PT3_10mVFPGA' # retighten left side, slitghly bad on right side
+# rec_name = f'2026-09-08_12.09_2x8x56umP_PT4_10mVFPGA' # tiny tightenting of bottom right screw, little worse, why?
+rec_name = f'2026-09-08_12.30_2x8x56umP_PT4_10mVFPGA' # added more ringer
+rec_name = f'2026-09-09_18.20_2x8x56umP_bottomRight100K_PT4_10mVFPGA'
+rec_name = f'2026-09-09_18.39_2x8x56umP_1of16100K_PT4_10mVFPGA'
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=3)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+plt.show()
+plt.hist(conn['mea1k_connectivity'], bins=100)
+plt.ylim(0, 1000)
+plt.show()
+print(rec_name)
+
+# %%
+
+rec_names = [
+    '2026-09-04_09.59_2x8x56umP_PT1_Imp',
+    '2026-09-07_22.43_2x8x56umP_PT1_Imp',
+    '2026-09-08_12.44_2x8x56umP_PT4_Imp', # # good actullay, but postprocessing was a mess, some stim units undersampled, need to rewrite the postproc part in sep thread as in shortcut stim
+]
+
+labels = [
+    "PT1",
+    "PT1, +3d",
+    "PT4",
+    "PT4"
+]
+
+data = []
+for rec_name in rec_names:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_name, nas_dir, subdir, )
+    # aggr_df['mea1k_connectivity'] = np.nan
+    # aggr_df.loc[~aggr_df['stim_unit'].isin([30])] = np.nan
+    # aggr_df.loc[aggr_df['phase_shift_deg']<20] = np.nan
+    data.append(aggr_df)
+    vis.plot_impedance_analysis(rec_name, aggr_df, log_scale=True, 
+                                ylims=(1_000, 2_000_000), skip_bottom=False, 
+                                color_by_metal=False, use_imp_connectivity=True)
+    
+    plt.show()
+    plt.hist(aggr_df['phase_shift_deg'], bins=100)
+    plt.show()
+    
+
+# %%   
+# #shorts: 
+
+# shorts — 4thTry TileShorts PT2 (notes: mostly high imp even where shorted)
+rec_dir = "2026-09-08_02.16.27_2x8x56umP_PT1_TileShorts"
+rec_dir = "2026-09-08_19.46.49_2x8x56umP_PT1_SingleShorts"
+full_recdir = os.path.join(nas_dir, subdir, rec_dir)
+connected_islands(full_recdir, output_dir=os.path.join(full_recdir, "processed"), 
+                  conn_thr=.8, output_fname=f"connected_islands.png",
+                  draw_mea_args={"mapping":conn, "el_color":"#595959", 'cmap_scaler':1})
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %%
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_name = f'2026-09-04_13.37_PDMS_J2_2x61umP,35umP_PT1_10mVFPGA'
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+# %%
+
+
+# shorts — 4thTry TileShorts PT2 (notes: mostly high imp even where shorted)
+rec_dir = "2026-09-04_13.50.35_PDMS_J2_2x61umP,35umP_PT2_TileShorts"
+full_recdir = os.path.join(nas_dir, subdir, rec_dir)
+connected_islands(full_recdir, output_dir=os.path.join(full_recdir, "processed"), 
+                  conn_thr=.5, output_fname=f"connected_islands.png",
+                  draw_mea_args={"mapping":conn, "el_color":"#595959", 'cmap_scaler':2})
+
+# %%
+
+
+
+#impedance
+
+
+
+
+rec_dir = "2026-09-04_16.57_PDMS_J2_2x61umP,35umP_PT2_Imp"
+
+aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+# aggr_df['mea1k_connectivity'] = np.nan
+vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                            ylims=(1_000, 2_000_000), skip_bottom=True,
+                            color_by_metal=False, use_imp_connectivity=False)
+# %%
+
+
+
+
+
+
+
+
+
+
+
+# %% [markdown]
+# ## test1 — MEA1K24, 8-11 Sept: 100k ref load, 35umP (longest timeseries) good one
+# First 100k-resistor device instead of PEDOT electrodes. PT2/PT3 on the 8th, retightened to
+# PT5 on the 9th in the evening, then 64C press test on the 10th. Ran over 3 days.
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_name = f'2026-09-08_14.08_test_100k_35umP_PT1_10mVFPGA'
+rec_name = f'2026-09-08_14.13_test_100k_35umP_PT2_10mVFPGA'
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+
+# %%
+# test1 impedance series, 8 -> 11 Sept
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_dirs = [
+    "2026-09-08_14.35_test_100k_35umP_PT2_Imp",
+    "2026-09-08_15.25_test_100k_35umP_PT3_Imp", # right side slightly tightened
+    # "2026-09-08_16.44_test_100k_35umP_PT4_Imp", # tiny bit on the left again, delted accidentally -.- but looked similar, little high imp region on the right
+    # the next three are named `2x8x56umP` but sit in MEA1K24 and use the exact same el_config
+    # set as the test_100k recordings above/below (2617 files each) -> they are test1, misnamed
+    "2026-09-09_13.13_2x8x56umP_PT4_Imp",  # sic: test1 PT4, next morning
+    "2026-09-09_16.18_2x8x56umP_PT4_Imp",  # sic: test1 PT4
+    "2026-09-09_17.30_2x8x56umP_PT5_Imp",  # sic: test1, this is where PT5 (retightening) happens
+    # "2026-09-09_23.49_test_100k_35umP_PT5_Imp", # not on NAS
+    "2026-09-10_07.19_test_100k_35umP_PT5_Imp", # should have measured again before tightening, guess i forgot? -> 09-09_17.30 above is the missing one
+    "2026-09-10_12.05_test_100k_35umP_PT5_Imp",
+    "2026-09-10_12.43_test_100k_35umP_post64C_pressTest_PT5_Imp",
+    # "2026-09-10_16.36_test_100k_35umP_post64C_pressTest_PT5_Imp", # aborted (1595 files vs 2617)
+    "2026-09-10_17.20_test_100k_35umP_post64C_pressTest_PT5_Imp",
+    "2026-09-11_12.15_test_100k_35umP_post64C_pressTest_PT5_Imp"
+]
+
+labels = [ 
+    "PT2",
+    "PT3",
+    # "PT4",
+    "PT4, +22h",
+    "PT4, +1d",
+    "PT5", # retightening
+    "PT5, +1d",
+    "PT5, +2d",
+    "PT5pt, +2d",
+    # "PT5",
+    "PT5pt, +2.5d",
+    "PT5pt, +3d"
+]
+
+data = []
+for rec_dir in rec_dirs:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+    # aggr_df['mea1k_connectivity'] = np.nan
+    vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                                ylims=(1_000, 2_000_000), skip_bottom=False,
+                                color_by_metal=False, use_imp_connectivity=True)
+    plt.show()
+    data.append(aggr_df)
+
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %% [markdown]
+# ## test2 — MEA1K23, 11 Sept (Thursday, colab day): 100k, 35umP
+# Pressed to PT2 at noon, one full imp sweep. In the afternoon something broke (pulled
+# electrodes?), the check recording and all 5 imp restarts died. Disassembled same day,
+# ran recalibration after.
+
+# %%
+headstage_name = "MEA1K23"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_name = f'2026-09-11_12.55_test2_100k_35umP_PT1_10mVFPGA'
+rec_name = f'2026-09-11_12.59_test2_100k_35umP_PT2_2.8mm_10mVFPGA'
+rec_name = "2026-09-11_16.52_test2_100k_35umP_check_PT2_10mVFPGA" # something broke i remember, pulled electrodes?
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+# %%
+# test2 impedance, only the 13.12 sweep is complete (7041 files)
+
+headstage_name = "MEA1K23"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_dirs = [
+    "2026-09-11_13.12_test2_100k_35umP_PT2_2.8mm_Imp",
+    # "2026-09-11_16.31_test2_100k_35umP_PT2_2.8mm_Imp", # 1 file
+    # "2026-09-11_16.32_test2_100k_35umP_PT2_2.8mm_Imp", # 36 files
+    # "2026-09-11_16.47_test2_100k_35umP_PT2_2.8mm_Imp", # 30 files
+    # "2026-09-11_16.49_test2_100k_35umP_PT2_2.8mm_Imp", # 42 files
+    # "2026-09-11_16.50_test2_100k_35umP_PT2_2.8mm_Imp", # none of these were completed, also tried ext current measurements, not sure what happened there, but disassembled on the same day, ran recalibration after, so prob really bad drift of stim units? I remember it was really not working back then i think... again mea23 hm... Then i did a new assembly at 10:30 pm called test5
+]
+
+labels = [ 
+    "PT2",
+    # "PT2, +3h",
+    # "PT2, +3h_2",
+    # "PT2, +3h_3", # 
+    # "PT2, +3h_4", # 
+    # "PT2, +3h_5", # see above
+]
+
+data = []
+for rec_dir in rec_dirs:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+    # aggr_df['mea1k_connectivity'] = np.nan
+    vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                                ylims=(1_000, 2_000_000), skip_bottom=False,
+                                color_by_metal=False, use_imp_connectivity=True)
+    plt.show()
+    data.append(aggr_df)
+
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+
+
+
+
+
+
+
+
+
+
+
+# %% [markdown]
+# ## test3 — MEA1K24, 11 Sept afternoon: 100k, 35umP
+# In parallel to test2 on the other chip. Four re-presses in ~1.5h (14.51, 15.36, 16.01, 16.23
+# each restart at PT1), no impedance recording at all -> never got good enough to measure. Prob reused an old film?
+
+# %%
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+# --- 1st press
+# rec_name = f'2026-09-11_14.50_test3_100k_35umP_PT1_10mVFPGA'  # aborted (19 files)
+# rec_name = f'2026-09-11_14.51_test3_100k_35umP_PT1_10mVFPGA'
+# rec_name = f'2026-09-11_15.17_test3_100k_35umP_PT1_10mVFPGA'  # aborted (8 files)
+# rec_name = f'2026-09-11_15.19_test3_100k_35umP_PT2_10mVFPGA'
+# --- 2nd press
+# rec_name = f'2026-09-11_15.36_test3_100k_35umP_PT1_10mVFPGA'
+# rec_name = f'2026-09-11_15.40_test3_100k_35umP_PT2_10mVFPGA'
+# rec_name = f'2026-09-11_15.43_test3_100k_35umP_PT3_10mVFPGA'
+# rec_name = f'2026-09-11_15.49_test3_100k_35umP_PT4_10mVFPGA'  # aborted (17 files)
+# --- 3rd press
+# rec_name = f'2026-09-11_16.01_test3_100k_35umP_PT1_10mVFPGA'
+# rec_name = f'2026-09-11_16.05_test3_100k_35umP_PT2_10mVFPGA'
+# rec_name = f'2026-09-11_16.10_test3_100k_35umP_PT3_10mVFPGA'
+# --- 4th press
+# rec_name = f'2026-09-11_16.23_test3_100k_35umP_PT1_10mVFPGA'
+rec_name = f'2026-09-11_16.25_test3_100k_35umP_PT2_10mVFPGA'
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+# %% [markdown]
+# ## test4 — MEA1K24, 11 Sept 22:00 -> 12 Sept: 100k, 61umP. the good one
+# PT4 very good. NOTE: the impedance recordings DO exist, 5 complete sweeps (6077 files each)
+# on MEA1K24, overnight + all of the 12th. Film was reused later for test7.
+
+# %%
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+# rec_name = f'2026-09-11_22.11_test4_100k_61umP_PT1_10mVFPGA'
+# rec_name = f'2026-09-11_22.14_test4_100k_61umP_PT2_2.8mm_10mVFPGA'
+# rec_name = f'2026-09-11_22.19_test4_100k_61umP_PT3_2.6mm_10mVFPGA'
+rec_name = f'2026-09-11_22.25_test4_100k_61umP_PT4_2.6mm_10mVFPGA' # very good. Did new assembly test5 a little after
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+# %%
+# test4 impedance series, overnight 11 -> 12 Sept, all complete
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_dirs = [
+    "2026-09-11_22.46_test4_100k_61umP_PT4_2.6mm_Imp", # badish calibration
+    "2026-09-12_00.23_test4_100k_61umP_PT4_2.6mm_Imp", # even worse calibration
+    "2026-09-12_08.56_test4_100k_61umP_PT4_2.6mm_Imp", # very bad again
+    "2026-09-12_11.08_test4_100k_61umP_PT4_2.6mm_Imp", # now good again, recalibrated i guess
+    "2026-09-12_13.51_test4_100k_61umP_PT5_2.6mm_Imp", # retightened
+]
+
+labels = [
+    "PT4",
+    "PT4, +1.5h",
+    "PT4, +10h",
+    "PT4, +12h",
+    "PT5, +15h",
+]
+
+data = []
+for rec_dir in rec_dirs:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+    # aggr_df['mea1k_connectivity'] = np.nan
+    vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                                ylims=(1_000, 2_000_000), skip_bottom=False,
+                                color_by_metal=False, use_imp_connectivity=True)
+    plt.show()
+    data.append(aggr_df)
+
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %% [markdown]
+# ## test5 — MEA1K23, 11 Sept 22:33: 100k, 61umP
+# New assembly right after test4, on the other chip. PT1 -> PT4 in 10 min, no impedance.   I think here i tried to reuse a film
+
+# %%
+headstage_name = "MEA1K23"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+# rec_name = f'2026-09-11_22.33_test5_100k_61umP_PT1_3.0mm_10mVFPGA'
+# rec_name = f'2026-09-11_22.37_test5_100k_61umP_PT2_2.8mm_10mVFPGA'
+rec_name = f'2026-09-11_22.39_test5_100k_61umP_PT3_2.8mm_10mVFPGA'
+# rec_name = f'2026-09-11_22.43_test5_100k_61umP_PT4_2.8mm_10mVFPGA' # aborted (5 h5, no configs)
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+
+# %% [markdown]
+# ## test6 — MEA1K23, 12 Sept 00:09 -> 15:11: 100k, 61umP
+# Midnight assembly, had some water. Revisited in the afternoon: left half back, right half gone,
+# no more liquid, strange noise. One imp sweep (15.43), was named test4 at record time, renamed.
+
+# %%
+headstage_name = "MEA1K23"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+# rec_name = f'2026-09-12_00.09_test6_100k_61umP_PT1_10mVFPGA' # had some water i think, and left side gone... can still be used?
+# rec_name = f"2026-09-12_00.17_test6_100k_61umP_PT2_10mVFPGA" 
+# rec_name = f"2026-09-12_15.05_test6_100k_61umP_PT2_10mVFPGA"  # very strange left half back, right half gone, no more liquid, and strange noise
+rec_name = f'2026-09-12_15.11_test6_100k_61umP_PT2_10mVFPGA'
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+rec_dir = f"2026-09-12_15.43_test6_100k_61umP_PT5_2.6mm_Imp" # only one measurement, left side was badly soldered (of 4), right side not connected at all... left side connection added like 20kOhm, how to use? or exclude?
+
+aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+# aggr_df['mea1k_connectivity'] = np.nan
+vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                            ylims=(1_000, 2_000_000), skip_bottom=False,
+                            color_by_metal=False, use_imp_connectivity=True)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %% [markdown]
+# ## 1x12x56umP 100K — MEA1K24, 12 Sept 17:18 -> 19:15
+# Not a testN assembly: the 12-block 56um pad device with the 100K resistors. First run with
+# Alexei's solder from the day before was bad (wrinkled in a bad press, maybe bad soldering),
+# redone with fresh soldering in the evening.
+
+# %%
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+# --- soldered by alexei the day before
+# rec_name = f"2026-09-12_17.18_1x12x56umP_1of3_100K_PT1_10mVFPGA" 
+# rec_name = f"2026-09-12_17.31_1x12x56umP_12of12_100K_PT1_10mVFPGA" 
+# rec_name = f"2026-09-12_17.36_1x12x56umP_12of12_100K_PT2_10mVFPGA" # not good at all, got rinkled in bad press first, and aso maybe bad soldering?
+# --- freshly solderd on this day
+# rec_name = f"2026-09-12_19.10_1x12x56umP_12of12_100K_PT1_10mVFPGA"
+rec_name = f"2026-09-12_19.15_1x12x56umP_12of12_100K_PT2_10mVFPGA" # not good, bad soldering
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+
+# %% [markdown]
+# ## test7 — MEA1K24, 12 Sept 18:20: 100k, 61umP
+# Reused the test4 film. Patchy, one PT1 recording only, didn't invest time for imp measures
+
+# %%
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+rec_name = "2026-09-12_18.20_test7_100k_61umP_PT1_10mVFPGA" # tried reusing the film from test4, the good one, but a bit rinkled, so patchy, won't use further
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+
+# %% [markdown]
+# ## test8 — MEA1K23, 12 Sept 20:29 -> 13 Sept: 100k, 36umP
+# Last try before leaving home. PT3 GOOD. One complete overnight imp sweep (21.02, 2173 configs);
+# the 13 Sept follow-up died after 30 files.
+
+# %%
+headstage_name = "MEA1K23"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+# rec_name = f'2026-09-12_20.29_test8_100k_36umP_PT1_10mVFPGA' # aborted (16 files)
+# rec_name = f'2026-09-12_20.31_test8_100k_36umP_PT1_10mVFPGA' # last try before i left home...
+# rec_name = f'2026-09-12_20.35_test8_100k_36umP_PT2_10mVFPGA'
+rec_name = f'2026-09-12_20.40_test8_100k_36umP_PT3_10mVFPGA'# GOOD!
+
+rec_name = f'2026-09-14_11.23_test8_100k_36umP_PT3_10mVFPGA' 
+rec_name = f'2026-09-14_11.28_test8_100k_36umP_PT4_10mVFPGA' 
+
+rec_name = f'2026-09-29_16.08_test8_100k_36umP_PT3_10mVFPGA' 
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+# %%
+# test8 impedance
+
+headstage_name = "MEA1K23"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_dirs = [
+    # "2026-09-12_20.44_test8_100k_36umP_PT2_Imp", # aborted (18 files)
+    "2026-09-12_21.02_test8_100k_36umP_PT2_Imp",
+    # "2026-09-13_12.28_test8_100k_36umP_PT2_Imp", # aborted (30 files)
+]
+
+labels = [
+    "PT2",
+    # "PT2, +15h",
+]
+
+data = []
+for rec_dir in rec_dirs:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+    # aggr_df['mea1k_connectivity'] = np.nan
+    vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                                ylims=(1_000, 2_000_000), skip_bottom=False,
+                                color_by_metal=False, use_imp_connectivity=True)
+    plt.show()
+    data.append(aggr_df)
+
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+
+# %%
+
+# REAL
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+rec_name = f'2026-09-14_11.38_2x8x56umP_16`of16_100K_PT1_10mVFPGA'
+rec_name = f'2026-09-14_11.41_2x8x56umP_16`of16_100K_PT2_10mVFPGA'
+rec_name = f'2026-09-14_11.49_2x8x56umP_16`of16_100K_PT2_10mVFPGA' # tried to reposition cables
+rec_name = f'2026-09-14_11.53_2x8x56umP_16`of16_100K_PT3_10mVFPGA'
+rec_name = f'2026-09-14_11.57_2x8x56umP_16`of16_100K_PT4_10mVFPGA'
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+print(rec_name)
+plt.show()
+
+
+
+# %%
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_name = f'2026-09-14_11.57_2x8x56umP_16`of16_100K_PT4_10mVFPGA'
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+plt.show()
+
+rec_dir = "2026-09-30_16.22.55_2x8x56umP_PT4_TileShorts"
+rec_dir = "2026-09-30_21.07.41_2x8x56umP_PT4_SingleShorts"
+full_recdir = os.path.join(nas_dir, subdir, rec_dir)
+connected_islands(full_recdir, output_dir=os.path.join(full_recdir, "processed"), 
+                  conn_thr=.5, output_fname=f"connected_islands.png",
+                  draw_mea_args={"mapping":conn, "el_color":"#595959", 'cmap_scaler':2})
+
+
+
+
+
+
+
+
+# %%
+
+
+headstage_name = "MEA1K27"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+
+rec_dir = "2026-10-12_13.00.58_2x8x56umP_PT4_TileShorts"
+# rec_dir = "2026-10-12_17.06.30_2x8x56umP_PT4_TileShorts"
+# rec_dir = "2026-10-13_13.53.25_2x8x56umP_PT4_TileShorts"
+
+full_recdir = os.path.join(nas_dir, subdir, rec_dir)
+connected_islands(full_recdir, output_dir=os.path.join(full_recdir, "processed"), 
+                  conn_thr=.5, output_fname=f"connected_islands.png",)
+                #   draw_mea_args={"mapping":conn, "el_color":"#595959", 'cmap_scaler':2})
+
+# plot_amplitude_ridges(full_recdir, bins=60, n_groups=8, shorted_thresh=0.8,
+#                       min_stim_uV=None, dpi=100, rebuilt_graph=False)
+
+# %%
+
+
+headstage_name = "MEA1K27"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_name = f'2026-10-13_16.16_test10_100k_36umP_PT1_20mVFPGAExt'
+rec_name = f'2026-10-15_13.05_test10_100k_36umP_PT1_20mVFPGAExt'
+rec_name = f'2026-10-15_13.13_test10_100k_36umP_PT1_reSoldered_20mVFPGAExt'
+rec_name = f'2026-10-15_13.21_test10_100k_36umP_PT2_reSoldered_20mVFPGAExt'
+rec_name = f'2026-10-15_13.27_test10_100k_36umP_PT3_reSoldered_20mVFPGAExt'
+rec_name = f'2026-10-15_14.21_test10_100k_36umP_PT4_reSoldered_20mVFPGAExt'
+
+rec_name = f'2026-10-15_14.21_test10_100k_36umP_PT4_reSoldered_20mVFPGAExt'
+
+# rec_name = f'2026-10-16_12.01_test10_100k_36umP_PT4_reSoldered_10mVFPGA' # soldering joint broke -.-
+
+# rec_name = f'2026-10-21_14.45_test11_100k_36umP_PT1_10mVFPGA' 
+# rec_name = f'2026-10-22_13.56_test11_100k_36umP_PT2_10mVFPGA' 
+# rec_name = f'2026-10-22_13.58_test11_100k_36umP_PT3_10mVFPGA' 
+# rec_name = f'2026-10-22_15.21_test11_100k_36umP_PT4_10mVFPGA' 
+
+# rec_name = f'2026-10-25_16.47_test11_100k_36umP_PT5_10mVFPGA' # wrong side tightened...
+
+# rec_name = f'2026-10-25_16.58_test11_100k_36umP_PT6_10mVFPGA' # untightened an retightened, new balance
+
+# rec_name = f'2026-10-25_17.03_test11_100k_36umP_PT7_10mVFPGA' # 
+
+# rec_name = f'2026-10-28_14.52_test11_100k_36umP_PT7_10mVFPGA' # 
+
+rec_name = f'2026-11-01_20.09_test12_100k_36umP_56umPE_PT1_10mVFPGA' # resoldered wire, wasn never attached... but bottom borke off? almost no signal
+rec_name = f'2026-11-01_20.09_test12_100k_36umP_56umPE_PT1_10mVFPGA' # 
+rec_name = f'2026-11-01_20.17_test12_100k_36umP_56umPE_PT2_10mVFPGA' # bottom device only 4-5 electrodes? til check again
+
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+plt.show()
+plt.hist(conn['mea1k_connectivity'], bins=50)
+plt.yscale('log')
+plt.show()
+
+print(rec_name)
+# %%
+
+
+
+headstage_name = "MEA1K27"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_dirs = [
+    # "2026-10-15_15.28_test10_100k_36umP_PT4_resoldered_Imp",
+    # "2026-10-15_15.40_test10_100k_36umP_PT4_resoldered_Imp",
+    # "2026-10-15_15.55_test10_100k_36umP_PT4_resoldered_Imp", # super weird looked good for one run -.-
+    
+    # "2026-10-22_14.01_test11_100k_36umP_PT3_Imp", # puhh.. bad first i see bimodel good+bad mixed imp -.- 35 minutes wasn't good?
+    # "2026-10-22_15.44_test11_100k_36umP_PT4_Imp",
+    # "2026-10-22_19.16_test11_100k_36umP_PT4_Imp",
+    
+    # "2026-10-22_22.44_test11_100k_36umP_PT4_Imp",
+    # "2026-10-22_23.55_test11_100k_36umP_PT4_Imp",
+    
+    # "2026-10-24_15.44_test11_100k_36umP_PT4_Imp",
+    
+    # "2026-10-25_17.14_test11_100k_36umP_PT7_Imp",
+    
+    # "2026-10-26_13.45_test11_100k_36umP_PT7_Imp",
+
+    # "2026-10-26_13.57_test11_100k_36umP_PT7_Imp",
+    
+    # "2026-10-28_14.57_test11_100k_36umP_PT7_Imp",
+    
+    # "2026-10-31_17.04_test12_100k_36umP_56umPE_PT1_Imp_oneCorner",   # without GND cable connected, but not connected to ring GND apparnetly, all max Imp
+    # "2026-11-01_08.50_test12_100k_36umP_56umPE_PT1_Imp_oneCorner",    # with cable still not connected
+    "2026-11-02_07.11_test12_100k_36umP_56umPE_PT2_Imp",
+]
+
+labels = [
+    # "PT4",
+    # "PT4.1",
+    # "PT3",
+    # "PT4", 
+    # "PT4+2h",
+    # "PT4+6h",
+    # "PT4+2d",
+    # "PT7",
+    # "PT7+1d",
+    # "PT7+4d",
+    
+    # 'test12 PT1 one corner',
+    # 'test12 PT1 one corner',
+    'test12 PT1',
+]
+
+data = []
+for rec_dir in rec_dirs:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+    # aggr_df = aggr_df[aggr_df['stim_unit'] == 0]
+    vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                                ylims=(1_000, 1_800_000), skip_bottom=False,
+                                color_by_metal=False, use_imp_connectivity=True)
+    plt.show()
+    data.append(aggr_df)
+
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+# %%
+
+
+headstage_name = "MEA1K27"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_dir = f'2026-10-30_18.24.30_test12_100k_36umP_56umPE_PT1_TileShorts'
+rec_dir = f'2026-10-31_21.47.17_test12_100k_36umP_56umPE_PT1_TileShorts' # using ssequential stim 
+rec_dir = f'2026-11-01_20.22.38_test12_100k_36umP_56umPE_PT2_TileShorts' # using ssequential stim 
+
+# full_recdir = os.path.join(nas_dir, subdir, rec_dir)
+# connected_islands(full_recdir, output_dir=os.path.join(full_recdir, "processed"), 
+#                   conn_thr=.2, output_fname=f"connected_islands.png",
+#                 #   draw_mea_args={"mapping":conn, "el_color":"#595959", 'cmap_scaler':2})
+# )
+plot_amplitude_ridges(full_recdir, bins=60, n_groups=8, shorted_thresh=0.5,
+                      min_stim_uV=None, dpi=100, rebuilt_graph=False)
+
+
+# %%

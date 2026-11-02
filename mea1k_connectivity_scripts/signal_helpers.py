@@ -369,7 +369,8 @@ def extract_amplitude(signal, sampling_rate, min_band, max_band,
                       notch=True, demean=True, highpass=None, lowpass=None,
                       lp_cutoff=None, name=None, debug=False,
                       plot_fname='debug_signal', zoom_from=None, zoom_to=None,
-                      ylim=None, save_to_dir=None, dac_ylim_range=32):
+                      ylim=None, save_to_dir=None, dac_ylim_range=32,
+                      raw_ylim=None, unit='uV'):
     """
     Lock-in amplitude at the stimulus frequency over a chosen sample interval.
 
@@ -388,6 +389,10 @@ def extract_amplitude(signal, sampling_rate, min_band, max_band,
     ylim
         (ymin, ymax) to fix the y-limits of the amplitude panels
         (processed + zoom). Default None -> responsive/auto-scaled.
+    raw_ylim
+        (ymin, ymax) to fix the y-limits of the raw panel. Default None -> auto-scaled.
+    unit
+        Unit of `signal`, used for the plot labels only (e.g. 'uV', 'uA').
     save_to_dir
         Directory to save the debug figure to. Default None -> ./live_figures.
     dac_ylim_range
@@ -440,7 +445,7 @@ def extract_amplitude(signal, sampling_rate, min_band, max_band,
                                 amp, settle_n, mean_amp, min_band, max_band,
                                 lp_cutoff, dac, zoom_from, zoom_to, name,
                                 plot_fname, baseline, sine_dc, ylim, save_to_dir,
-                                dac_ylim_range)
+                                dac_ylim_range, raw_ylim, unit)
     return mean_amp, phase_shift, baseline, sine_dc
 
 
@@ -448,9 +453,14 @@ def _plot_extract_amplitude(raw, proc, applied, sampling_rate, start, end,
                             amp, settle_n, mean_amp, min_band, max_band,
                             lp_cutoff, dac, zoom_from, zoom_to, name,
                             plot_fname, baseline=None, sine_dc=None, ylim=None,
-                            save_to_dir=None, dac_ylim_range=32):
+                            save_to_dir=None, dac_ylim_range=32, raw_ylim=None, unit='uV'):
     """Debug figure: full raw (top-left), processed + lock-in (bottom-left), zoom (right)."""
     t = np.arange(len(raw)) / sampling_rate * 1000.0   # ms
+
+    def _fmt(x, sign=False):
+        """uV-scale values with thousands separators, small units (uA) with 3 decimals."""
+        spec = ('+' if sign else '') + (',.2f' if unit == 'uV' else '.3f')
+        return format(x, spec)
 
     def _draw_dac(ax, sl):
         """Draw the (inverted) DAC on a twin y-axis, fixed to 512 ± dac_ylim_range."""
@@ -489,15 +499,17 @@ def _plot_extract_amplitude(raw, proc, applied, sampling_rate, start, end,
     _mark_interval(ax_raw)
     if baseline is not None:
         ax_raw.hlines(baseline, t[0], t[start], color='orange', ls='dashed', linewidth=2,
-                      label=f'Pre-sine baseline: {baseline:.1f} uV')
+                      label=f'Pre-sine baseline: {_fmt(baseline)} {unit}')
     if sine_dc is not None:
-        sine_lbl = f'Sine DC centre: {sine_dc:.1f} uV'
+        sine_lbl = f'Sine DC centre: {_fmt(sine_dc)} {unit}'
         if baseline is not None:
-            sine_lbl += f'  (shift {sine_dc - baseline:+.1f})'
+            sine_lbl += f'  (shift {_fmt(sine_dc - baseline, sign=True)})'
         ax_raw.hlines(sine_dc, t[start], t[min(end, len(t) - 1)], color='magenta', ls='dashed',
                       linewidth=2, label=sine_lbl)
     ax_raw.set_title('Raw signal (full, no processing)')
-    ax_raw.set_ylabel('Potential [uV]')
+    ax_raw.set_ylabel(f'{"Potential" if unit == "uV" else "Signal"} [{unit}]')
+    if raw_ylim is not None:
+        ax_raw.set_ylim(raw_ylim)
     if dac is not None:
         _draw_dac(ax_raw, slice(0, len(raw)))
     ax_raw.legend(loc='upper right', fontsize=8)
@@ -514,11 +526,11 @@ def _plot_extract_amplitude(raw, proc, applied, sampling_rate, start, end,
     ax_proc.plot(t, amp_full, color='red', alpha=0.9,
                  label=f'Lock-in amp (LP={lp_cutoff:.1f} Hz, {min_band:.0f}-{max_band:.0f} Hz)')
     ax_proc.axhline(mean_amp, color='k', ls='dashed',
-                    label=f'Mean (settled): {mean_amp:,.2f} uV')
+                    label=f'Mean (settled): {_fmt(mean_amp)} {unit}')
     ax_proc.axhline(-mean_amp, color='k', ls='dashed', alpha=0.4)
     _mark_interval(ax_proc)
     ax_proc.set_xlabel('Time [ms]')
-    ax_proc.set_ylabel('Amplitude [uV]')
+    ax_proc.set_ylabel(f'Amplitude [{unit}]')
     if ylim is not None:
         ax_proc.set_ylim(ylim)
     ax_proc.legend(loc='upper right', fontsize=8)
@@ -542,7 +554,7 @@ def _plot_extract_amplitude(raw, proc, applied, sampling_rate, start, end,
         _draw_dac(ax_zoom, slice(z0, z1))
     ax_zoom.legend(loc='upper right', fontsize=8)
 
-    title = f'Amplitude: {mean_amp:_.2f} uV'
+    title = f'Amplitude: {_fmt(mean_amp)} {unit}'
     if name:
         title = f'{name}   —   {title}'
     fig.suptitle(title, fontsize=21, fontweight='bold')

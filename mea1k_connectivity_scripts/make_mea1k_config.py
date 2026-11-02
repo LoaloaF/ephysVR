@@ -22,6 +22,7 @@ from mea1k_modules.mea1k_post_processing import animal_name2implant_device
 from mea1k_modules.mea1k_post_processing import get_raw_implant_mapping
 
 from mea1k_modules.mea1k_visualizations import draw_mea1k
+from mea1k_connectivity_scripts.analyze_shortcut_stim import get_island_candidates
 
 def make_bonding_config(animal_name=None, implant_name=None, shank_subset=None,
                         connectivity_threshold=0.6, route_every_pad=False):
@@ -236,6 +237,96 @@ def make_single_el2stimunit_configs(output_dirname):
     all_configs.to_csv(fullfname, index=False)
     print(f"Saved all single_el2stimunit configs to {fullfname},\n{all_configs}")  
 
+def make_island_single_stim_configs(tileshorts_recdir, min_island_size=2,
+                                   conn_thr=.5, output_basedir=None):
+    """Single-stim configs with exactly ONE electrode routed per shorted island.
+
+    Island membership comes from a TileShorts connectivity graph instead of an
+    implant mapping, so this works for bare headstage/bonding tests with no pad
+    mapping. Every config routes the same base set (one representative per
+    island) and stimulates a different one of them, so a lit-up electrode means
+    its island is shorted to the stimulated island."""
+    nas_dir = device_paths()[0]
+    if output_basedir is None:
+        output_basedir = os.path.join(nas_dir, "mea1k_configs", "shorted_islands_configs")
+
+    candidates = get_island_candidates(tileshorts_recdir, min_island_size=min_island_size,
+                                       conn_thr=conn_thr)
+    if not candidates:
+        raise ValueError(f"No islands with >={min_island_size} electrodes in {tileshorts_recdir}")
+
+    # ---- base set: rank-1 representative per island, fall back on routing failure ----
+    rank = {island_id: 0 for island_id in candidates}
+    dropped = []
+    while True:
+        rep = {i: candidates[i][rank[i]] for i in candidates if i not in dropped}
+        base_els = sorted(rep.values())
+        _, failed_routing, array = try_routing(base_els, randomize_routing=True,
+                                               return_array=True)
+        array.close()
+        print(f"Routed {len(base_els)-len(failed_routing)}/{len(base_els)} island "
+              f"representatives ({len(dropped)} islands dropped)")
+        if len(failed_routing) == 0:
+            break
+        el2island = {el: i for i, el in rep.items()}
+        for el in failed_routing:
+            island_id = el2island[el]
+            rank[island_id] += 1
+            if rank[island_id] >= len(candidates[island_id]):
+                print(f"Island {island_id}: no routable electrode left, dropping it")
+                dropped.append(island_id)
+        print(f"Trying alternative electrodes for {len(failed_routing)} island(s)")
+
+    island_sizes = {i: len(candidates[i]) for i in candidates}
+    el2island = {el: i for i, el in rep.items()}
+
+    day = datetime.datetime.now().strftime("%d.%b")
+    config_dirname = (f"{os.path.basename(tileshorts_recdir)}_{day}_"
+                      f"{len(rep)}Islands_SingleStimConfigs")
+    fulldirname = os.path.join(output_basedir, config_dirname)
+    os.makedirs(fulldirname, exist_ok=True)
+    print(f"Generating island single stim configs in {fulldirname}")
+
+    for i, (island_id, stim_el) in enumerate(sorted(rep.items())):
+        print(f"Generating config for island {island_id}, stim el {stim_el} "
+              f"({i+1}/{len(rep)})")
+        config_els, config_el2island = base_els, el2island
+        succ_routed, failed_routing, array = try_routing(config_els,
+                                                         stim_electrodes=[stim_el],
+                                                         return_array=True)
+        # the stim unit connection can fail or perturb the routing -> swap in the
+        # next-ranked electrode of the SAME island and retry
+        if len(failed_routing) > 0:
+            for alt_el in candidates[island_id][rank[island_id]+1:]:
+                array.close()
+                print(f"Island {island_id}: retrying with el {alt_el}")
+                config_els = sorted((set(base_els) - {stim_el}) | {alt_el})
+                succ_routed, failed_routing, array = try_routing(config_els,
+                                                                 stim_electrodes=[alt_el],
+                                                                 return_array=True)
+                if len(failed_routing) == 0:
+                    config_el2island = {**el2island}
+                    config_el2island.pop(stim_el)
+                    config_el2island[alt_el] = island_id
+                    stim_el = alt_el
+                    break
+            else:
+                print(f"Island {island_id}: failed to route stim, skipping island")
+                array.close()
+                continue
+
+        fname = f"el_config_El{stim_el:05d}_Island{island_id:04d}.cfg"
+        config_fullfname = os.path.join(fulldirname, fname)
+
+        config_mapping = array_config2df(array)
+        config_mapping['stim'] = config_mapping.electrode == stim_el
+        config_mapping['short_island_id'] = config_mapping.electrode.map(config_el2island)
+        config_mapping['island_size'] = config_mapping.short_island_id.map(island_sizes)
+        config_mapping.to_csv(config_fullfname.replace(".cfg", ".csv"), index=False)
+
+        array.save_config(config_fullfname)
+        array.close()
+
 def make_single_el_stim_configs(animal_name=None, implant_name=None, shank_subset=None, 
                                 connectivity_threshold=0.8, route_every_pad=False):
     nas_dir = device_paths()[0]
@@ -325,18 +416,27 @@ def main():
     #                     connectivity_threshold=0.15, route_every_pad=True,
     #                     shank_subset=None, )
 
+    # single stim configs with one el per shorted island, islands from a TileShorts run
+    nas_dir = device_paths()[0]
+    tileshorts_recdir = os.path.join(
+        nas_dir, "devices", "headstage_devices", "MEA1K24", "recordings",
+        # "2026-09-08_02.16.27_2x8x56umP_PT1_TileShorts")
+        "2026-09-30_16.22.55_2x8x56umP_PT4_TileShorts")
+    make_island_single_stim_configs(tileshorts_recdir, min_island_size=2, conn_thr=.5)
+    
+
     # needs to be only run once, is done for each 26400 electrodes
     # output_dirname = os.path.join(nas_dir, "mea1k_configs", "single_el2stimunit_configs",)
     # make_single_el2stimunit_configs(output_dirname=output_dirname)
     
     # make single el stim configs for all electrodes with good enough connectivity, trying to keep the same stim electrode as much as possible across configs
-    make_single_el_stim_configs(animal_name=animal_name, implant_name=implant_name, 
-                                shank_subset=[1,2,3,4,5,5,6,7,8], 
-                                connectivity_threshold=.4, route_every_pad=True) 
-    make_single_el_stim_configs(animal_name=animal_name, implant_name=implant_name, 
-                                shank_subset=[9,10,11,12,13,14], 
-                                # shank_subset=[1,2,3,4,5,5,6,7,8], 
-                                connectivity_threshold=.4, route_every_pad=True)
+    # make_single_el_stim_configs(animal_name=animal_name, implant_name=implant_name, 
+    #                             shank_subset=[1,2,3,4,5,5,6,7,8], 
+    #                             connectivity_threshold=.4, route_every_pad=True) 
+    # make_single_el_stim_configs(animal_name=animal_name, implant_name=implant_name, 
+    #                             shank_subset=[9,10,11,12,13,14], 
+    #                             # shank_subset=[1,2,3,4,5,5,6,7,8], 
+    #                             connectivity_threshold=.4, route_every_pad=True)
     
     # subdir = (f'{nas_dir}/devices/headstage_devices/MEA1K22/recordings/'
     #           '2026-07-06_20.43.57_ShinTsuFlim_Try4_PT1_EcoFLexNewFilmSpringInteronnect/')

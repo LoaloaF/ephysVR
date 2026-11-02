@@ -39,6 +39,10 @@ RANGES = {
     "20V":   ps.PS5000A_RANGE['PS5000A_20V'],
 }
 
+# ps5000a hardware limit: the higher resolutions combine fewer channels.
+# 15 bit allows 2 channels (A+B only), 16 bit allows exactly 1.
+MAX_CHANNELS_PER_RESOLUTION = {"8BIT": 4, "12BIT": 4, "14BIT": 4, "15BIT": 2, "16BIT": 1}
+
 RESOLUTIONS = {
     "8BIT":  ps.PS5000A_DEVICE_RESOLUTION["PS5000A_DR_8BIT"],
     "12BIT": ps.PS5000A_DEVICE_RESOLUTION["PS5000A_DR_12BIT"],
@@ -46,6 +50,18 @@ RESOLUTIONS = {
     "15BIT": ps.PS5000A_DEVICE_RESOLUTION["PS5000A_DR_15BIT"],
     "16BIT": ps.PS5000A_DEVICE_RESOLUTION["PS5000A_DR_16BIT"],
 }
+
+
+# current-sense chain: pico sits across a sense resistor behind an amplifier
+SENSE_RESISTOR_OHM = 10_000
+# DEFAULT_SENSE_GAIN = 1000       
+DEFAULT_SENSE_GAIN = 100       # amplification between the sense resistor and the pico
+
+
+def mv_to_current_uA(mv, gain, r_sense_ohm=SENSE_RESISTOR_OHM):
+    """Pico millivolts (recorded behind an amplifier of `gain`) -> current in uA
+    through the sense resistor.  I = (mV / gain) / R_sense."""
+    return np.asarray(mv, dtype=float) / gain * 1000 / r_sense_ohm
 
 
 class PicoRecorder:
@@ -57,6 +73,7 @@ class PicoRecorder:
         coupling: str = "DC",
         channel: str = "A",
         buffer_size: int = 500,
+        channel_ranges: dict | None = None,
     ):
         """
         Args:
@@ -64,30 +81,58 @@ class PicoRecorder:
             resolution:         "8BIT", "12BIT", "14BIT", "15BIT", "16BIT"
             sample_interval_us: sample period in microseconds (100 = 10 kS/s)
             coupling:           "DC" or "AC"
-            channel:            "A" or "B"
+            channel:            "A" or "B"  (single-channel recording)
             buffer_size:        driver buffer chunk size (500 is fine)
+            channel_ranges:     {"A": "5V", "B": "2V"} to record several channels at
+                                once, each with its own range. Overrides channel/
+                                voltage_range. The npz then holds one mv_<letter> array
+                                per channel (plus `mv` = the first channel, so
+                                single-channel readers keep working).
         """
-        if voltage_range not in RANGES:
-            raise ValueError(f"voltage_range must be one of {list(RANGES)}")
         if resolution not in RESOLUTIONS:
             raise ValueError(f"resolution must be one of {list(RESOLUTIONS)}")
+        if channel_ranges is None:
+            channel_ranges = {channel.upper(): voltage_range}
+        channel_ranges = {k.upper(): v for k, v in channel_ranges.items()}
+        for ch, rng in channel_ranges.items():
+            if ch not in ('A', 'B', 'C', 'D'):
+                raise ValueError(f"channel must be one of A-D, got {ch}")
+            if rng not in RANGES:
+                raise ValueError(f"voltage_range must be one of {list(RANGES)}, got {rng}")
 
-        self._range = RANGES[voltage_range]
-        self._range_label = voltage_range
+        max_ch = MAX_CHANNELS_PER_RESOLUTION[resolution]
+        if len(channel_ranges) > max_ch:
+            raise ValueError(
+                f"{resolution} supports at most {max_ch} channel(s), got "
+                f"{sorted(channel_ranges)}. Use "
+                f"{[r for r, n in MAX_CHANNELS_PER_RESOLUTION.items() if n >= len(channel_ranges)]} "
+                f"instead (the driver would fail with PICO_INVALID_NUMBER_CHANNELS_FOR_RESOLUTION).")
+        if resolution == "15BIT" and set(channel_ranges) - {"A", "B"}:
+            raise ValueError(f"15BIT supports channels A and B only, got {sorted(channel_ranges)}")
+
+        # ordered: the first channel is the one saved as `mv`
+        self._ch_labels = list(channel_ranges)
+        self._ch_ranges = {c: RANGES[channel_ranges[c]] for c in self._ch_labels}
+        self._ch_range_labels = dict(channel_ranges)
+        self._ch_enums = {c: ps.PS5000A_CHANNEL[f'PS5000A_CHANNEL_{c}'] for c in self._ch_labels}
+        # kept for backwards compatibility with single-channel callers
+        self._range = self._ch_ranges[self._ch_labels[0]]
+        self._range_label = self._ch_range_labels[self._ch_labels[0]]
+        self._channel = self._ch_enums[self._ch_labels[0]]
+
         self._resolution = RESOLUTIONS[resolution]
         self._interval_us = sample_interval_us
         self._coupling = ps.PS5000A_COUPLING[f'PS5000A_{coupling.upper()}']
-        self._channel = ps.PS5000A_CHANNEL[f'PS5000A_CHANNEL_{channel.upper()}']
         self._buf_size = buffer_size
 
         self._handle = ctypes.c_int16()
         self._opened = False
         self._recording = False
         self._thread = None
-        self._samples = []
+        self._samples = {c: [] for c in self._ch_labels}
         self._lock = threading.Lock()
         self._filename = None
-        
+
         self._open_device()
         self._configure_channel()
 
@@ -119,7 +164,7 @@ class PicoRecorder:
             self._thread.join(timeout=5)
             self._thread = None
         ps.ps5000aStop(self._handle)
-        self._save_npz(len(self._samples))
+        self._save_npz(min(len(v) for v in self._samples.values()))
 
     def start(self, filename):
         if not self._opened:
@@ -127,8 +172,10 @@ class PicoRecorder:
         if self._recording:            # never leave a previous stream running
             self.stop()
         self._filename = filename
-        self._samples.clear()
-        self._buf = np.zeros(self._buf_size, dtype=np.int16)
+        for v in self._samples.values():
+            v.clear()
+        self._bufs = {c: np.zeros(self._buf_size, dtype=np.int16) for c in self._ch_labels}
+        self._buf = self._bufs[self._ch_labels[0]]   # backwards compatible alias
         self._register_buffer()
         self._start_streaming()       # fast — no USB enumeration
         self._recording = True
@@ -143,51 +190,11 @@ class PicoRecorder:
         except Exception:
             pass
         
-    # def start(self, filename: str = "capture.npz"):
-    #     """Open the scope, begin streaming, and collect samples in the background."""
-    #     if self._recording:
-    #         raise RuntimeError("Already recording — call stop() first.")
-
-    #     self._filename = filename
-    #     self._samples.clear()
-
-    #     self._open_device()
-    #     self._configure_channel()
-    #     self._buf = np.zeros(self._buf_size, dtype=np.int16)
-    #     self._register_buffer()
-    #     self._start_streaming()
-
-    #     self._recording = True
-    #     self._thread = threading.Thread(target=self._poll_loop, daemon=True)
-    #     self._thread.start()
-    #     print(f"Recording to '{filename}' at {1e6 / self._interval_us:.0f} S/s ...")
-
-    # def stop(self):
-    #     """Stop streaming, save NPZ, and close the device."""
-    #     if not self._recording:
-    #         print("Not recording.")
-    #         return
-
-    #     self._recording = False
-    #     self._thread.join(timeout=5)
-
-    #     ps.ps5000aStop(self._handle)
-
-    #     count = len(self._samples)
-    #     if count > 0:
-    #         self._save_npz(count)
-    #     else:
-    #         print("No samples collected.")
-
-    #     ps.ps5000aCloseUnit(self._handle)
-    #     self._opened = False
-    #     print(f"Stopped — {count} samples saved to '{self._filename}'.")
-
     @property
     def sample_count(self) -> int:
-        """Number of samples collected so far."""
+        """Number of samples collected so far (of the shortest channel)."""
         with self._lock:
-            return len(self._samples)
+            return min(len(v) for v in self._samples.values())
 
     @property
     def is_recording(self) -> bool:
@@ -209,20 +216,22 @@ class PicoRecorder:
         self._opened = True
 
     def _configure_channel(self):
-        assert_pico_ok(ps.ps5000aSetChannel(
-            self._handle, self._channel, 1, self._coupling, self._range, 0.0
-        ))
+        for c in self._ch_labels:
+            assert_pico_ok(ps.ps5000aSetChannel(
+                self._handle, self._ch_enums[c], 1, self._coupling, self._ch_ranges[c], 0.0
+            ))
 
     def _register_buffer(self):
-        assert_pico_ok(ps.ps5000aSetDataBuffers(
-            self._handle,
-            self._channel,
-            self._buf.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
-            None,
-            self._buf_size,
-            0,
-            ps.PS5000A_RATIO_MODE['PS5000A_RATIO_MODE_NONE'],
-        ))
+        for c in self._ch_labels:
+            assert_pico_ok(ps.ps5000aSetDataBuffers(
+                self._handle,
+                self._ch_enums[c],
+                self._bufs[c].ctypes.data_as(ctypes.POINTER(ctypes.c_int16)),
+                None,
+                self._buf_size,
+                0,
+                ps.PS5000A_RATIO_MODE['PS5000A_RATIO_MODE_NONE'],
+            ))
 
     def _start_streaming(self):
         interval = ctypes.c_int32(self._interval_us)
@@ -243,8 +252,10 @@ class PicoRecorder:
         auto_stop = [False]
 
         def _callback(handle, n, start, overflow, trigAt, trig, autoStop, param):
+            # one driver callback covers every registered channel buffer
             with self._lock:
-                self._samples.extend(self._buf[start:start + n].tolist())
+                for c in self._ch_labels:
+                    self._samples[c].extend(self._bufs[c][start:start + n].tolist())
             if autoStop:
                 auto_stop[0] = True
 
@@ -258,11 +269,16 @@ class PicoRecorder:
         maxADC = ctypes.c_int16()
         assert_pico_ok(ps.ps5000aMaximumValue(self._handle, ctypes.byref(maxADC)))
 
-        raw = np.array(self._samples[:count], dtype=np.int16)
-        mv = adc2mV(raw, self._range, maxADC)
-        time_s = np.arange(count) * (self._actual_interval_us * 1e-6)
+        out = {'time_s': np.arange(count) * (self._actual_interval_us * 1e-6),
+               'channels': np.array(self._ch_labels),
+               'channel_ranges': np.array([self._ch_range_labels[c] for c in self._ch_labels])}
+        for c in self._ch_labels:
+            raw = np.array(self._samples[c][:count], dtype=np.int16)
+            out[f'mv_{c}'] = np.asarray(adc2mV(raw, self._ch_ranges[c], maxADC))
+        # `mv` stays the first channel so single-channel readers keep working
+        out['mv'] = out[f'mv_{self._ch_labels[0]}']
 
-        np.savez_compressed(self._filename, time_s=time_s, mv=mv)
+        np.savez_compressed(self._filename, **out)
 
 
 def plot_capture(filename: str):
@@ -375,9 +391,8 @@ def plot_dc_offsets(
         dc_smoothed = _moving_average(mv, 0.002, fs)   # ~2 ms
 
         if units == "current":
-            # 10K sense resistor, 1000 amplification, pico voltage in mV -> current in uA
-            signal = mv / 1000 * 1000 / 10_000
-            dc_smoothed = dc_smoothed / 1000 * 1000 / 10_000
+            signal = mv_to_current_uA(mv, DEFAULT_SENSE_GAIN)
+            dc_smoothed = mv_to_current_uA(dc_smoothed, DEFAULT_SENSE_GAIN)
             y_label = "uA"
         else:
             signal = mv

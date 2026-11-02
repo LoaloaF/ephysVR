@@ -87,6 +87,33 @@ def draw_mea1k(bg='black', el_color='#111111', mapping=None, cmap_scaler=1, fast
     [ax.spines[spine].set_visible(False) for spine in ax.spines]
     return (fig, ax), recs
 
+def scatter_mea1k(ax, electrodes, values, vmin=10_000, vmax=1_400_000, cmap='plasma',
+                  s=5, cbar=True, cbar_label='Impedance (Ohm)', cbar_kwargs=None):
+    """Scatter MEA1K electrodes at their chip coordinates on an existing ax.
+
+    Same geometry and framing as the 'CMOS Spatial Distribution' panel of
+    plot_impedance_analysis, but draws into an ax you pass in, so it can sit in a
+    gridspec next to other panels.
+
+    electrodes : array-like of mea1k electrode ids (0..26399)
+    values     : array-like, same length, mapped to color via cmap/vmin/vmax
+    """
+    electrodes = np.asarray(electrodes)
+    x = (electrodes % CHIP_W) * 17.5 + 17.5/4
+    y = (electrodes // CHIP_W) * 17.5 + 17.5/4
+    sc = ax.scatter(x, y, c=values, s=s, marker='s', vmin=vmin, vmax=vmax,
+                    cmap=cmap, edgecolors='none')
+    ax.set_ylim(2100, 0)
+    ax.set_xlim(0, 3850)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+    ax.set_aspect('equal', adjustable='box')
+    if cbar:
+        plt.colorbar(sc, ax=ax, label=cbar_label, **(cbar_kwargs or {"pad": 0.02}))
+    return sc
+
+
 def adjust_saturation(rgb_color, offset):
     # Convert RGB (0-1 scale) to HSV
     r, g, b = rgb_color
@@ -324,7 +351,7 @@ def plot_impedance_analysis(rec_dir, aggr_df, log_scale=True, use_imp_connectivi
     if ylims is not None:
         scatter = ax.scatter(heatmap_x,
                              heatmap_y,
-                             c=aggr_df[imp_col], s=8, marker='s',
+                             c=aggr_df[imp_col], s=5, marker='s',
                              vmin=ylims[0], vmax=ylims[1],
                              cmap='plasma', edgecolors='none')
         cbar = plt.colorbar(scatter, ax=ax, label='Impedance (Ohm)', pad=0.02)
@@ -332,7 +359,7 @@ def plot_impedance_analysis(rec_dir, aggr_df, log_scale=True, use_imp_connectivi
         cmap = plt.cm.colors.ListedColormap(plt.cm.turbo(np.linspace(0.01, 0.8, 256)))
         scatter = ax.scatter(heatmap_x,
                              heatmap_y,
-                             c=aggr_df[imp_col], s=8, marker='s', vmin=10_000, vmax=1_400_000,
+                             c=aggr_df[imp_col], s=3, marker='s', vmin=10_000, vmax=1_400_000,
                              cmap=cmap, edgecolors='none')
         cbar = plt.colorbar(scatter, ax=ax, label='Impedance (Ohm)', pad=0.02)
         cbar.set_ticks([10_000, 50_000, 100_000, 200_000, 400_000, 600_000, 800_000, 1_400_000])
@@ -791,26 +818,49 @@ def compare_impedance(aggr_dfs, title_list, show_scatter=True, color_metal=False
     span_idx = idx.max() - idx.min()
     spread = 0.6
     x_base = (idx - idx.min()) / span_idx * spread if span_idx else np.zeros_like(idx)
+    x_base = np.asarray(x_base).ravel()
     center = spread / 2
 
     # scatter per dataset
     for i, title in enumerate(title_list):
         if not show_scatter:
             break
-        y = data['impedance_Ohm_'+title].values
-        if color_metal and 'pad_metal_'+title in data.columns:
-            c = data['pad_metal_'+title].map({**metal_colors, np.nan: 'gray'}).values
+        col_imp = 'impedance_Ohm_'+title
+        col_metal = 'pad_metal_'+title
+
+        # Handle duplicate column names (take first if multiple exist)
+        imp_col = data[col_imp]
+        if isinstance(imp_col, pd.DataFrame):
+            imp_col = imp_col.iloc[:, 0]
+
+        y = np.asarray(imp_col.values).ravel()
+        valid_idx = np.where(~np.isnan(y))[0]
+
+        if color_metal and col_metal in data.columns:
+            metal_col = data[col_metal]
+            if isinstance(metal_col, pd.DataFrame):
+                metal_col = metal_col.iloc[:, 0]
+            c = metal_col.map({**metal_colors, np.nan: 'gray'}).values
             # shuffle draw order so neither metal is fully overdrawn by the other
-            order = np.random.permutation(len(y))
-            ax.scatter((x_base + i)[order], y[order], c=c[order], alpha=0.6, s=2, zorder=3)
+            order = np.random.permutation(len(valid_idx))
+            shuffled_idx = valid_idx[order]
+            ax.scatter((x_base + i)[shuffled_idx], y[shuffled_idx], c=c[shuffled_idx], alpha=0.6, s=2, zorder=3)
         else:
-            ax.scatter(x_base + i, y, color='steelblue', alpha=0.6, s=20, label=title, zorder=3)
+            x_vals = (x_base + i)[valid_idx]
+            y_vals = y[valid_idx]
+            ax.scatter(x_vals, y_vals, color='steelblue', alpha=0.6, s=20, label=title, zorder=3)
 
     # connect each electrode's impedance across consecutive datasets; lines colored
     # by metal (desaturated) when requested, else gray with alpha scaled by change
     for i, (t0, t1) in enumerate(zip(title_list[:-1], title_list[1:])):
-        y0 = data['impedance_Ohm_'+t0].values
-        y1 = data['impedance_Ohm_'+t1].values
+        col0 = data['impedance_Ohm_'+t0]
+        col1 = data['impedance_Ohm_'+t1]
+        if isinstance(col0, pd.DataFrame):
+            col0 = col0.iloc[:, 0]
+        if isinstance(col1, pd.DataFrame):
+            col1 = col1.iloc[:, 0]
+        y0 = col0.values
+        y1 = col1.values
         valid = ~(np.isnan(y0) | np.isnan(y1))
         p0 = np.column_stack([x_base[valid] + i,     y0[valid]])
         p1 = np.column_stack([x_base[valid] + i + 1, y1[valid]])

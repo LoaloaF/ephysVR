@@ -18,17 +18,19 @@ from mea1k_modules.mea1k_raw_preproc import read_raw_data
 from mea1k_modules.mea1k_visualizations import draw_mea1k
 from mea1k_connectivity_scripts.signal_helpers import estimate_frequency_power
 
+def _fname2config_id(fname):
+    # check 4 digit case...
+    pruned_fname = fname.replace('.raw.h5', '')
+    if pruned_fname[-4].isdigit():
+        return int(pruned_fname[-4:])
+    return int(pruned_fname[-3:])
+
 def _get_hdf5_fnames_from_dir(subdir):
     fnames, ids = [], []
     for fname in sorted(os.listdir(subdir)):
         if fname.endswith('raw.h5'):
             fnames.append(fname)
-            # check 4 digit case...
-            pruned_fname = fname.replace('.raw.h5', '')
-            if pruned_fname[-4].isdigit():
-                ids.append(int(pruned_fname[-4:]))
-            else:
-                ids.append(int(pruned_fname[-3:]))
+            ids.append(_fname2config_id(fname))
     return fnames, ids
 
 def _save_output(subdir, data, fname):
@@ -38,37 +40,44 @@ def _save_output(subdir, data, fname):
         os.makedirs(fullpath)
     data.to_csv(os.path.join(fullpath, fname))
 
-def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False, 
+def extract_connectivity_file(subdir, fname, config_id, input_ampl_mV, n_samples,
+                              debug=False, min_band=960, max_band=1040):
+    """Connectivity of all electrodes in one recording. Returns None if unreadable."""
+    try:
+        data = read_raw_data(subdir, fname, convert2uV=True, to_df=True,
+                             to_df_index='mea1k_el',
+                             col_slice=slice(0, n_samples))
+    except Exception as e:
+        print(f"Error occurred while reading {fname}: {e}")
+        return None
+
+    mean_ampl = []
+    for j,row in enumerate(data.astype(float).values):
+        m_ampl, _ = estimate_frequency_power(row, sampling_rate=EC.SAMPLING_RATE,
+                                             debug=debug and j < 10, min_band=min_band,
+                                             max_band=max_band)
+        # scale to mV
+        mean_ampl.append(m_ampl/1000)
+
+    data = pd.DataFrame(mean_ampl, index=data.index, columns=['ampl'])
+    data['connectivity'] = data.ampl.values/input_ampl_mV
+    data['ampl_mV'] = data.ampl.values
+    data['input_ampl_mV'] = input_ampl_mV
+    data.index = pd.MultiIndex.from_product([[config_id],data.index], names=['config', 'el'])
+    return data
+
+def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False,
                          min_band=960, max_band=1040):
     fnames, ids = _get_hdf5_fnames_from_dir(subdir)
     all_data = []
     for fname, i in zip(fnames, ids):
         print(f"Config {i} of {len(fnames)}")
-        try:
-            data = read_raw_data(subdir, fname, convert2uV=True, to_df=True,
-                                 col_slice=slice(0, n_samples))
-        except Exception as e:
-            print(f"Error occurred while reading {fname}: {e}")
-            continue
-        # data = data / 1000 # convert to mV        from scipy.signal import butter, sosfiltfilt        from scipy.signal import butter, sosfiltfilt
-    
         print("Filtering...")
-        mean_ampl = []
-        for j,row in enumerate(data.astype(float).values):
-            debug = True if j <10 and debug else False
-            m_ampl, _ = estimate_frequency_power(row, sampling_rate=EC.SAMPLING_RATE,
-                                                 debug=debug, min_band=min_band, 
-                                                 max_band=max_band)
-            # scale to mV
-            mean_ampl.append(m_ampl/1000)
-        
-        data = pd.DataFrame(mean_ampl, index=data.index, columns=['ampl'])
-        data['connectivity'] = data.ampl.values/input_ampl_mV 
-        data['ampl_mV'] = data.ampl.values
-        data['input_ampl_mV'] = input_ampl_mV
-        data.index = pd.MultiIndex.from_product([[i],data.index], names=['config', 'el'])
-        print(f"Done. n >80%: {(data.connectivity >.8).sum()}\n")
-
+        data = extract_connectivity_file(subdir, fname, i, input_ampl_mV, n_samples,
+                                         debug=debug, min_band=min_band, max_band=max_band)
+        if data is None:
+            continue
+        print(f"Done. n >70%: {(data.connectivity >.7).sum()}\n")
         all_data.append(data)
     _save_output(subdir, pd.concat(all_data), f"extr_connectivity.csv")
         
@@ -90,7 +99,7 @@ def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
             print("missing", el_i, end=' ')
             # el_recs.set_edgecolor((.8,0,0))
             continue
-        if data.loc[el_i:el_i].connectivity.isna().any():
+        if data.loc[[el_i]].connectivity.isna().any():
             # el_recs.set_edgecolor((.8,0,0))
             print("NaN", el_i, end=' ')
             continue

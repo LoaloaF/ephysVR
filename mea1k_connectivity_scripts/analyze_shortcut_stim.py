@@ -255,7 +255,10 @@ def plot_amplitude_ridges(subdir, bins=60, n_groups=8, shorted_thresh=0.8,
     print("Saved amplitude heatmap to \n", os.path.join(output_dir, "amplitude_heatmap.png"))
     return fig
 
-def connected_islands(subdir, output_dir=None, output_fname=None, conn_thr=.8, draw_mea_args={'fast': True}):
+def _load_shorted_reciprocal_edges(subdir, output_dir, conn_thr=.8):
+    """Load (or build) the connectivity graph for a TileShorts recording and
+    return just the reciprocal edges that belong to a shorted island, plus
+    the underlying per-electrode sine-voltage data (for x/y positions etc.)."""
     processed_dir = os.path.join(subdir, "processed")
     if os.path.exists(os.path.join(output_dir, "extracted_sine_voltages.csv")):
         data = pd.read_csv(os.path.join(output_dir, "extracted_sine_voltages.csv"))
@@ -272,12 +275,65 @@ def connected_islands(subdir, output_dir=None, output_fname=None, conn_thr=.8, d
 
     if g.empty:
         print("No connectivity edges found.")
-        return
+        return data, pd.DataFrame()
 
     g['reciprocal'] = g['reciprocal'].astype(str).str.lower().isin(['true', '1'])
     reciprocal = g[g.reciprocal & g.short_island_id.notna()]
     if reciprocal.empty:
         print("No reciprocal connectivity edges found.")
+    return data, reciprocal
+
+def get_shorted_electrodes(subdir, conn_thr=.5):
+    """Return the sorted list of mea1k electrodes that are part of a shorted
+    island in a TileShorts recording (`subdir`, the full recording directory
+    with a `processed` subfolder)."""
+    output_dir = os.path.join(subdir, "processed")
+    _, reciprocal = _load_shorted_reciprocal_edges(subdir, output_dir, conn_thr=conn_thr)
+    if reciprocal.empty:
+        return []
+    electrodes = pd.unique(reciprocal[['source', 'target']].values.ravel())
+    return sorted(int(el) for el in electrodes)
+
+def get_island_candidates(subdir, min_island_size=2, conn_thr=.5):
+    """Return {short_island_id: [electrodes]} for islands with at least
+    ``min_island_size`` electrodes, each list ranked best-representative first.
+
+    Rank score = median connectivity of the in-island reciprocal edges the
+    electrode was the SOURCE of, i.e. how well it drove its island-mates when
+    stimulated. Electrodes that never appear as a source (never stimulated in
+    the TileShorts sweep) get NaN and are ranked last."""
+    output_dir = os.path.join(subdir, "processed")
+    _, reciprocal = _load_shorted_reciprocal_edges(subdir, output_dir, conn_thr=conn_thr)
+    if reciprocal.empty:
+        return {}
+
+    membership = pd.concat([
+        reciprocal[['short_island_id', 'source']].rename(columns={'source': 'electrode'}),
+        reciprocal[['short_island_id', 'target']].rename(columns={'target': 'electrode'}),
+    ]).drop_duplicates()
+    membership['electrode'] = membership.electrode.astype(int)
+    membership['short_island_id'] = membership.short_island_id.astype(int)
+
+    sizes = membership.groupby('short_island_id').electrode.nunique()
+    keep = sizes[sizes >= min_island_size].index
+    membership = membership[membership.short_island_id.isin(keep)]
+
+    # drive score per electrode (as stimulation source, within its island)
+    drive = reciprocal.groupby('source').connectivity.median()
+    membership['drive'] = membership.electrode.map(drive)
+
+    candidates = {}
+    for island_id, sub in membership.groupby('short_island_id'):
+        # NaN drive sorts last, best driver first
+        ranked = sub.sort_values('drive', ascending=False, na_position='last')
+        candidates[int(island_id)] = ranked.electrode.tolist()
+    print(f"{len(candidates)} islands with >={min_island_size} electrodes "
+          f"({membership.electrode.nunique()} electrodes total)")
+    return candidates
+
+def connected_islands(subdir, output_dir=None, output_fname=None, conn_thr=.8, draw_mea_args={'fast': True}):
+    data, reciprocal = _load_shorted_reciprocal_edges(subdir, output_dir, conn_thr=conn_thr)
+    if reciprocal.empty:
         return
 
     # Electrode id -> chip coordinates for plotting.

@@ -31,7 +31,7 @@ from mea1k_modules.mea1k_config_utils import (
 def rec_config_set():
     # ======== PARAMETERS ========
     nas_dir = device_paths()[0]
-    headstage_name = "MEA1K23"
+    headstage_name = "MEA1K27"
     subdir = f"devices/headstage_devices/{headstage_name}/recordings"
     # subdir = f"devices/implant_devices/260713_MEA1K23_J1688pad2shankB1/recordings"
     t = datetime.now().strftime("%Y-%m-%d_%H.%M")
@@ -41,9 +41,26 @@ def rec_config_set():
     # rec_dir = f"{t}_8Sh4SilverPaint_Ext0.2uA_Singles_PT1_1.7mm_+MANYd_S1-8no7,8"
     # rec_dir = f"{t}_Bond3_16Shank_VrefFPGAStim_ampl15_14shanks_PT1_2.2mm"
     # rec_dir = f"{t}_Bond3_VrefFPGAStim_ampl15_14shanksSilver_PT1_2.2mm"
-    rec_dir = f"{t}_JDesignFirstSoldered2_VRef15_PT5"
+    # rec_dir = f"{t}_JDesignFirstSoldered2_VRef15_PT5"
     # rec_dir = f"{t}_ACF_PIEl_VRefAmpl15_Try10_PT5_2mm"
-    # rec_dir = f"{t}_ReEtched14ShankReGoldPlated_VRef15_PT3"
+    # rec_dir = f"{t}_2ndTry_ACF_J2_VRef15_PT3"
+    # rec_dir = f"{t}_noACFTry2_J2_36Pads_VRef15_PT1_1.9mm"
+    # rec_dir = f"{t}_noACFTry4_J2_61Pads_VRef15_PT2"
+
+    # ---- consistent naming theme: {t}_{name}_{tightening_str}_<recording type> ----
+    # update name/tightening_str each session; recording type stays "10mVFPGA" for this script
+    # name = "PDMS_J2_2x61umP,35umP"
+    # name = "2x8x56umP_1of16100K"
+    # name = "PDMS_J2_2x61umP,35umP"
+    name = "test12_100k_36umP_56umPE"
+    # name = "2x8x56umP_16`of16_100K"
+    
+    # tightening_str = "PT2_2.8mm"
+    # tightening_str = "PT4_2.6mm"
+    # tightening_str = "PT4_2.8mm"
+    tightening_str = "PT2"
+    
+    rec_dir = f"{t}_{name}_{tightening_str}_10mVFPGA"
     
     post_download_wait_time = .6
     rec_time = 1.5

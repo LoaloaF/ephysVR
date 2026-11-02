@@ -181,6 +181,13 @@ def shift_DAC(DAC_val, dac_id=0):
     seq.send()
     del seq
 
+def set_DAC(dac_id, dac_val):
+    """Hold DAC `dac_id` at `dac_val` (e.g. park an idle DAC at mid-supply 512)."""
+    seq = maxlab.Sequence()
+    seq.append(maxlab.chip.DAC(dac_id, dac_val))
+    seq.send()
+    del seq
+
 def get_headstage_stim_settings(headstage_name):
     nas_dir = device_paths()[0]
     stimulater_settings_path = f"devices/headstage_devices/{headstage_name}/{headstage_name}_stimunit_characterization.csv"
@@ -255,23 +262,27 @@ def end_fpga_sine_stim():
     maxlab.send(maxlab.system.Switches(sw_0=0, sw_1=0, sw_2=0, sw_3=0, sw_4=0, sw_5=0, sw_6=0, sw_7=0))
     time.sleep(0.5)
 
-def setup_stim_unit_characterization(dirname):
+def setup_stim_unit_characterization(dirname, gain=7):
     if not os.path.exists(dirname):
         os.makedirs(dirname, exist_ok=True)
     print(f"Recording path exists: {os.path.exists(dirname)} - ", dirname)
     
     array = maxlab.chip.Array()
-    reset_MEA1K(gain=7, enable_stimulation_power=True)
+    reset_MEA1K(gain=gain, enable_stimulation_power=True)
     array.reset()
     array.clear_selected_electrodes()
     maxlab.send(maxlab.chip.Core().use_external_port(True))
     array.download()
     return array
     
-def find_stim_unit_amplifier(array, stim_unit, which_amplifier=0):
+def find_stim_unit_amplifier(array, stim_unit, which_amplifier=0, exclude=()):
+    """Random amplifier routed to `stim_unit`. Returned amplifier is left connected to
+    stimulation (not downloaded), every probed or skipped amplifier is disconnected again.
+    exclude: amplifier ids already used for this stim unit. Pass these instead of counting
+    up which_amplifier, the shuffle differs per call so which_amplifier can repeat picks."""
     # for ampl_id in random.sample(range(1024), 1024):
     # shuffle the amplifiers to avoid always picking the same one
-    ampl_ids = list(range(1024))
+    ampl_ids = [a for a in range(1024) if a not in set(exclude)]
     random.shuffle(ampl_ids)
     for ampl_id in ampl_ids:
         array.connect_amplifier_to_stimulation(ampl_id)
@@ -292,5 +303,7 @@ def find_stim_unit_amplifier(array, stim_unit, which_amplifier=0):
             else:
                 which_amplifier -= 1
                 print(f" skipping this one.")
+                # don't leave skipped amplifiers on the stim unit for the next download
+                array.disconnect_amplifier_from_stimulation(ampl_id)
                 continue
     raise ValueError(f"Could not find amplifier for stimulation unit {stim_unit}")

@@ -12,7 +12,10 @@ from baseVR.base_logger import CustomLogger as Logger
 
 from ephys_constants import SAMPLING_RATE, MAX_AMPL_mV, ADC_RESOLUTION, MEA_LOGGER_DEFAULT_GAIN, MEA_OVERRIDE_GAIN
 
-def _get_recording_gain(path, fname):
+def _get_recording_gain(path, fname, override_gain=None):
+    # override_gain: if passed, used regardless of the file and MEA_OVERRIDE_GAIN
+    if override_gain is not None:
+        return override_gain
     fmt = _get_recording_version(path, fname)
     if fmt == 'legacy':
         with h5py.File(os.path.join(path, fname), 'r') as file:
@@ -195,14 +198,16 @@ def read_stim_DAC(path, fname, col_slice=slice(None), adjust_delay=True):
 
 def read_raw_data(path, fname, convert2uV,
                   subtract_dc_offset=False, to_df=False, 
-                  row_slice=slice(None), col_slice=slice(None)):
+                  to_df_index='amplifier_id',
+                  row_slice=slice(None), col_slice=slice(None), override_gain=None):
+    # override_gain: convert with this gain instead of MEA_OVERRIDE_GAIN (recordings at varying gain)
     
     dtype = np.int16 # base case, no conversion of ADC values, except logger (is uint16)
     if convert2uV:
         dtype = np.float16 # uV of max ±28mV for gain=112, or smaller for higher gains
-        gain = _get_recording_gain(path, fname)
-        if gain in (1.0, 7.0):
-            dtype = np.float32 # uV get ±400 mV for gain=7.0, prevent overflow
+        gain = _get_recording_gain(path, fname, override_gain)
+        if gain < 28:
+            dtype = np.float32 # uV get ±400 mV for gain=7.0 (±59 mV at gain 28), prevent float16 overflow
     raw_data = _read_mea1k_file(path, fname, row_slice=row_slice, 
                                 col_slice=col_slice, dtype=dtype)
 
@@ -212,7 +217,7 @@ def read_raw_data(path, fname, convert2uV,
     #     raw_data = raw_data[raw_data_mapping.values]
     
     if convert2uV:
-        gain = _get_recording_gain(path, fname)
+        gain = _get_recording_gain(path, fname, override_gain)
         raw_data = _ADC2voltage(raw_data, gain, subtract_dc_offset=subtract_dc_offset,)
     # in convert2uV dc is already subtracted, case below only for raw ADC values, always first column
     elif subtract_dc_offset:
@@ -222,10 +227,15 @@ def read_raw_data(path, fname, convert2uV,
     
     if to_df and not isinstance(row_slice, pd.Index):
         raw_data_mapping, _ = get_recording_config(path, fname)
-        # should already be in this order
-        # raw_data = pd.DataFrame(raw_data, index=raw_data_mapping.index)
-        raw_data = pd.DataFrame(raw_data, index=raw_data_mapping.values)
-        raw_data.index.name = 'el'
+        if to_df_index == 'amplifier_id':
+            idx = raw_data_mapping.values 
+        elif to_df_index == 'mea1k_el':
+             idx = raw_data_mapping.index
+        else:
+            raise ValueError(f"Invalid `to_df_index` value: {to_df_index}. "
+                             "Must be 'amplifier_id' or 'mea1k_el'.")
+        raw_data = pd.DataFrame(raw_data, index=idx)
+        raw_data.index.name = to_df_index
 
         # if rec_file_fmt != 'legacy':
         #     index_key = data_key.replace('raw', 'frame_nos')
