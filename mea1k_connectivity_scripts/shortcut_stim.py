@@ -3,13 +3,14 @@ import sys
 from glob import glob
 import time
 import datetime
-import threading
 import functools
 
 import pandas as pd
 import numpy as np
 from scipy.ndimage import uniform_filter1d
 
+import matplotlib
+matplotlib.use("Agg")  # debug plots are drawn in the postproc thread, files only
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
@@ -29,22 +30,14 @@ from mea1k_modules.mea1k_config_utils import get_maxlab_saving, get_maxlab_array
 # from mea1k_modules.mea1k_config_utils import get_zeroCurrentDAC_value
 from mea1k_utils import cp_rec_dir_to_implant_dir
 from mea1k_connectivity_scripts.analyze_shortcut_stim import get_aggr_results
+from mea1k_modules.live_postproc import LivePostproc, save_live_fig
 
 import ephys_constants as EC
 from mea1k_modules.mea1k_raw_preproc import read_raw_data
-from signal_helpers import estimate_frequency_power
+from signal_helpers import extract_amplitude
 
 
 CHIP_W, CHIP_H, PITCH = 220, 120, 17.5
-FIG_DIR = os.path.join(os.path.dirname(__file__), "live_figures")
-
-def get_hdf5_fnames_from_dir(subdir):
-    fnames, ids = [], []
-    for fname in sorted(os.listdir(subdir)):
-        if fname.endswith('raw.h5'):
-            fnames.append(fname)
-            ids.append(fname.replace('.raw.h5', '').split('_')[-1])
-    return fnames, ids
 
 def find_sequential_windows(data, stimulated, f=1000, trim=0.2):
     """Sequential tile stim: locate the n_steps sine bursts in one recording.
@@ -114,36 +107,38 @@ def find_sequential_windows(data, stimulated, f=1000, trim=0.2):
         windows[stimulated.tile.values[stim_rows[k]]] = slice(a + pad, b - pad)
     return windows
 
-def extract_sine_voltages(subdir, fname, debug):
+def _sine_ampl(x, name, debug):
+    """Lock-in amplitude at 1 kHz over all of x (demean + 50 Hz notch first)."""
+    return extract_amplitude(x, sampling_rate=EC.SAMPLING_RATE, min_band=960, max_band=1040,
+                             estimate_amplitude_from=0, estimate_amplitude_to=len(x)-1,
+                             name=name, plot_fname='debug_amplifier', debug=debug)[0]
+
+def extract_sine_voltages(subdir, fname, gain, debug):
     """Shared primitive: one raw file -> df with sine_voltage_uV per electrode.
     If the config csv has a stim_order column (sequential tile stim), every electrode is
-    evaluated in the burst of its own tile; otherwise in one fixed window (all stim at once)."""
+    evaluated in the burst of its own tile; otherwise in one fixed window (all stim at once).
+    gain: set on the chip during the recording, used instead of the gain in the file."""
     stimulated = pd.read_csv(os.path.join(subdir, fname.replace(".raw.h5", ".csv")))
     data = read_raw_data(subdir, fname, convert2uV=True, subtract_dc_offset=True,
-                        #  col_slice=slice(14000, 22500, None))
-    )
+                         override_gain=gain)
     stim_amplifier = stimulated[stimulated.stim].index[0]
+    name = fname.replace(".raw.h5", "")
     if 'stim_order' in stimulated.columns and stimulated.stim_order.notna().any():
         windows = find_sequential_windows(data, stimulated)
         if windows is None:
             return None
         tiles = stimulated.tile.values
-        mean_ampl = np.array([estimate_frequency_power(row.astype(float)[windows[tiles[irow]]],
-                              sampling_rate=EC.SAMPLING_RATE, min_band=960,
-                              max_band=1040, debug=True if debug and irow==stim_amplifier else False)[0]
+        mean_ampl = np.array([_sine_ampl(row.astype(float)[windows[tiles[irow]]], name,
+                                         debug=debug and irow==stim_amplifier)
                               for irow, row in enumerate(data)])
     else:
-        mean_ampl = np.array([estimate_frequency_power(row.astype(float)[14500:22000],
-                              sampling_rate=EC.SAMPLING_RATE, min_band=960,
-                              max_band=1040, debug=True if debug and irow==stim_amplifier else False)[0]
+        mean_ampl = np.array([_sine_ampl(row.astype(float)[14500:22000], name,
+                                         debug=debug and irow==stim_amplifier)
                               for irow, row in enumerate(data)])
     if "Unnamed: 0" in stimulated.columns:
         stimulated.drop("Unnamed: 0", axis=1, inplace=True)
     stimulated['sine_voltage_uV'] = mean_ampl
     return stimulated
-
-def _config_csv_is_ready(path, min_age_s=5):
-    return os.path.exists(path) and (time.time() - os.path.getmtime(path)) >= min_age_s
 
 def add_connectivity_single(stimulated):           # was analyze_single_stim
     stim_row = stimulated[stimulated.stim]
@@ -166,7 +161,7 @@ def _el_xy(el):
     el = np.asarray(el)
     return (el % CHIP_W) * PITCH + PITCH/4, (el // CHIP_W) * PITCH + PITCH/4
 
-def plot_config_debug(stimulated, fname, out_dir=FIG_DIR):
+def plot_config_debug(stimulated, fname):
     """Live chip view: overwrites a single PNG so a viewer can auto-refresh."""
     fig = Figure(figsize=(24, 13))
     FigureCanvasAgg(fig)
@@ -213,69 +208,48 @@ def plot_config_debug(stimulated, fname, out_dir=FIG_DIR):
     ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
     ax.set_title(title, fontsize=20)
 
-    # write to temp then replace, so a refreshing viewer never reads a half-written file
-    out = "./live_figures/shortcut_stim_config_res.png"
-    fig.savefig(out, dpi=130, bbox_inches='tight')
-    os.replace(out, out)
+    save_live_fig(fig, "shortcut_stim_config_res", dpi=130, bbox_inches='tight')
 
-_postproc_failed = set()   # files whose processing returned None, don't re-read every poll
+def process_shortcut_recording(subdir, fname, log, connectivity_fn, fallback_gain=None,
+                               debug=False):
+    """process_fn for LivePostproc: one recording -> sine voltage and tile_connectivity per
+    electrode. The gain comes from the config csv written after the recording; recordings
+    from before the gain was stored there use fallback_gain."""
+    config_fullfname = os.path.join(subdir, fname.replace(".raw.h5", ".csv"))
+    if not os.path.exists(config_fullfname):
+        log(f"{fname}: no config csv, recording was interrupted?")
+        return None
+    config_map = pd.read_csv(config_fullfname)
+    if 'gain' in config_map.columns:
+        gain = config_map.gain.iloc[0]
+    elif fallback_gain is not None:
+        gain = fallback_gain
+        log(f"{fname}: no gain in config csv, using fallback gain={gain}")
+    else:
+        log(f"{fname}: no gain in config csv and no fallback_gain given")
+        return None
 
-def postprocess_file(subdir, fname, connectivity_fn, debug=False):
-    in_csv  = os.path.join(subdir, fname.replace(".raw.h5", ".csv"))
-    out_csv = os.path.join(subdir, "processed", fname.replace(".raw.h5", ".csv"))
-    if (os.path.exists(out_csv) or not _config_csv_is_ready(in_csv)
-            or (subdir, fname) in _postproc_failed):
-        return False  # already done, OR recording not finished yet (no config csv)
-    stimulated = extract_sine_voltages(subdir, fname, debug=debug)
+    stimulated = extract_sine_voltages(subdir, fname, gain, debug=debug)
     stimulated = connectivity_fn(stimulated) if stimulated is not None else None
     if stimulated is None:
-        _postproc_failed.add((subdir, fname))
-        Logger().logger.error(f"postproc failed, skipping {fname}")
-        return False
+        return None
     if debug:
         plot_config_debug(stimulated, fname.replace(".raw.h5", ""))
     stimulated.index = pd.MultiIndex.from_product(
         [[fname.replace(".raw.h5", "")], stimulated.index], names=['config', 'el'])
-    os.makedirs(os.path.dirname(out_csv), exist_ok=True)
-    stimulated.to_csv(out_csv)
-    Logger().logger.info(f"postproc -> {os.path.basename(out_csv)}")
-    return True
+    return stimulated.reset_index()
 
-def postprocess_live(subdir, connectivity_fn, stop_event, debug=False, poll_interval=2):
-    """Run in a thread. Polls for finished recordings; one final sweep after stop."""
-    n_done = 0
-    while True:
-        stopped = stop_event.is_set()
-        if os.path.exists(subdir):
-            fnames = get_hdf5_fnames_from_dir(subdir)[0]
-            for fname in fnames:
-                if postprocess_file(subdir, fname, connectivity_fn, debug=debug):
-                    n_done += 1
-                    print(f"[postproc] {n_done} processed this run "
-                          f"({len(_postproc_failed)} failed), last: {fname}", end="\r", flush=True)
-        if stopped:
-            break
-        time.sleep(poll_interval)
-
-def _fatal_thread_exit(message, exc=None):
-    logger = Logger().logger
-    if exc is None:
-        logger.critical(message)
-    else:
-        logger.critical(message, exc_info=exc)
-    sys.stdout.flush()
-    sys.stderr.flush()
-    os._exit(1)
-
-def _run_postprocess_live_guarded(subdir, connectivity_fn, stop_event, debug=False, poll_interval=2):
-    """Run postprocess_live, but hard-exit the process if it fails unexpectedly."""
-    try:
-        postprocess_live(subdir, connectivity_fn, stop_event, debug=debug, poll_interval=poll_interval)
-    except BaseException as exc:
-        _fatal_thread_exit("postprocess_live thread crashed", exc)
-    finally:
-        if not stop_event.is_set():
-            _fatal_thread_exit("postprocess_live thread exited unexpectedly")
+def summarize_shorts(results, last_result, min_stim_uV=4000, conn_thr=.5):
+    """Tiles of the last processed config: did its stim electrode carry the sine (sanity
+    check), and did any other electrode of the tile pick it up (short)."""
+    if last_result is None:   # only results of an earlier run so far
+        return ""
+    stim = last_result.stim.astype(bool)
+    by_tile = last_result.tile
+    stim_ok = (stim & (last_result.sine_voltage_uV > min_stim_uV)).groupby(by_tile).any()
+    shorted = (~stim & (last_result.tile_connectivity > conn_thr)).groupby(by_tile).any()
+    return (f"{stim_ok.sum()}/{len(stim_ok)} tiles with stim > {min_stim_uV} uV, "
+            f"{(stim_ok & shorted).sum()} of those with shorted neighbours (conn > {conn_thr})")
 
 def _stimulate_sequential(stim_units, stim_seq, step_s, gap_s):
     """One burst per stim unit, in ascending unit order. All units are already powered up
@@ -290,7 +264,7 @@ def _stimulate_sequential(stim_units, stim_seq, step_s, gap_s):
     print()
 
 def _stimulate_and_record(array, config_map, stim_units, path, fname, rec_time,
-                          post_download_wait_time, s, stim_seq, mode, seq_step=None):
+                          post_download_wait_time, s, stim_seq, mode, gain, seq_step=None):
     """Shared primitive: given a fully routed+downloaded array with stim_units already
     connected, record while stimulating, then tear down and write the config csv.
     seq_step=(step_s, gap_s) stimulates the units one after another (voltage mode only)
@@ -301,50 +275,55 @@ def _stimulate_and_record(array, config_map, stim_units, path, fname, rec_time,
         config_map['stim_order'] = config_map.stim_unit.map(
             {u: i for i, u in enumerate(sorted(stim_units))})
     start_saving(s, dir_name=path, fname=fname, legacy=False)
+    # everything up to stop_saving in try/finally: MaxWell keeps recording until saving is
+    # stopped, an exception or Ctrl+C in between would leave it running (server crashes)
+    try:
+        time.sleep((post_download_wait_time/3) *1)
+        if seq_step is not None:
+            turn_on_stimulation_units(stim_units, dac_id=1, mode=mode)
+            set_DAC(1, 512)
+        elif len(stim_units) == 2:
+            turn_on_stimulation_units(stim_units[0:1], dac_id=0, mode=mode)
+            turn_on_stimulation_units(stim_units[1:2], dac_id=1, mode='large_current')
+            shift_DAC(1, 502)
+            # 6	502	51.72211128	452	6.427219226
+        else:
+            turn_on_stimulation_units(stim_units, mode=mode)
 
-    time.sleep((post_download_wait_time/3) *1)
-    if seq_step is not None:
-        turn_on_stimulation_units(stim_units, dac_id=1, mode=mode)
-        set_DAC(1, 512)
-    elif len(stim_units) == 2:
-        turn_on_stimulation_units(stim_units[0:1], dac_id=0, mode=mode)
-        turn_on_stimulation_units(stim_units[1:2], dac_id=1, mode='large_current')
-        shift_DAC(1, 502)
-        # 6	502	51.72211128	452	6.427219226
-    else:
-        turn_on_stimulation_units(stim_units, mode=mode)
+        time.sleep((post_download_wait_time/3) *1)
 
-    time.sleep((post_download_wait_time/3) *1)
+        # stimulation
+        print(f"\nStimulating ~ ~ ~ ~ ~ ~ ~ ~ on {stim_units} ")
+        if seq_step is not None:
+            _stimulate_sequential(stim_units, stim_seq, *seq_step)
+            time.sleep(post_download_wait_time/3)  # tail after the last burst
+        elif len(stim_units) == 1 and mode != "voltage":
+            stim_seq[stim_units[0]].send() # single unit, current mode, centered around zeroCurrentDAC_value
+        elif len(stim_units) == 2 and mode != "voltage":
+            stim_seq[stim_units[0]].send() # current mode, centered around zeroCurrentDAC_value
+        else:
+            stim_seq.send() # voltage mode, on many units ceneterd arround 512
+        if seq_step is None:
+            time.sleep(rec_time)
 
-    # stimulation
-    print(f"\nStimulating ~ ~ ~ ~ ~ ~ ~ ~ on {stim_units} ")
-    if seq_step is not None:
-        _stimulate_sequential(stim_units, stim_seq, *seq_step)
-        time.sleep(post_download_wait_time/3)  # tail after the last burst
-    elif len(stim_units) == 1 and mode != "voltage":
-        stim_seq[stim_units[0]].send() # single unit, current mode, centered around zeroCurrentDAC_value
-    elif len(stim_units) == 2 and mode != "voltage":
-        stim_seq[stim_units[0]].send() # current mode, centered around zeroCurrentDAC_value
-    else:
-        stim_seq.send() # voltage mode, on many units ceneterd arround 512
-    if seq_step is None:
-        time.sleep(rec_time)
-
-    # turn off
-    turn_off_stimulation_units(stim_units)
-    time.sleep((post_download_wait_time/6) *2)
-    # disconnect electrode
-    for stim_el in config_map.electrode[config_map.stim].tolist():
-        array.disconnect_electrode_from_stimulation(stim_el)
-    array.download()
-    time.sleep((post_download_wait_time/6) *2)
-    array.close()
-    stop_saving(s)
+        # turn off
+        turn_off_stimulation_units(stim_units)
+        time.sleep((post_download_wait_time/6) *2)
+        # disconnect electrode
+        for stim_el in config_map.electrode[config_map.stim].tolist():
+            array.disconnect_electrode_from_stimulation(stim_el)
+        array.download()
+        time.sleep((post_download_wait_time/6) *2)
+        array.close()
+    finally:
+        stop_saving(s)
     # write the config map AFTER stop_saving -> this is the "recording finished" signal
+    config_map['gain'] = gain   # postproc converts with this, not with the gain in the file
     config_map.to_csv(os.path.join(path, f"{fname}.csv"))
+    return f"{fname}.raw.h5"
 
 def run_stim_config(config_fullfname, path, rec_time, post_download_wait_time, s,
-                    stim_seq, mode, seq_step=None):
+                    stim_seq, mode, gain, seq_step=None):
     array = get_maxlab_array()
     array.load_config(config_fullfname)
 
@@ -361,11 +340,12 @@ def run_stim_config(config_fullfname, path, rec_time, post_download_wait_time, s
     print(f"Used {stim_units=}") # turn on
     array.download() # needed before saving otherwise order is off
     fname = os.path.basename(config_fullfname).replace(".cfg", "")
-    _stimulate_and_record(array, config_map, stim_units, path, fname, rec_time,
-                          post_download_wait_time, s, stim_seq, mode, seq_step=seq_step)
+    return _stimulate_and_record(array, config_map, stim_units, path, fname, rec_time,
+                                 post_download_wait_time, s, stim_seq, mode, gain,
+                                 seq_step=seq_step)
 
 def run_stim_onfly(stim_el, path, rec_time, post_download_wait_time, s, stim_seq,
-                   mode, base_els):
+                   mode, gain, base_els):
     """Like run_stim_config, but routes+stimulates a single electrode from an in-memory
     candidate list instead of loading a pre-saved .cfg/.csv pair from disk."""
     succ_routed, failed_routing, array = try_routing(base_els, stim_electrodes=[stim_el],
@@ -373,7 +353,7 @@ def run_stim_onfly(stim_el, path, rec_time, post_download_wait_time, s, stim_seq
     if len(failed_routing) > 0:
         print(f"Failed to route stim for el {stim_el}, skipping.")
         array.close()
-        return
+        return None
 
     config_map = array_config2df(array)
     config_map['stim'] = config_map.electrode == stim_el
@@ -383,43 +363,33 @@ def run_stim_onfly(stim_el, path, rec_time, post_download_wait_time, s, stim_seq
     print(f"Used stim_units=[{stim_unit}]")
 
     fname = f"el_config_El{stim_el:05d}"
-    _stimulate_and_record(array, config_map, [stim_unit], path, fname, rec_time,
-                          post_download_wait_time, s, stim_seq, mode)
+    return _stimulate_and_record(array, config_map, [stim_unit], path, fname, rec_time,
+                                 post_download_wait_time, s, stim_seq, mode, gain)
 
-def _run_recording_loop(items, run_one_fn, full_recdir, connectivity_fn, s, stim_seq,
-                        rec_time, post_download_wait_time, mode, debug=False,
-                        skip_stimulation=False):
-    """Start the postproc thread, run all items via run_one_fn, ensure clean shutdown."""
-    processed_dir = os.path.join(full_recdir, "processed")
-    stop_event = threading.Event()
-    pp = threading.Thread(target=_run_postprocess_live_guarded,
-                          args=(full_recdir, connectivity_fn, stop_event),
-                          kwargs=dict(debug=debug),
-                          daemon=True)
+def _run_recording_loop(items, run_one_fn, full_recdir, process_fn, s, stim_seq,
+                        rec_time, post_download_wait_time, mode, gain,
+                        skip_stimulation=False, reprocess=False):
+    """Run all items via run_one_fn, each finished recording is postprocessed in a 2nd
+    thread (LivePostproc). skip_stimulation: only (re)process what is in full_recdir."""
+    pp = LivePostproc(full_recdir, process_fn, summarize_shorts,
+                      name="postproc_shortcut_stim", reprocess=reprocess)
     pp.start()
-    if skip_stimulation:
-        n_raw = len(get_hdf5_fnames_from_dir(full_recdir)[0])
-        n_proc = len(glob(os.path.join(processed_dir, "el_config_*.csv")))
-        print(f"Skipping stimulation, only postprocessing existing recordings: "
-              f"{n_raw} raw, {n_proc} already processed.")
-        stop_event.set()   # the thread's final sweep covers all existing recordings, then ends
-        pp.join()
-        print(f"\nPostprocessing done: {len(_postproc_failed)} failed, aggregating...")
-        get_aggr_results(processed_dir)
-        return
-    items = sorted(items)
     try:
-        for i, item in enumerate(items):
-            print(f"\nConfig {i+1}/{len(items)}: {item}", flush=True)
-            run_one_fn(item, full_recdir, rec_time, post_download_wait_time, s,
-                      stim_seq=stim_seq, mode=mode)
+        if not skip_stimulation:
+            items = sorted(items)
+            for i, item in enumerate(items):
+                print(f"\nConfig {i+1}/{len(items)}: {item}", flush=True)
+                print(f"[postproc] {pp.status()}", flush=True)
+                fname = run_one_fn(item, full_recdir, rec_time, post_download_wait_time, s,
+                                   stim_seq=stim_seq, mode=mode, gain=gain)
+                if fname is not None:
+                    pp.add(fname)
     finally:
-        stop_event.set()   # triggers final sweep
-        pp.join()
-        get_aggr_results(processed_dir)
+        pp.finish()
+        get_aggr_results(os.path.join(full_recdir, "processed"))
 
 def run_tile_square_stim(subdir, which_configs, rec_dir, skip_stimulation=False, 
-                         debug=False, post_download_wait_time=1, rec_time=1.2, gain=7,
+                         reprocess=False, debug=False, post_download_wait_time=1, rec_time=1.2, gain=7,
                          amplitude=10, mode="voltage", sequential=False,
                          step_cycles=200, step_gap_s=0.1):
     """sequential=True: stim units fire one after another (ascending unit number), each a
@@ -448,12 +418,16 @@ def run_tile_square_stim(subdir, which_configs, rec_dir, skip_stimulation=False,
     if len(fnames) == 0:
         raise ValueError(f"No config files found in {configs_basepath}/{which_configs}")
     run_one = functools.partial(run_stim_config, seq_step=seq_step)
-    _run_recording_loop(fnames, run_one, full_recdir, add_connectivity_tiles, s, stim_seq,
-                        rec_time, post_download_wait_time, mode,
-                        skip_stimulation=skip_stimulation, debug=debug)
+    # recordings from before the gain was stored in the config csv fall back to `gain`
+    process_fn = functools.partial(process_shortcut_recording,
+                                   connectivity_fn=add_connectivity_tiles,
+                                   fallback_gain=gain, debug=debug)
+    _run_recording_loop(fnames, run_one, full_recdir, process_fn, s, stim_seq,
+                        rec_time, post_download_wait_time, mode, gain,
+                        skip_stimulation=skip_stimulation, reprocess=reprocess)
 
 def run_single_stim(subdir, configs_basepath, rec_dir, headstage_name=None,
-                    skip_stimulation=False, 
+                    skip_stimulation=False, reprocess=False,
                     debug=False, post_download_wait_time=1, rec_time=1.2, gain=7,
                     amplitude=10, mode="voltage", ):
     """`configs_basepath` is the full path to a dir of single-stim .cfg/.csv pairs
@@ -486,9 +460,13 @@ def run_single_stim(subdir, configs_basepath, rec_dir, headstage_name=None,
     if len(fnames) == 0:
         raise ValueError(f"No config files found in {configs_basepath}")
     print(f"Found {len(fnames)} configs in {configs_basepath}")
-    _run_recording_loop(fnames, run_stim_config, full_recdir, add_connectivity_single, s, stim_seq,
-                        rec_time, post_download_wait_time, mode,
-                        skip_stimulation=skip_stimulation, debug=debug)
+    # recordings from before the gain was stored in the config csv fall back to `gain`
+    process_fn = functools.partial(process_shortcut_recording,
+                                   connectivity_fn=add_connectivity_single,
+                                   fallback_gain=gain, debug=debug)
+    _run_recording_loop(fnames, run_stim_config, full_recdir, process_fn, s, stim_seq,
+                        rec_time, post_download_wait_time, mode, gain,
+                        skip_stimulation=skip_stimulation, reprocess=reprocess)
 
 def main():
     # ======== WHICH RUN ========
@@ -497,15 +475,16 @@ def main():
     
     # ======== COMMON PARAMETERS ========
     nas_dir = device_paths()[0]
-    debug = False              # live chip plot -> ./live_figures/shortcut_stim_config_res.png
+    debug = True              # live_figures/shortcut_stim_config_res.png + debug_amplifier.png
     post_download_wait_time = 1
     rec_time = 1.2
-    gain = 7
+    gain = 7                   # set on the chip, stored in each config csv, used by postproc
     amplitude = 10
     # mode = "large_current"          # or "small_current"
     mode = "voltage"          # or "small_current"
-    skip_stimulation = False  # if True, only postprocess existing recordings (no stimulation, no MEA1K access)
-    common = dict(debug=debug, post_download_wait_time=post_download_wait_time,
+    skip_stimulation = True  # if True, only postprocess existing recordings (no stimulation, no MEA1K access)
+    reprocess = True         # if True, also redo recordings that already have a processed/ output
+    common = dict(debug=debug, reprocess=reprocess, post_download_wait_time=post_download_wait_time,
                   rec_time=rec_time, gain=gain, amplitude=amplitude, mode=mode)
 
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
@@ -584,8 +563,7 @@ def main():
     tile_rec_dir      = f"{t}_{name}_{tightening_str}_TileShorts"
 
     
-    # tile_rec_dir       = f"{t}_FullShortTiles_JFirstTry_PT3"
-    # tile_rec_dir       = "2026-07-06_20.43.57_ShinTsuFlim_Try4_PT1_EcoFLexNewFilmSpringInteronnect"
+    tile_rec_dir  = "2026-11-02_12.15.47_test12_100k_36umP_56umPE_PT2_TileShorts"
     # ===================================================
 
     if which == "single":

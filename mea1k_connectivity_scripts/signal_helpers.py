@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import butter, sosfiltfilt
 
+from mea1k_modules.live_postproc import save_live_fig
+
 
 # ── Filters ──────────────────────────────────────────────────────────────────
 
@@ -319,7 +321,8 @@ def estimate_frequency_power(signal, sampling_rate, min_band, max_band, name=Non
         if name is not None:
             fig.suptitle(f"Config: {name}", fontsize=16)
 
-        plt.savefig('./live_figures/debug_signal.png')
+        save_live_fig(fig, 'debug_signal')
+        plt.close(fig)
         # plt.show()
 
     if return_baseline:
@@ -394,7 +397,7 @@ def extract_amplitude(signal, sampling_rate, min_band, max_band,
     unit
         Unit of `signal`, used for the plot labels only (e.g. 'uV', 'uA').
     save_to_dir
-        Directory to save the debug figure to. Default None -> ./live_figures.
+        Directory to save the debug figure to. Always saved to live_figures/ too.
     dac_ylim_range
         Half-range of the DAC y-axes, always centred on 512
         (i.e. limits are 512 ± dac_ylim_range). Default 32.
@@ -559,8 +562,8 @@ def _plot_extract_amplitude(raw, proc, applied, sampling_rate, start, end,
         title = f'{name}   —   {title}'
     fig.suptitle(title, fontsize=21, fontweight='bold')
     
-    plt.savefig(f'./live_figures/{plot_fname}.png')
+    save_live_fig(fig, plot_fname)
     if save_to_dir is not None:
         os.makedirs(save_to_dir, exist_ok=True)
-        plt.savefig(os.path.join(save_to_dir, f'{plot_fname}.png'))
+        fig.savefig(os.path.join(save_to_dir, f'{plot_fname}.png'))
     plt.close(fig)

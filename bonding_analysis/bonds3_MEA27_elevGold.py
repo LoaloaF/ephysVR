@@ -98,7 +98,7 @@ rec_name = f'2026-11-01_20.17_test12_100k_36umP_56umPE_PT2_10mVFPGA' # bottom de
 
 full_path = os.path.join(nas_dir, subdir, rec_name)
 
-# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, debug=False, )
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, gain=7, debug=False, )
 # vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
 
 conn = get_connectivity_data(full_path)

@@ -1,13 +1,20 @@
-from itertools import combinations
+"""Impedance of single MEA1K electrodes: sine current through one stim unit, voltage on the
+electrode's amplifier. Each recording gets a sidecar csv (stim settings, gain, and all columns
+of its target row, e.g. connectivity). Postprocessing runs in a 2nd thread and only needs the
+recording dir, so reprocessing never has to repeat the electrode selection.
+"""
 import os
+import re
 import sys
 from glob import glob
 import time
+import functools
 
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # debug plots are drawn in the postproc thread, files only
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap, LogNorm
 from datetime import datetime
 
 # to import logger, VR-wide constants and device paths
@@ -22,73 +29,172 @@ from mea1k_modules.mea1k_config_utils import shift_DAC, reset_MEA1K
 from mea1k_modules.mea1k_config_utils import get_maxlab_saving, get_maxlab_array
 
 from mea1k_modules.mea1k_raw_preproc import read_raw_data, read_stim_DAC
+from mea1k_modules.live_postproc import LivePostproc, save_live_fig
 from mea1k_connectivity_scripts.signal_helpers import extract_amplitude
 import mea1k_modules.mea1k_visualizations as vis
 
 from PicoRecorder import PicoRecorder, mv_to_current_uA, DEFAULT_SENSE_GAIN
 
-def _stimlate_electrode(config_fullfname, path, s, dac_id, seq, 
-                        stim_mode, stim_settings, stim_sequence_DAC_amplitude,
-                              stim_sequence_frequency_Hz,
-                              stim_sequence_ncycles, pico_rec=None):
-    config_map = pd.read_csv(config_fullfname.replace(".cfg", ".csv"))
+# ======== TARGETS: which electrodes to measure ========
+# A targets table is a DataFrame with an `electrode` column. All other columns (connectivity,
+# shank_id, ...) are copied into the sidecar csv of each recording and end up in the results.
+
+def targets_from_connectivity_rec(full_recdir):
+    """Electrodes of a 10mVFPGA connectivity recording (headstage-only tests, no implant mapping)."""
+    conn = pd.read_csv(os.path.join(full_recdir, "processed", "extr_connectivity.csv"))
+    conn = conn.rename(columns={"el": "electrode"}).sort_values("connectivity", ascending=False)
+    return conn[["electrode", "connectivity"]].drop_duplicates("electrode")
+
+def targets_from_implant_mapping(implant_name, shank_subset=None, every_pad=None, every_pi_el=False):
+    """Electrodes of a bonded implant. every_pad: only the n best electrodes per pad (ranks),
+    every_pi_el: only the best electrode per polyimide electrode."""
+    nas_dir = device_paths()[0]
+    mapping = pd.read_csv(os.path.join(nas_dir, "devices", "implant_devices", implant_name, "bonding",
+                                       f"bonding_mapping_{implant_name}.csv"))
+    mapping = mapping.dropna(subset=["mea1k_el"])
+    if shank_subset is not None:
+        mapping = mapping[mapping.shank_id.isin(shank_subset)]
+    if every_pad is not None:
+        mapping = mapping[mapping.pad_connectivity_rank.isin(every_pad)]
+    elif every_pi_el:
+        mapping = mapping[mapping.el_connectivity_rank == 1]
+    targets = mapping.rename(columns={"mea1k_el": "electrode", "mea1k_connectivity": "connectivity"})
+    targets["electrode"] = targets.electrode.astype(int)
+    targets = targets.sort_values("connectivity", ascending=False)
+    return targets[["electrode", "connectivity", "shank_id", "pad_id", "pad_metal"]].drop_duplicates("electrode")
+
+def targets_from_short_islands(connectivity_graph_csv, min_island_size=3):
+    """Electrodes of shorted islands with >= min_island_size electrodes, from the
+    extracted_connectivity_graph.csv of a TileShorts recording."""
+    graph = pd.read_csv(connectivity_graph_csv)
+    graph = graph[graph.short_island_id.notna()]
+    island_els = pd.concat([graph[["short_island_id", "source"]].rename(columns={"source": "electrode"}),
+                            graph[["short_island_id", "target"]].rename(columns={"target": "electrode"})])
+    island_els = island_els.drop_duplicates().rename(columns={"short_island_id": "island_id"})
+    island_size = island_els.groupby("island_id").electrode.transform("nunique")
+    targets = island_els[island_size >= min_island_size].astype({"electrode": int})
+    return targets.drop_duplicates("electrode").sort_values("electrode")
+
+def index_stimulation_configs(configs_dir):
+    """Electrode -> stim unit + config file, from configs_dir/StimUnitXX/el_config_ElXXXXX_*.cfg"""
+    rows = []
+    for config_fullfname in glob(os.path.join(configs_dir, "StimUnit*", "*.cfg")):
+        el = int(re.search(r"El(\d+)_", os.path.basename(config_fullfname)).group(1))
+        stim_unit = int(re.search(r"StimUnit(\d+)", os.path.dirname(config_fullfname)).group(1))
+        rows.append((el, stim_unit, config_fullfname))
+    config_index = pd.DataFrame(rows, columns=["electrode", "stim_unit", "config_fullfname"])
+    return config_index.sort_values("config_fullfname").drop_duplicates("electrode")
+
+def select_targets(targets, config_index, connectivity_threshold=None, stim_units=None,
+                   sample_fraction=None, negative_ctrl=False):
+    """Adds stim unit + config file to each target and filters. Electrodes without a stim
+    config are reported and dropped. negative_ctrl: adds the lowest-connectivity electrode
+    of each stim unit (from the unfiltered targets), marked with negative_ctrl=True."""
+    targets = targets.merge(config_index, on="electrode", how="left")
+    no_config = targets.config_fullfname.isna()
+    if no_config.any():
+        print(f"{no_config.sum()} target electrode(s) without stim config, skipped: "
+              f"{targets.electrode[no_config].tolist()}")
+    targets = targets[~no_config].astype({"stim_unit": int})
+    if stim_units is not None:
+        targets = targets[targets.stim_unit.isin(stim_units)]
+    candidates = targets
+
+    if connectivity_threshold is not None:
+        targets = targets[targets.connectivity > connectivity_threshold]
+        print(f"{len(targets):,} electrodes with connectivity > {connectivity_threshold}")
+    if sample_fraction is not None:
+        targets = targets.sample(frac=sample_fraction)
+        print(f"Randomly sampled {len(targets):,} electrodes ({sample_fraction:.0%})")
+    targets = targets.assign(negative_ctrl=False)
+    if negative_ctrl:
+        neg = candidates.sort_values("connectivity").groupby("stim_unit").head(1)
+        neg = neg[~neg.electrode.isin(targets.electrode)].assign(negative_ctrl=True)
+        targets = pd.concat([targets, neg])
+    targets = targets.sort_values(["stim_unit", "electrode"]).reset_index(drop=True)
+    print(f"Measuring {len(targets):,} electrodes on {targets.stim_unit.nunique()} stim units")
+    return targets
+
+# ======== RECORDING ========
+
+def _stimulate_electrode(target, full_recdir, s, seq, pico_rec, stim_info):
+    """Record one electrode while the sine is played through its stim unit. The sidecar csv
+    (stim_info + target columns) is written after stop_saving: "recording finished" signal."""
+    el, stim_unit = int(target.electrode), int(target.stim_unit)
     array = get_maxlab_array()
-    array.load_config(config_fullfname)
-    
-    fname = os.path.basename(config_fullfname).replace(".cfg", "")
-    start_saving(s, dir_name=path, fname=fname, legacy=True)
-    pico_fullfname = os.path.join(path, f"{fname}.npz")
-    if pico_rec:
-        pico_rec.start(pico_fullfname)
-    
-    el = int(config_map.electrode.item())
-    stim_unit = int(config_map.stim_unit.item())
-    time.sleep(.1)
-    attampt_connect_el2stim_unit(el, array, used_up_stim_units=[],
-                                 with_download=True)
+    array.load_config(target.config_fullfname)
 
-    seq_duration = (stim_sequence_ncycles / stim_sequence_frequency_Hz)
-    print(f"\nStimulating ~ ~ ~ ~ ~ ~ ~ ~ with StimUnit{stim_unit} for {seq_duration:.1f}s")
-    seq.send()
-    time.sleep(seq_duration)
-    time.sleep(.1)  # wait a bit before disconnecting the electrode from stimulation
-    array.disconnect_electrode_from_stimulation(el)
-    array.download()
-    time.sleep(.3)  # wait a bit before disconnecting the electrode from stimulation
+    fname = os.path.basename(target.config_fullfname).replace(".cfg", "")
+    start_saving(s, dir_name=full_recdir, fname=fname, legacy=True)
+    # everything up to stop_saving in try/finally: MaxWell keeps recording until saving is
+    # stopped, an exception or Ctrl+C in between would leave it running (server crashes)
+    try:
+        if pico_rec:
+            pico_rec.start(os.path.join(full_recdir, f"{fname}.npz"))
 
-    stop_saving(s)
-    if pico_rec:
-        pico_rec.stop()  # make sure to stop the PicoRecorder to save the file properly
+        time.sleep(.1)
+        attampt_connect_el2stim_unit(el, array, used_up_stim_units=[],
+                                     with_download=True)
+
+        seq_duration = (stim_info["stim_sequence_ncycles"] / stim_info["stim_sequence_frequency_Hz"])
+        print(f"\nStimulating ~ ~ ~ ~ ~ ~ ~ ~ El{el} with StimUnit{stim_unit} for {seq_duration:.1f}s")
+        seq.send()
+        time.sleep(seq_duration)
+        time.sleep(.1)  # wait a bit before disconnecting the electrode from stimulation
+        array.disconnect_electrode_from_stimulation(el)
+        array.download()
+        time.sleep(.3)  # wait a bit before disconnecting the electrode from stimulation
+    finally:
+        stop_saving(s)
+        if pico_rec:
+            pico_rec.stop()  # make sure to stop the PicoRecorder to save the file properly
     array.close()
-    
-    
-    # save the config settings
-    s = pd.Series({
-                "stim_unit": stim_unit,
-                "stim_mode": stim_mode,
-                "LSB_nA": stim_settings.loc[stim_unit, f"{stim_mode}_median_LSB_nA"].item(),
-                "electrode": el,
-                "dac_id": dac_id,
-                "stim_sequence_DAC_amplitude": stim_sequence_DAC_amplitude,
-                "stim_sequence_frequency_Hz": stim_sequence_frequency_Hz,
-                "stim_sequence_ncycles": stim_sequence_ncycles,
-    }).to_frame().T
-    s.to_csv(os.path.join(path, f"{fname}.csv"), index=True)
-            
-def comma_formatter(x):
-    # Check if the value is a number (and not a boolean)
-    if isinstance(x, (int, float)) and not isinstance(x, bool):
-        # If it's an integer or a float representing a whole number (like 1000.0)
-        if isinstance(x, int) or x.is_integer():
-            return f"{int(x):,}"
-        else:
-            return f"{x:,.2f}"  # Change .2f to adjust decimal places
-    return str(x)   
 
-def _extract_sine_amplitude(dir_name, fname,  min_band, max_band, debug=True,):
+    sidecar = pd.concat([pd.Series(stim_info), target.drop(list(stim_info), errors="ignore")])
+    sidecar.to_frame().T.to_csv(os.path.join(full_recdir, f"{fname}.csv"), index=False)
+    return f"{fname}.raw.h5"
+
+def _record_targets(full_recdir, targets, s, pico_rec, pp, stim_settings, stim_mode, gain,
+                    dac_id, dac_sine_amplitude, stim_sequence_frequency_Hz,
+                    stim_sequence_ncycles, dac_offset):
+    for stim_unit, unit_targets in targets.groupby("stim_unit"):
+        # set the DAC to zero current, create the sine sequence around it
+        dac_code = int(stim_settings.loc[stim_unit, f"{stim_mode}_zero_current_DAC"])
+        shift_DAC(dac_code+dac_offset)
+        seq = create_stim_sine_sequence(dac_id=dac_id, amplitude=dac_sine_amplitude,
+                                        f=stim_sequence_frequency_Hz,
+                                        ncycles=stim_sequence_ncycles,
+                                        center_around=dac_code+dac_offset)
+        turn_on_stimulation_units([stim_unit], dac_id=dac_id, mode=stim_mode)
+        stim_info = {
+            "stim_unit": stim_unit,
+            "stim_mode": stim_mode,
+            "LSB_nA": stim_settings.loc[stim_unit, f"{stim_mode}_median_LSB_nA"].item(),
+            "dac_id": dac_id,
+            "dac_code": dac_code,
+            "dac_offset": dac_offset,
+            "stim_sequence_DAC_amplitude": dac_sine_amplitude,
+            "stim_sequence_frequency_Hz": stim_sequence_frequency_Hz,
+            "stim_sequence_ncycles": stim_sequence_ncycles,
+            "gain": gain,
+        }
+        try:
+            for i, (_, target) in enumerate(unit_targets.iterrows()):
+                print(f"\nStimUnit{stim_unit}: electrode {i+1}/{len(unit_targets)} "
+                      f"| [postproc] {pp.status()}", flush=True)
+                fname = _stimulate_electrode(target, full_recdir, s, seq, pico_rec, stim_info)
+                pp.add(fname)
+        finally:
+            turn_off_stimulation_units([stim_unit])
+        # all_impedance.csv + live_figures/impedance_analysis_live.png, in the postproc thread
+        pp.run_in_thread(lambda: save_impedance_results(full_recdir, pp.results_df()))
+
+# ======== POSTPROCESSING ========
+
+def _extract_sine_amplitude(dir_name, fname, min_band, max_band, gain, debug=True,):
     amplifier = int(fname.split("Ampl")[-1].split("_")[0][:-7])
     data = read_raw_data(dir_name, fname, convert2uV=True,
-                            subtract_dc_offset=False,)
+                            subtract_dc_offset=False, override_gain=gain)
     dac = read_stim_DAC(dir_name, fname)
     # analysis window comes from the DAC onset/offset; notch + demean on by default
     mean_ampl, phase_shift, _, _ = extract_amplitude(
@@ -106,232 +212,158 @@ def _extract_sine_amplitude(dir_name, fname,  min_band, max_band, debug=True,):
     )
     return mean_ampl, phase_shift
 
-def measure_impedance(full_recdir, nas_dir, configs_basepath, stim_mode,
-                      stim_settings, implant_mapping, gain, dac_sine_amplitude,
-                      stim_sequence_frequency_Hz, stim_sequence_ncycles,
-                      dac_id, stim_units=list(range(32)), debug=False,
-                      shank_subset=None, dac_offset=0, negative_ctrl=True,
-                      every_pad=None, every_pi_el=False, connectivity_threshold=.6,
-                      electrode_sample_fraction=None,
-                      skip_stimulation=False, skip_post_proc=False, rec_current_externally=False):
-    if electrode_sample_fraction is not None and not 0 <= electrode_sample_fraction <= 1:
-        raise ValueError("electrode_sample_fraction must be between 0 and 1 or None")
+def _extract_pico_current(dir_name, fname, min_band, max_band, name, log, debug=False):
+    """Current amplitude [uA] from the picoscope recording, NaNs if there is none."""
+    pico_fullfname = os.path.join(dir_name, fname.replace('.raw.h5', '.npz'))
+    if not os.path.exists(pico_fullfname):
+        return np.nan, np.nan, np.nan
+    pico_data = np.load(pico_fullfname)
+    if len(pico_data['time_s']) < 2:
+        log(f"{fname}: picoscope data too short")
+        return np.nan, np.nan, np.nan
+    pico_current_uA = mv_to_current_uA(pico_data['mv'], DEFAULT_SENSE_GAIN)
+    pico_ampl, _, baseline_dc, sine_dc = extract_amplitude(
+        pico_current_uA,
+        sampling_rate=20_000,
+        min_band=min_band, max_band=max_band,
+        estimate_amplitude_from=3600,
+        estimate_amplitude_to=11000,
+        lowpass=3000.0,
+        name=name,
+        ylim=(-0.28, 0.28),
+        debug=debug,
+        plot_fname='debug_picoscope_signal',
+        save_to_dir=os.path.join(dir_name, "processed"),
+    )
+    return pico_ampl, baseline_dc, sine_dc
 
-    sampled_mea1k_els = None
-    if electrode_sample_fraction is not None:
-        eligible_entries = implant_mapping[
-            implant_mapping.mea1k_connectivity > connectivity_threshold
-        ]
-        if shank_subset is not None:
-            eligible_entries = eligible_entries[eligible_entries.shank_id.isin(shank_subset)]
-        if every_pad is not None:
-            eligible_entries = eligible_entries[eligible_entries.pad_connectivity_rank.isin(every_pad)]
-        elif every_pi_el:
-            eligible_entries = eligible_entries[eligible_entries.el_connectivity_rank == 1]
+def process_impedance_recording(rec_dir, fname, log, fallback_gain=None, fallback_targets=None,
+                                debug=False):
+    """process_fn for LivePostproc: one recording -> one row of impedance results.
+    Recordings from before gain/target columns were stored in the sidecar use fallback_gain
+    and fallback_targets (targets table indexed by electrode) for what is missing."""
+    sidecar_fullfname = os.path.join(rec_dir, fname.replace(".raw.h5", ".csv"))
+    if not os.path.exists(sidecar_fullfname):
+        log(f"{fname}: no sidecar csv, recording was interrupted?")
+        return None
+    stim_info = pd.read_csv(sidecar_fullfname).iloc[0].drop("Unnamed: 0", errors="ignore")
+    if "gain" not in stim_info:
+        if fallback_gain is None:
+            log(f"{fname}: no gain in sidecar csv and no fallback_gain given")
+            return None
+        stim_info["gain"] = fallback_gain
+    if fallback_targets is not None and stim_info.electrode in fallback_targets.index:
+        missing = fallback_targets.loc[stim_info.electrode].drop(stim_info.index, errors="ignore")
+        stim_info = pd.concat([stim_info, missing])
+    if "connectivity" not in stim_info:
+        stim_info["connectivity"] = np.nan
 
-        eligible_mea1k_els = eligible_entries.mea1k_el.to_numpy()
-        n_to_sample = int(len(eligible_mea1k_els) * electrode_sample_fraction)
-        sampled_mea1k_els = np.random.choice(
-            eligible_mea1k_els, size=n_to_sample, replace=False
-        )
-        print(
-            f"Electrodes above connectivity threshold ({connectivity_threshold}): "
-            f"{len(eligible_mea1k_els):,}\n{eligible_mea1k_els}"
-        )
-        print(
-            f"Randomly sampling {len(sampled_mea1k_els):,} electrodes "
-            f"({electrode_sample_fraction:.1%}) across all stim units."
-        )
+    freq = stim_info.stim_sequence_frequency_Hz
+    rng = max(1, freq//100) # allow 1% frequency deviation
+    ampl, phase_shift = _extract_sine_amplitude(rec_dir, fname, min_band=freq-rng,
+                                                max_band=freq+rng, gain=stim_info.gain,
+                                                debug=debug)
+    pico_name = (f"StimUnit={stim_info.stim_unit}, DAC={stim_info.get('dac_code', '?')}"
+                 f"+{stim_info.get('dac_offset', '?')}, el={int(stim_info.electrode):05d}")
+    ext_current_uA, baseline_dc, sine_dc = _extract_pico_current(
+        rec_dir, fname, freq-rng, freq+rng, pico_name, log, debug=debug)
 
+    amplitude_uA = stim_info.stim_sequence_DAC_amplitude * stim_info.LSB_nA / 1000  # in uA
+    stim_res = pd.Series({
+        "amplitude_uV": ampl,
+        "current_uA": amplitude_uA,
+        "external_current_uA": ext_current_uA,
+        "external_current_pre_DC_offset": baseline_dc,
+        "external_current_DC_offset": sine_dc,
+        # micro volt / (LSB in nA * sine amplitude in DAC units / 1000 to convert to uA)) = Ohm
+        "impedance_Ohm": ampl / amplitude_uA,  # in Ohm
+        "external_impedance_Ohm": ampl / ext_current_uA,
+        "phase_shift_deg": phase_shift,
+    })
+    res = pd.concat([stim_info, stim_res])
+    bar = "=" * 60
+    log(f"{fname}\n{bar}\n  El{int(res.electrode):05d} StimUnit{int(res.stim_unit):02d}:  "
+        f"IMPEDANCE {res.impedance_Ohm/1e3:,.1f} kOhm   (phase {phase_shift:.1f} deg)\n{bar}\n"
+        f"{res.drop(LOG_HIDDEN_FIELDS, errors='ignore').map(comma_formatter).to_string()}")
+    return pd.DataFrame([res.to_dict()])
+
+# kept in the results csv, just not printed to the postproc log
+LOG_HIDDEN_FIELDS = ["dac_id", "dac_code", "LSB_nA", "stim_sequence_frequency_Hz",
+                     "stim_sequence_ncycles", "config_fullfname", "negative_ctrl"]
+
+def comma_formatter(x):
+    # Check if the value is a number (and not a boolean)
+    if isinstance(x, (int, float)) and not isinstance(x, bool):
+        # If it's an integer or a float representing a whole number (like 1000.0)
+        if isinstance(x, int) or x.is_integer():
+            return f"{int(x):,}"
+        else:
+            return f"{x:,.2f}"  # Change .2f to adjust decimal places
+    return str(x)   
+
+def summarize_impedance(results, last_result, target_Ohm=100_000, tolerance=.15):
+    imp = results.impedance_Ohm.astype(float)
+    n_ok = imp.between(target_Ohm*(1-tolerance), target_Ohm*(1+tolerance)).sum()
+    msg = f"{n_ok}/{len(imp)} within {target_Ohm/1e3:,.0f} kOhm \u00b1{tolerance:.0%}"
+    if last_result is not None:
+        msg += f", last {last_result.impedance_Ohm.iloc[0]/1e3:,.0f} kOhm"
+    return msg
+
+def save_impedance_results(full_recdir, results, final=False):
+    """processed/all_impedance.csv + the impedance analysis plot to live_figures/
+    (final: also to processed/). Called after every stim unit and at the end."""
+    if len(results) == 0:
+        return
+    processed_dir = os.path.join(full_recdir, "processed")
+    results.to_csv(os.path.join(processed_dir, "all_impedance.csv"), index=False)
+    data_plotting = results.copy()
+    if "pad_metal" not in data_plotting.columns:
+        data_plotting['pad_metal'] = 1
+    fig = vis.plot_impedance_analysis(processed_dir, data_plotting, skip_bottom=False,
+                                      color_by_metal=False, use_imp_connectivity=True)
+    save_live_fig(fig, "impedance_analysis_live", dpi=100)
+    if final:
+        fig.savefig(os.path.join(processed_dir, "all_impedance_analysis.png"), dpi=300)
+    plt.close(fig)
+
+def measure_impedance(full_recdir, targets, stim_settings, stim_mode, gain, dac_id,
+                      dac_sine_amplitude, stim_sequence_frequency_Hz, stim_sequence_ncycles,
+                      dac_offset=0, rec_current_externally=False, skip_stimulation=False,
+                      reprocess=False, fallback_targets=None, target_imp_Ohm=100_000,
+                      debug=False):
+    """Stimulate + record all targets (see select_targets), each recording is postprocessed
+    in a 2nd thread. skip_stimulation: only (re)process the recordings in full_recdir."""
+    s = pico_rec = None
     if not skip_stimulation:
         reset_MEA1K(gain=gain, enable_stimulation_power=True)
         s = get_maxlab_saving()
         if rec_current_externally:
             pico_rec = PicoRecorder(voltage_range="5V", resolution="16BIT", sample_interval_us=50)
-        else:
-            pico_rec = None
-    else:
-        pico_rec = None
-    
-    aggr = []
-    for stim_unit in stim_units:
-        fnames = glob(os.path.join(nas_dir, configs_basepath, f"StimUnit{stim_unit:02d}", "*.cfg"))
-        print(f"\n\nFound {len(fnames)} configs for StimUnit{stim_unit}")
-        
-        dac_code = int(stim_settings.loc[stim_unit, f"{stim_mode}_zero_current_DAC"])
+    elif not os.path.exists(full_recdir):
+        raise FileNotFoundError(f"Nothing to postprocess, no such recording dir: {full_recdir}")
+
+    # recordings from before gain was stored in the sidecar csv fall back to `gain`
+    process_fn = functools.partial(process_impedance_recording, fallback_gain=gain,
+                                   fallback_targets=fallback_targets, debug=debug)
+    summarize_fn = functools.partial(summarize_impedance, target_Ohm=target_imp_Ohm)
+    pp = LivePostproc(full_recdir, process_fn, summarize_fn, name="postproc_record_imp",
+                      reprocess=reprocess)
+    pp.start()
+    try:
         if not skip_stimulation:
-            # set the DAC to zero current, create the sine sequence around it
-            shift_DAC(dac_code+dac_offset)
-            seq = create_stim_sine_sequence(dac_id=dac_id, amplitude=dac_sine_amplitude, 
-                                            f=stim_sequence_frequency_Hz,
-                                            ncycles=stim_sequence_ncycles,
-                                            center_around=dac_code+dac_offset)
-            turn_on_stimulation_units([stim_unit], dac_id=dac_id, mode=stim_mode)
-        
-        # stim unit electrodes. files look like el_config_El16752_StimUnit08_Ampl0114.cfg
-        all_mea1k_els = [int(fname[fname.find("El")+2:fname.find("El")+7]) for fname in fnames]
-        print(f"StimUnit{stim_unit} has {len(all_mea1k_els):,} electrodes that can be stimulated")
-        test_el_entries = implant_mapping[(implant_mapping.mea1k_el.isin(all_mea1k_els))]
-        conn_mask = test_el_entries.mea1k_connectivity > connectivity_threshold
-        neg_ctrl_entries = test_el_entries.nsmallest(1, 'mea1k_connectivity')
-        test_el_entries = test_el_entries[conn_mask]
-        # only do subset of device
-        if shank_subset is not None:
-            test_el_entries = test_el_entries[test_el_entries.shank_id.isin(shank_subset)]
-            
-        print(test_el_entries)
-        x,y = test_el_entries.mea1k_el %220, test_el_entries.mea1k_el //220
-        # test_el_entries = test_el_entries[y<=40]
-        # test_el_entries = test_el_entries[x>=170]
+            _record_targets(full_recdir, targets, s, pico_rec, pp, stim_settings, stim_mode, gain,
+                            dac_id, dac_sine_amplitude, stim_sequence_frequency_Hz,
+                            stim_sequence_ncycles, dac_offset)
+    finally:
+        results = pp.finish()
+        # close the picoscope once, after all stim units are done
+        if pico_rec is not None:
+            pico_rec.close()
 
-        print(f"For StimUnit{stim_unit}, {len(test_el_entries):,} electrodes have connectivity > {connectivity_threshold}")
-        
-        if every_pad is not None:
-            assert 'pad_connectivity_rank' in implant_mapping.columns, "pad_connectivity_rank column not found in data"
-            # test_el_entries = test_el_entries[test_el_entries.pad_connectivity_rank == 1]
-            test_el_entries = test_el_entries[test_el_entries.pad_connectivity_rank.isin(every_pad)]
-            print(f"After filtering for every pad, {len(test_el_entries):,} electrodes remain for StimUnit{stim_unit}")
-
-        elif every_pi_el:
-            assert 'el_connectivity_rank' in implant_mapping.columns, "el_connectivity_rank column not found in data"
-            test_el_entries = test_el_entries[test_el_entries.el_connectivity_rank == 1]
-            print(f"After filtering for every polyimide el, {len(test_el_entries):,} electrodes remain for StimUnit{stim_unit}")
-
-        if sampled_mea1k_els is not None:
-            test_el_entries = test_el_entries[
-                test_el_entries.mea1k_el.isin(sampled_mea1k_els)
-            ]
-        
-        if negative_ctrl:
-            test_el_entries = pd.concat([test_el_entries, neg_ctrl_entries]).drop_duplicates()
-            
-        for i, (_, el_row_i) in enumerate(test_el_entries.iterrows()):
-            
-            print(f"StimUnit{stim_unit}: electrode {i}/{len(test_el_entries)} with connectivity {el_row_i.mea1k_connectivity:.3f}...", end="\n")
-            config_fullfname = [fname for fname in fnames if f"El{int(el_row_i.mea1k_el):05d}_" in fname]
-            config_fullfname = config_fullfname[0]
-            if not skip_stimulation:
-                _stimlate_electrode(config_fullfname, full_recdir,
-                                    s, dac_id, seq, stim_mode,
-                                    stim_settings=stim_settings,
-                                    stim_sequence_DAC_amplitude=dac_sine_amplitude,
-                                    stim_sequence_frequency_Hz=stim_sequence_frequency_Hz,
-                                    stim_sequence_ncycles=stim_sequence_ncycles,
-                                    pico_rec=pico_rec,)
-            if skip_post_proc:
-                continue
-            
-            fname = os.path.basename(config_fullfname).replace(".cfg", ".raw.h5")
-            # when skipping stimuation, files may not exist. used for post postprocessing when stimuated in previous run
-            if not os.path.exists(os.path.join(full_recdir, fname)):
-                continue
-            print(os.path.join(full_recdir, fname))
-            rng = max(1, stim_sequence_frequency_Hz//100) # allow 1% frequency deviation
-            
-            ampl, phase_shift = _extract_sine_amplitude(full_recdir, fname,                             
-                                                        min_band=stim_sequence_frequency_Hz-rng, 
-                                                        max_band=stim_sequence_frequency_Hz+rng,
-                                                        debug=debug)
-            # picoscope
-            pico_fullfname = os.path.join(full_recdir, f"{fname.replace('.raw.h5', '.npz')}")
-            if os.path.exists(pico_fullfname):
-                pico_data = np.load(pico_fullfname)
-                pico_time_s = pico_data['time_s']
-                pico_voltage_mV = pico_data['mv']
-                # convert to current in uA
-                pico_current_uA = mv_to_current_uA(pico_voltage_mV, DEFAULT_SENSE_GAIN)
-
-                if len(pico_time_s) < 2:
-                    print("Picoscope data too short to estimate sampling rate.")
-                else:
-                    # estimate amplitude at stimulation frequency
-                    pico_ampl, _, baseline_dc, sine_dc = extract_amplitude(
-                        pico_current_uA,
-                        # dac = read_stim_DAC(full_recdir, fname),
-                        sampling_rate=20_000,
-                        min_band=stim_sequence_frequency_Hz-rng,
-                        max_band=stim_sequence_frequency_Hz+rng,
-                        estimate_amplitude_from=3600,
-                        estimate_amplitude_to=11000,
-                        lowpass=3000.0,
-                        name=f'StimUnit={stim_unit}, DAC={dac_code}+{dac_offset}, el={int(el_row_i.mea1k_el):05d}',
-                        ylim=(-0.28, 0.28),
-                        debug=debug,
-                        plot_fname = 'debug_picoscope_signal',
-                        save_to_dir = os.path.join(full_recdir, "processed")
-                    )
-                    time.sleep(2)
-                    ext_current_uA = pico_ampl
-                    ext_current_imp = ampl / ext_current_uA
-                    
-            else:
-                ext_current_uA = np.nan
-                ext_current_imp = np.nan
-                baseline_dc = np.nan
-                sine_dc = np.nan
-                # exit()
-            
-            # get the settings
-            stim_info = pd.read_csv(os.path.join(full_recdir, f"{fname.replace('.raw.h5', '.csv')}")).iloc[0]
-            amplitude_uA = stim_info.loc["stim_sequence_DAC_amplitude"].item() * stim_info.loc["LSB_nA"].item() / 1000  # in uA
-            stim_res = pd.Series({
-                "connectivity": el_row_i.mea1k_connectivity,
-                "amplitude_uV": ampl,
-                "current_uA": amplitude_uA,
-                "external_current_uA": ext_current_uA,
-                "external_current_pre_DC_offset": baseline_dc,
-                "external_current_DC_offset": sine_dc,
-                # micro volt / (LSB in nA * sine amplitude in DAC units / 1000 to convert to uA)) = Ohm
-                "impedance_Ohm": ampl / amplitude_uA,  # in Ohm
-                "external_impedance_Ohm": ext_current_imp,
-                "phase_shift_deg": phase_shift,
-            })
-            print(pd.concat([stim_info, stim_res]).map(comma_formatter))
-            aggr.append(pd.concat([stim_info, stim_res]))
-            
-        turn_off_stimulation_units([stim_unit])  # reset all stim units
-
-        aggr_df = pd.DataFrame(aggr)
-        if not os.path.exists(os.path.join(full_recdir, "processed")):
-            os.makedirs(os.path.join(full_recdir, "processed"))
-            
-        
-        # update the table
-        if aggr_df.shape[0] > 0: 
-            stim_unit_aggr =  aggr_df[aggr_df.stim_unit==stim_unit]
-            if stim_unit_aggr.shape[0] > 0:
-                stim_unit_aggr.to_csv(os.path.join(full_recdir, "processed", f"stim_unit_{stim_unit:02d}_impedance.csv"), index=False)
-                
-            aggr_df.to_csv(os.path.join(full_recdir, "processed", "all_impedance.csv"), index=False)
-            data_plotting = aggr_df.copy()
-            data_plotting['pad_metal'] = 1
-            fig = vis.plot_impedance_analysis(os.path.join(full_recdir, "processed"), 
-                                              data_plotting, skip_bottom=False, 
-                                              color_by_metal=False, use_imp_connectivity=True)
-            # save plot
-            fig.savefig(os.path.join(full_recdir, "processed",
-                                     "all_impedance_analysis.png"), dpi=300)
-
-    # close the picoscope once, after all stim units are done
-    if pico_rec is not None:
-        pico_rec.close()
-
-
-def get_all_stimunit_impedance_data(rec_dir, save_to_csv=True):
-    processed_dir = os.path.join(rec_dir, "processed")
-    all_files = glob(os.path.join(processed_dir, "stim_unit_*_impedance.csv"))
-    dfs = []
-    for file in sorted(all_files):
-        df = pd.read_csv(file)
-        dfs.append(df)
-    print(f"Found {len(dfs)} stim unit impedance files in {processed_dir}")
-    if len(dfs) > 0:
-        aggr_df = pd.concat(dfs, ignore_index=True)
-        if save_to_csv:
-            aggr_df.to_csv(os.path.join(processed_dir, "all_impedance.csv"), index=False)
-        return aggr_df
-    else:
-        return pd.DataFrame()
+    save_impedance_results(full_recdir, results, final=True)
+    if len(results):
+        print(f"Saved {os.path.join(full_recdir, 'processed', 'all_impedance.csv')} + all_impedance_analysis.png")
+    return results
 
 def main():
     np.random.seed(42)
@@ -356,6 +388,7 @@ def main():
     stim_settings = pd.read_csv(os.path.join(nas_dir, stimulater_settings_path)).set_index("stimunit_id", drop=True)
     
     gain = 7
+    target_imp_Ohm = 100_000 # live readout: n electrodes within this impedance +-15%
     dac_id = 0
     debug = False
     # ======== PARAMETERS ========
@@ -431,7 +464,7 @@ def main():
     
     rec_name = f'2026-10-15_14.21_test10_100k_36umP_PT4_reSoldered_20mVFPGAExt'
     
-    # rec_name = f'2026-11-01_20.17_test12_100k_36umP_56umPE_PT2_10mVFPGA' # bottom device only 4-5 electrodes? 
+    rec_name = f'2026-11-01_20.17_test12_100k_36umP_56umPE_PT2_10mVFPGA' # bottom device only 4-5 electrodes? 
     
     
     # rec_name = f'2026-10-21_14.45_test11_100k_36umP_PT1_10mVFPGA' 
@@ -441,34 +474,33 @@ def main():
     # rec_name = f'2026-10-25_17.03_test11_100k_36umP_PT7_10mVFPGA' # 
     
     
-    # if not mapped yet, pseudo implant_mapping
-    implant_mapping = pd.read_csv(os.path.join(nas_dir, subdir,
-                                               rec_name, 
-                                               "processed", "extr_connectivity.csv")).rename(
-                                                columns={"el":"mea1k_el",
-                                                         "connectivity":"mea1k_connectivity"})
-    implant_mapping['pad_connectivity_rank'] = None
-    
-    # fullfname = os.path.join(nas_dir, "devices", "implant_devices", implant_name, 
-    #                          "bonding", f"bonding_mapping_{implant_name}.csv")
-    # implant_mapping = pd.read_csv(fullfname)
     
     
     
-    
-    # rec_dir = f"{rec_name}_Imp_{stim_mode}_f{stim_sequence_frequency_Hz:04d}Hz"
-    # rec_dir = f"2026-06-02_12.55_8Sh4SilverPaint_VRefFPGA_ampl15_PT1_1.9mm_Imp_large_current_f1000Hz_old"
-    # rec_dir = f"test"
-    
-    # rec_dir = f'{t}_ReEtched14ShankReGoldPlated_Imp2_PT2_LC'
-    # rec_dir = f"{t}_JDesignFirstSoldered2_Imp11_Bottom_shiftAdjusted_PT5_LC"
-    # rec_dir = f'{t}_noACFTry2_J2_36Pads_PT3_1.8mmcornerRetightened_Imp'
-    # rec_dir = f'{t}_noACFTry4_J2_61Pad_PT2_Imp'
-    
-    # rec_dir = f'2026-10-25_17.14_test11_100k_36umP_PT7_Imp'
-    
-    # rec_dir = "2026-10-28_14.57_test11_100k_36umP_PT7_Imp"
+    # ======== TARGETS ========
+    # headstage-only test, no implant mapping: electrodes of a 10mVFPGA connectivity recording
+    targets = targets_from_connectivity_rec(os.path.join(nas_dir, subdir, rec_name))
+    # bonded implant:
+    # targets = targets_from_implant_mapping(implant_name, shank_subset=None, every_pad=None, every_pi_el=False)
+    # electrodes of shorted islands (TileShorts recording):
+    # targets = targets_from_short_islands(os.path.join(nas_dir, subdir, "<TileShorts rec>",
+    #                                      "processed", "extracted_connectivity_graph.csv"), min_island_size=3)
+    # explicit list:
+    # targets = pd.DataFrame({"electrode": [16752, 7555]})
+    # region subset, e.g. bottom rows only:
+    # targets = targets[targets.electrode // 220 > 60]
 
+    rec_current_externally = False
+    skip_stimulation = True  # if True, only (re)process the recordings in postproc_rec_dir
+    reprocess = True         # if True, also redo recordings that already have a processed/ output
+    postproc_rec_dir = "2026-11-02_12.33_test12_100k_36umP_56umPE_PT2_ImpNew"
+
+
+
+
+
+    # ======== PARAMETERS ========
+    
     # ---- consistent naming theme: {t}_{name}_{tightening_str}_<recording type> ----
     # update name/tightening_str each session; recording type stays "Imp" for this script
     
@@ -496,33 +528,32 @@ def main():
     name = "test12_100k_36umP_56umPE"
     tightening_str = "PT2"
 
-    rec_dir = f'{t}_{name}_{tightening_str}_Imp_bottomCorner'
-    
-    measure_impedance(os.path.join(nas_dir, subdir, rec_dir), 
-                    nas_dir, configs_basepath, 
-                    stim_mode, stim_settings, implant_mapping,
-                    gain=gain, dac_sine_amplitude=dac_sine_amplitude, 
-                    dac_id=dac_id, 
-                    stim_sequence_frequency_Hz=stim_sequence_frequency_Hz,
-                    stim_sequence_ncycles=stim_sequence_ncycles,
-                    # stim_units = list(range(32)),
-                    stim_units = list(range(16,32)),
-                    #   every_pi_el=True, 
-                    dac_offset=0,
-                    negative_ctrl=False,
-                    electrode_sample_fraction=1,
-                    # every_pad=range(10),
-                    # shank_subset=[4,5,6,7], 
-                    connectivity_threshold=.4,
-                    skip_stimulation=False,
-                    skip_post_proc=False,
-                    rec_current_externally=False,
-                    debug=False,
-                    )
-    
+    rec_dir = f'{t}_{name}_{tightening_str}_ImpNew'
+    if skip_stimulation:
+        rec_dir = postproc_rec_dir
+    else:
+        config_index = index_stimulation_configs(os.path.join(nas_dir, configs_basepath))
+        targets = select_targets(targets, config_index,
+                                 connectivity_threshold=.4,
+                                 # stim_units=list(range(32)),
+                                 stim_units=list(range(16,32)),
+                                 sample_fraction=1,
+                                 negative_ctrl=False)
+
+    measure_impedance(os.path.join(nas_dir, subdir, rec_dir), targets,
+                      stim_settings, stim_mode, gain=gain, dac_id=dac_id,
+                      dac_sine_amplitude=dac_sine_amplitude,
+                      stim_sequence_frequency_Hz=stim_sequence_frequency_Hz,
+                      stim_sequence_ncycles=stim_sequence_ncycles,
+                      dac_offset=0,
+                      rec_current_externally=rec_current_externally,
+                      skip_stimulation=skip_stimulation,
+                      reprocess=reprocess,
+                      target_imp_Ohm=target_imp_Ohm,
+                      # old recordings without target columns in their sidecar csv
+                    #   fallback_targets=targets.set_index("electrode"),
+                      debug=debug)
     # cp_rec_dir_to_implant_dir(full_recdir, implant_name)
-    get_all_stimunit_impedance_data(os.path.join(nas_dir, subdir, rec_dir))
-    # exit()
         
 if __name__ == "__main__":
     main()

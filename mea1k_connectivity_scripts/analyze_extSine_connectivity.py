@@ -16,7 +16,7 @@ from baseVR.base_functionality import device_paths
 import ephys_constants as EC
 from mea1k_modules.mea1k_raw_preproc import read_raw_data
 from mea1k_modules.mea1k_visualizations import draw_mea1k
-from mea1k_connectivity_scripts.signal_helpers import estimate_frequency_power
+from mea1k_connectivity_scripts.signal_helpers import extract_amplitude
 
 def _fname2config_id(fname):
     # check 4 digit case...
@@ -40,22 +40,24 @@ def _save_output(subdir, data, fname):
         os.makedirs(fullpath)
     data.to_csv(os.path.join(fullpath, fname))
 
-def extract_connectivity_file(subdir, fname, config_id, input_ampl_mV, n_samples,
+def extract_connectivity_file(subdir, fname, config_id, input_ampl_mV, n_samples, gain,
                               debug=False, min_band=960, max_band=1040):
-    """Connectivity of all electrodes in one recording. Returns None if unreadable."""
-    try:
-        data = read_raw_data(subdir, fname, convert2uV=True, to_df=True,
-                             to_df_index='mea1k_el',
-                             col_slice=slice(0, n_samples))
-    except Exception as e:
-        print(f"Error occurred while reading {fname}: {e}")
-        return None
+    """Connectivity of all electrodes in one recording. `gain` is the gain set on the
+    chip, used for the uV conversion instead of the gain stored in the file."""
+    data = read_raw_data(subdir, fname, convert2uV=True, to_df=True,
+                         to_df_index='mea1k_el',
+                         col_slice=slice(0, n_samples), override_gain=gain)
 
     mean_ampl = []
-    for j,row in enumerate(data.astype(float).values):
-        m_ampl, _ = estimate_frequency_power(row, sampling_rate=EC.SAMPLING_RATE,
-                                             debug=debug and j < 10, min_band=min_band,
-                                             max_band=max_band)
+    for j, (el, row) in enumerate(zip(data.index, data.astype(float).values)):
+        # demean + 50 Hz notch + lock-in over the whole slice, debug -> live_figures/debug_amplifier.png
+        m_ampl, _, _, _ = extract_amplitude(row, sampling_rate=EC.SAMPLING_RATE,
+                                            min_band=min_band, max_band=max_band,
+                                            estimate_amplitude_from=0,
+                                            estimate_amplitude_to=len(row)-1,
+                                            name=f"{fname.replace('.raw.h5', '')} El{el}",
+                                            plot_fname='debug_amplifier',
+                                            debug=debug and j < 10)
         # scale to mV
         mean_ampl.append(m_ampl/1000)
 
@@ -63,23 +65,47 @@ def extract_connectivity_file(subdir, fname, config_id, input_ampl_mV, n_samples
     data['connectivity'] = data.ampl.values/input_ampl_mV
     data['ampl_mV'] = data.ampl.values
     data['input_ampl_mV'] = input_ampl_mV
+    data['gain'] = gain
     data.index = pd.MultiIndex.from_product([[config_id],data.index], names=['config', 'el'])
     return data
 
-def extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False,
+def extract_connectivity(subdir, input_ampl_mV, n_samples, gain, debug=False,
                          min_band=960, max_band=1040):
     fnames, ids = _get_hdf5_fnames_from_dir(subdir)
     all_data = []
     for fname, i in zip(fnames, ids):
         print(f"Config {i} of {len(fnames)}")
         print("Filtering...")
-        data = extract_connectivity_file(subdir, fname, i, input_ampl_mV, n_samples,
-                                         debug=debug, min_band=min_band, max_band=max_band)
-        if data is None:
+        try:
+            data = extract_connectivity_file(subdir, fname, i, input_ampl_mV, n_samples, gain,
+                                             debug=debug, min_band=min_band, max_band=max_band)
+        except Exception as e:
+            print(f"Error occurred while reading {fname}: {e}")
             continue
         print(f"Done. n >70%: {(data.connectivity >.7).sum()}\n")
         all_data.append(data)
     _save_output(subdir, pd.concat(all_data), f"extr_connectivity.csv")
+
+def process_connectivity_recording(subdir, fname, log, n_samples, fallback_input_ampl_mV=None,
+                                   fallback_gain=None, debug=False, min_band=960, max_band=1040):
+    """process_fn for LivePostproc: one recording -> connectivity per electrode.
+    Input amplitude and gain come from the sidecar csv. Recordings made before sidecars
+    existed use fallback_input_ampl_mV and fallback_gain instead."""
+    sidecar_fullfname = os.path.join(subdir, fname.replace(".raw.h5", ".csv"))
+    if os.path.exists(sidecar_fullfname):
+        sidecar = pd.read_csv(sidecar_fullfname).iloc[0]
+        input_ampl_mV, gain = sidecar.input_ampl_mV, sidecar.gain
+    elif fallback_input_ampl_mV is not None and fallback_gain is not None:
+        input_ampl_mV, gain = fallback_input_ampl_mV, fallback_gain
+        log(f"{fname}: no sidecar csv, using fallback input_ampl_mV={input_ampl_mV}, "
+            f"gain={gain}")
+    else:
+        log(f"{fname}: no sidecar csv and no fallback_input_ampl_mV/fallback_gain given")
+        return None
+    data = extract_connectivity_file(subdir, fname, _fname2config_id(fname), input_ampl_mV,
+                                     n_samples, gain, debug=debug, min_band=min_band,
+                                     max_band=max_band)
+    return data.reset_index()
         
 def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):
     plt.figure(figsize=(6,4))
@@ -189,13 +215,14 @@ def main():
     
     input_ampl_mV = 10
     n_samples = 8_000 # where sine stim is visible
+    gain = 7 # gain set on the chip during recording
 
     subdir = f"{nas_dir}/devices/headstage_devices/{HEADSTAGE_DEVICE_NAME}/recordings/{rec_name}"
     if not os.path.exists(subdir):
         print(f"Error: {os.path.join(subdir)} does not exist.")
         exit()
     
-    extract_connectivity(subdir, input_ampl_mV, n_samples, debug=False, 
+    extract_connectivity(subdir, input_ampl_mV, n_samples, gain, debug=False, 
                          min_band=FROM_FREQ, max_band=TO_FREQ)
     vis_connectivity(subdir, input_ampl_mV, cmap_scaler=1)
     create_implant_dir(subdir, nas_dir, HEADSTAGE_DEVICE_NAME, IMPLANT_DEVICE_NAME)
