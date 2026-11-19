@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
+from PIL import Image
 
 TARGET_RANGE_uV = 25_000    # band around 0 the transient peak should land in at the zero-current code
 
@@ -74,9 +75,10 @@ def _draw_fit(ax, fit, fit_label):
                          f"Δ: {abs(fit['emp_dac'] - dac):.0f})")
         ax.scatter([dac], [offset], facecolors='none', edgecolors='green', s=200, linewidths=2, zorder=6)
 
-def stim_unit_characterization(stim_unit_results, fit_all, fit_last, stimunit_id):
+def stim_unit_characterization(stim_unit_results, fit_all, fit_last, stimunit_id, old_code=None):
     """Transient peak vs DAC code of one stim unit: all sets so far (top), the latest set
-    (bottom), each with its sigmoid fit (fit_* from _fit_zero_current_dac, or None)."""
+    (bottom), each with its sigmoid fit (fit_* from _fit_zero_current_dac, or None).
+    old_code: previous zero-current code (recalibration), drawn in purple."""
     fig, ax = plt.subplots(nrows=2, figsize=(14, 10))
     fig.suptitle(f"Characterization: Stimulation Unit {stimunit_id:02d}", fontsize=16, fontweight="bold")
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -103,6 +105,8 @@ def stim_unit_characterization(stim_unit_results, fit_all, fit_last, stimunit_id
     ax[1].set_xticks([])
 
     for a in ax:
+        if old_code is not None:
+            a.axvline(old_code, color='purple', linewidth=2, alpha=0.7, label=f"Previous code: {old_code}")
         a.axhline(0, color='gray', linestyle='--', alpha=0.5)
         a.yaxis.set_major_formatter(plt.matplotlib.ticker.StrMethodFormatter('{x:,.0f}'))
         a.set_ylabel("Peak [uV]")
@@ -113,77 +117,60 @@ def stim_unit_characterization(stim_unit_results, fit_all, fit_last, stimunit_id
     fig.tight_layout(rect=[0, 0, 1, 0.96])
     return fig
 
-def all_dac_sweeps(results, stim_units, old_codes=None, new_codes=None):
-    """All DAC sweep points per stim unit (4x8 grid), with the old (red) and new (green)
-    zero-current DAC codes. results: concatenated results_StimUnit*.csv"""
-    fig, axes = plt.subplots(nrows=4, ncols=8, figsize=(4*8, 16), sharey=True, sharex=True)
-    axes = axes.flatten()
-    for stim_unit in stim_units:
-        d = results[results.stimunit_id == stim_unit]
-        if d.empty:
-            continue
-        ax = axes[stim_unit]
-        ax.scatter(d.DAC_val, d.peak_uV, alpha=0.4, s=20, label=f"StimUnit {stim_unit:02d} samples")
-        if old_codes is not None and stim_unit in old_codes.index:
-            ax.axvline(old_codes.loc[stim_unit], color='red', linestyle='--',
-                       label=f"OLD Zero-Current DAC: {old_codes.loc[stim_unit]}")
-        if new_codes is not None and stim_unit in new_codes.index:
-            ax.axvline(new_codes.loc[stim_unit], color='green', linestyle=':', linewidth=2,
-                       label=f"NEW Zero-Current DAC: {new_codes.loc[stim_unit]}")
-        ax.axhspan(-TARGET_RANGE_uV, TARGET_RANGE_uV, color='gray', alpha=0.15, zorder=0,
-                   label=f"±{TARGET_RANGE_uV/1000:.0f}k uV Target Range")
-        ax.set_title(f"Stim Unit {stim_unit:02d}", y=.95)
-        ax.set_xlabel("DAC value", fontsize=10)
-        ax.set_ylabel("Peak uV")
-        ax.legend(fontsize=6)
-        [ax.spines[side].set_visible(False) for side in ['top', 'right', 'left', 'bottom']]
-    return fig
+def stitch_pngs(fnames, ncols=8, scale=1/3):
+    """Grid of the saved per stim unit figures (same size), scaled down. Returns a PIL image."""
+    imgs = [Image.open(f) for f in fnames]
+    w, h = int(imgs[0].width*scale), int(imgs[0].height*scale)
+    nrows = -(-len(imgs) // ncols)
+    grid = Image.new("RGB", (w*min(ncols, len(imgs)), h*nrows), "white")
+    for i, img in enumerate(imgs):
+        grid.paste(img.convert("RGB").resize((w, h), Image.LANCZOS), ((i % ncols)*w, (i//ncols)*h))
+    return grid
 
 # ======== current LSB ========
 
 def lsb_summary(aggr, R, stim_units, stim_mode):
-    """One LSB condition: zero-current DAC, amplitude, phase and LSB per stim unit."""
+    """Zero-current DAC, amplitude, phase and LSB per stim unit. Several conditions (gain,
+    frequency, sine amplitude) get their own marker, shifted a bit next to each other."""
     fig = plt.figure(figsize=(14, 8))
     ax = [fig.add_subplot(2, 2, 1), fig.add_subplot(2, 2, 2),
           fig.add_subplot(2, 2, 3, projection='polar'), fig.add_subplot(2, 2, 4)]
-    unique_med = aggr.drop_duplicates('stimunit_id')
-    freqs = sorted(aggr['freq'].unique())
-    markers = ['o', 's', '^']
+    cond_cols = ['gain', 'freq', 'sine_amplitude_DAC_units']
+    conditions = list(aggr.groupby(cond_cols).groups)
+    markers = ['o', 's', '^', 'D', 'v', 'P', 'X', '*']
+    width = .8 / len(conditions)
+
+    for i, (gain, freq, sine) in enumerate(conditions):
+        d = aggr[(aggr.gain == gain) & (aggr.freq == freq) & (aggr.sine_amplitude_DAC_units == sine)]
+        med = d.drop_duplicates('stimunit_id')
+        x = d['stimunit_id'] + (i - (len(conditions)-1)/2) * width
+        x_med = med['stimunit_id'] + (i - (len(conditions)-1)/2) * width
+        m = markers[i % len(markers)]
+        label = f"gain {gain:g}, {freq}Hz, ±{sine}"
+
+        ax[0].scatter(x, d[f'{stim_mode}_zero_current_DAC'], s=50, c=d['dac_code_offset'],
+                      alpha=0.6, marker=m)
+        ax[1].scatter(x, d['mean_amplitude_uV'], alpha=0.8, c=d['dac_code_offset'],
+                      edgecolor='none', s=30, marker=m, label=label)
+        ax[1].scatter(x_med, med['median_amplitude_uV'], color='blue', s=200*width, marker='_',
+                      linewidths=2, zorder=5, label='Median' if i == 0 else None)
+        ax[2].scatter(np.mod(np.deg2rad(d['phase_shift_deg']), 2 * np.pi), 1 + d['stimunit_id'],
+                      s=50, color='green', alpha=0.6, marker=m, label=label)
+        ax[3].scatter(x, d[f"{stim_mode}_LSB_nA"], alpha=0.3, color='blue', edgecolor='none',
+                      s=30, marker=m, label=label)
+        ax[3].scatter(x_med, med[f"{stim_mode}_median_LSB_nA"], color='blue', s=200*width,
+                      marker='_', linewidths=2, zorder=5, label='Median' if i == 0 else None)
 
     ax[0].set_title("1.) Zero current DAC code")
     ax[0].set_ylabel("Zero current DAC code")
-    for i, freq in enumerate(freqs):
-        d = aggr[aggr['freq'] == freq]
-        ax[0].scatter(d['stimunit_id'], d[f'{stim_mode}_zero_current_DAC'], s=50,
-                      c=d['dac_code_offset'], alpha=0.6, marker=markers[i % len(markers)])
-
     ax[1].set_title("2.) Mean Amplitude [uV]")
     ax[1].set_ylabel("Mean Amplitude [uV]")
-    for i, freq in enumerate(freqs):
-        d = aggr[aggr['freq'] == freq]
-        ax[1].scatter(d['stimunit_id'], d['mean_amplitude_uV'], alpha=0.8, c=d['dac_code_offset'],
-                      edgecolor='none', s=30, marker=markers[i % len(markers)], label=f'{freq}Hz')
-    ax[1].scatter(unique_med['stimunit_id'], unique_med['median_amplitude_uV'], color='blue',
-                  s=200, marker='_', linewidths=2, zorder=5, label='Median')
-
     ax[2].set_title("Phase Shift (Polar)", pad=20)
-    for i, freq in enumerate(freqs):
-        d = aggr[aggr['freq'] == freq]
-        ax[2].scatter(np.mod(np.deg2rad(d['phase_shift_deg']), 2 * np.pi), 1 + d['stimunit_id'],
-                      s=50, color='green', alpha=0.6, marker=markers[i % len(markers)], label=f'{freq}Hz')
     ax[2].set_theta_zero_location('N')
     ax[2].set_theta_direction(-1)
     ax[2].legend(fontsize=8, loc='upper left', bbox_to_anchor=(1.1, 1.0))
-
     ax[3].set_title(f"3.) LSB, {stim_mode} mode [nA]\n(Linear scaling by resistance R={R/1000:g}kΩ)")
     ax[3].set_ylabel("LSB [nA]")
-    for i, freq in enumerate(freqs):
-        d = aggr[aggr['freq'] == freq]
-        ax[3].scatter(d['stimunit_id'], d[f"{stim_mode}_LSB_nA"], alpha=0.3, color='blue',
-                      edgecolor='none', s=30, marker=markers[i % len(markers)], label=f'{freq}Hz')
-    ax[3].scatter(unique_med['stimunit_id'], unique_med[f"{stim_mode}_median_LSB_nA"], color='blue',
-                  s=200, marker='_', linewidths=2, zorder=5, label='Median')
-
     for a in (ax[0], ax[1], ax[3]):
         a.set_xlabel("Stim Unit ID")
         a.set_xticks(stim_units)
@@ -191,51 +178,5 @@ def lsb_summary(aggr, R, stim_units, stim_mode):
         a.grid(True)
     ax[1].legend(fontsize=9)
     ax[3].legend(fontsize=9)
-    fig.tight_layout()
-    return fig
-
-def lsb_sweep_summary(aggr, R, stim_mode):
-    """Several LSB conditions (recording gain x frequency): LSB per stim unit and vs frequency,
-    phase, and the picoscope / amplifier LSB ratio."""
-    gains, freqs = sorted(aggr['gain'].unique()), sorted(aggr['freq'].unique())
-    colors = {g: plt.cm.tab10(i) for i, g in enumerate(gains)}
-    markers = {f: m for f, m in zip(freqs, ['o', 's', '^', 'D', 'v', 'P'])}
-    lsb, ext_lsb = f"{stim_mode}_LSB_nA", f"{stim_mode}_external_LSB_nA"
-
-    fig, ax = plt.subplots(2, 2, figsize=(14, 9))
-    fig.suptitle(f"LSB sweep, {stim_mode} (R={R/1000:g}kΩ)")
-    for g in gains:
-        for f in freqs:
-            d = aggr[(aggr['gain'] == g) & (aggr['freq'] == f)]
-            if d.empty:
-                continue
-            ax[0, 0].scatter(d['stimunit_id'], d[lsb], s=25, alpha=.5, color=colors[g], marker=markers[f],
-                             label=f"gain {g:g}, {f} Hz")
-            ax[0, 1].scatter([f]*len(d), d[lsb], s=20, alpha=.3, color=colors[g])
-            ph = np.rad2deg(np.angle(np.mean(np.exp(1j*np.deg2rad(d['phase_shift_deg'])))))
-            ax[1, 0].scatter([f], [ph], s=60, color=colors[g], marker=markers[f])
-            ax[1, 1].scatter([f]*len(d), d[ext_lsb] / d[lsb], s=20, alpha=.4, color=colors[g])
-    for g in gains:
-        d = aggr[aggr['gain'] == g]
-        med = d.groupby('freq')[lsb].median()
-        ax[0, 1].plot(med.index, med.values, color=colors[g], marker='_', ms=14, label=f"gain {g:g}")
-        ratio = d.assign(r=d[ext_lsb] / d[lsb]).groupby('freq')['r'].median()
-        ax[1, 1].plot(ratio.index, ratio.values, color=colors[g], marker='_', ms=14, label=f"gain {g:g}")
-    ax[0, 0].set(title="Amplifier LSB per stim unit", xlabel="Stim Unit ID", ylabel="LSB [nA]")
-    ax[0, 0].legend(fontsize=6, ncol=2)
-    ax[0, 1].set(title="Amplifier LSB vs frequency (line: median)", xlabel="Frequency [Hz]",
-                 ylabel="LSB [nA]", xscale='log')
-    ax[0, 1].legend(fontsize=8)
-    ax[1, 0].set(title="Phase shift vs DAC (circular mean)", xlabel="Frequency [Hz]",
-                 ylabel="Phase [deg]", xscale='log')
-    # without picoscope recordings the ratios are all NaN, a log axis can't place ticks then
-    has_ext = aggr[ext_lsb].notna().any()
-    ax[1, 1].set(title="External (pico) LSB / amplifier LSB, 1 = amplifier gain correct"
-                       + ("" if has_ext else "\n(no picoscope recordings)"),
-                 xlabel="Frequency [Hz]", ylabel="ratio", xscale='log' if has_ext else 'linear')
-    ax[1, 1].axhline(1, color='gray', linestyle='--', alpha=.5)
-    ax[1, 1].legend(fontsize=8)
-    for a in ax.flat:
-        a.grid(True, alpha=.3)
     fig.tight_layout()
     return fig

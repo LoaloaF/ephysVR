@@ -112,7 +112,7 @@ rec_dir = "2026-07-20_15.56_ACF_PIEl_Try10_PT4_Imp1"
 aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
 vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=log_scale, skip_bottom=False, 
                             color_by_metal=False, use_imp_connectivity=True)
-vis.plot_ext_current_comparison(aggr_df, diff_max=2_000_000, title="Small current mode")
+vis.plot_ext_current_comparison(aggr_df, title="Small current mode")
  
 
 # %%
@@ -242,7 +242,7 @@ aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, su
 vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=log_scale, 
                             ylims=(1_000, 2_000_000), skip_bottom=False, 
                             color_by_metal=False, use_imp_connectivity=True)
-vis.plot_ext_current_comparison(aggr_df, diff_max=2_000_000, title="Small current mode")
+vis.plot_ext_current_comparison(aggr_df, title="Small current mode")
  
 
 # %%

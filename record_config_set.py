@@ -7,6 +7,7 @@ import pandas as pd
 from datetime import datetime
 import matplotlib
 matplotlib.use("Agg")  # debug plots are drawn in the postproc thread, files only
+import matplotlib.pyplot as plt
 
 # to import logger, VR-wide constants and device paths
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -31,6 +32,7 @@ from mea1k_modules.mea1k_config_utils import (
     start_saving, stop_saving, get_maxlab_saving, array_config2df,
 )
 from mea1k_modules.live_postproc import LivePostproc
+from mea1k_modules.mea1k_visualizations import draw_mea1k
 from mea1k_connectivity_scripts.analyze_extSine_connectivity import (
     process_connectivity_recording, _save_output,
 )
@@ -59,8 +61,9 @@ def rec_config_set():
     # name = "PDMS_J2_2x61umP,35umP"
     # name = "2x8x56umP_1of16100K"
     # name = "PDMS_J2_2x61umP,35umP"
-    name = "test12_100k_36umP_56umPE"
+    name = "test17_100_36umP"
     # name = "2x8x56umP_16`of16_100K"
+    name = "test18_W4.3_12x_12x_PDMS_50Hz"
     
     # tightening_str = "PT2_2.8mm"
     # tightening_str = "PT4_2.6mm"
@@ -75,7 +78,7 @@ def rec_config_set():
     with_external_sine = True
     external_sine_freq = 1000
     external_sine_amp_in_bits = 15 # 10 mV amplitude?
-    input_ampl_mV = 10 # sine amplitude at the electrodes, connectivity = measured / input
+    input_ampl_mV = 100 # sine amplitude at the electrodes, connectivity = measured / input
     configs_basepath = os.path.join(nas_dir, "mea1k_configs", '')
     # configs_basepath = os.path.join(nas_dir, "devices", 'implant_devices', '260413_MEA1K22_S1688pad14shankB5')
     which_configs = "all_parallel"
@@ -84,12 +87,13 @@ def rec_config_set():
 
     # postproc, runs in a 2nd thread while recording
     postproc_n_samples = 8000
+    analysis_freq = 1000 # Hz, frequency the postproc looks at; 50 = line noise (skips the 50 Hz notch)
     connectivity_threshold = .7
     debug = False # postproc debug plots -> live_figures/debug_amplifier.png (first 10 els per config)
     reprocess = False # True: redo recordings that already have a processed/ output
     # True: no hardware access, only (re)process the recordings in postproc_rec_dir
-    skip_stimulation = True
-    postproc_rec_dir = "2026-11-01_20.17_test12_100k_36umP_56umPE_PT2_10mVFPGA"
+    skip_stimulation = False
+    # postproc_rec_dir = "2026-11-01_20.17_test12_100k_36umP_56umPE_PT2_10mVFPGA"
     # ======== PARAMETERS ========
     
     if skip_stimulation:
@@ -101,10 +105,14 @@ def rec_config_set():
     process_fn = functools.partial(process_connectivity_recording,
                                    n_samples=postproc_n_samples,
                                    fallback_input_ampl_mV=input_ampl_mV, fallback_gain=gain,
+                                   min_band=analysis_freq*.96, max_band=analysis_freq*1.04,
+                                   notch=abs(analysis_freq-50) > 5,
                                    debug=debug)
     def summarize_fn(results, last_result):
-        n_above = results.el[results.connectivity > connectivity_threshold].nunique()
-        return f"{n_above} els > {connectivity_threshold}"
+        if last_result is None:   # only results of an earlier run so far
+            return ""
+        n_above = last_result.el[last_result.connectivity > connectivity_threshold].nunique()
+        return f"{n_above}/{last_result.el.nunique()} els > {connectivity_threshold} in last rec"
     
     if skip_stimulation:
         if not os.path.exists(path):
@@ -120,6 +128,19 @@ def rec_config_set():
                                   post_download_wait_time, rec_time)
     if len(results):
         _save_output(path, results.set_index(['config', 'el']), "extr_connectivity.csv")
+        _plot_connectivity(path, results, connectivity_threshold)
+
+def _plot_connectivity(path, results, connectivity_threshold):
+    """Connectivity on the MEA1K layout (white = 1), processed/extr_connectivity.png."""
+    conn = results.groupby('el').connectivity.max()
+    mapping = pd.DataFrame({'mea1k_el': conn.index, 'mea1k_connectivity': conn.values})
+    (fig, ax), _ = draw_mea1k(mapping=mapping, fast=True)
+    ax.set_title(f"{os.path.basename(path)}: {(conn > connectivity_threshold).sum()}/{len(conn)} "
+                 f"els > {connectivity_threshold}", color='white', y=.95)
+    fullfname = os.path.join(path, "processed", "extr_connectivity.png")
+    fig.savefig(fullfname, dpi=300, facecolor='black')
+    plt.close(fig)
+    print(f"\n\033[1;36mcode {fullfname}\033[0m\n")
 
 def _record_configs(path, process_fn, summarize_fn, reprocess, configs_basepath,
                     which_configs, gain, with_external_sine, external_sine_freq,

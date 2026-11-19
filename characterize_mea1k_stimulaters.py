@@ -294,18 +294,18 @@ def _update_characterization_csv(dirname, stimunit_id, zero_current_dac):
     df_char = df_char.astype(int).sort_values("stimunit_id")
     df_char.to_csv(csv_path, index=False)
 
-def eval_stim_unit_results(dirname, stim_unit_results, debug=False):
+def eval_stim_unit_results(dirname, stim_unit_results, debug=False, old_code=None):
     """Zero-current DAC code of a stim unit from all its sets so far (sigmoid fit), written to
-    processed/StimUnits_characterization.csv, plus its characterization plot (also live)."""
+    processed/StimUnits_characterization.csv, plus its characterization plot.
+    old_code: previous code of a recalibration, shown in the plot."""
     if not stim_unit_results:
         return
     stimunit_id = int(stim_unit_results[0]["stimunit_id"].iloc[0])
     fit_all = _fit_zero_current_dac(pd.concat(stim_unit_results, axis=0, ignore_index=True))
     fit_last = _fit_zero_current_dac(stim_unit_results[-1])
 
-    fig = plots.stim_unit_characterization(stim_unit_results, fit_all, fit_last, stimunit_id)
+    fig = plots.stim_unit_characterization(stim_unit_results, fit_all, fit_last, stimunit_id, old_code)
     os.makedirs(os.path.join(dirname, "processed"), exist_ok=True)
-    save_live_fig(fig, 'stim_unit_characterization_live', dpi=300)
     if debug:
         save_live_fig(fig, 'StimUnit_characterization_debug', dpi=300)
     fig.savefig(os.path.join(dirname, "processed", f"StimUnit{stimunit_id:02d}_characterization.png"), dpi=300)
@@ -346,7 +346,8 @@ def char_stim_units(dirname, stim_mode, n_amplifiers=2, stim_units=list(range(32
     """Zero-current DAC code per stim unit, by sweeping the DAC around a start value.
     start_centered_around: one DAC code for all stim units, or per stim unit (dict/Series,
     e.g. the headstage's current codes) for a quick recalibration with a small delta. With
-    per-unit start codes, all_StimUnit_DAC_sweeps.png compares old and new codes."""
+    per-unit start codes, the old code is drawn into each stim unit's plot. All stim unit plots
+    are stitched into processed/all_StimUnit_characterizations.png after every stim unit."""
     # create processed directory if not exists
     os.makedirs(os.path.join(dirname, "processed"), exist_ok=True)
     array = setup_stim_unit_characterization(dirname, gain=gain) 
@@ -387,7 +388,8 @@ def char_stim_units(dirname, stim_mode, n_amplifiers=2, stim_units=list(range(32
                 stim_unit_results.append(results)
                 
                 # Pass dirname so it can save the CSV at every execution reliably
-                eval_stim_unit_results(dirname, stim_unit_results, debug=debug)
+                eval_stim_unit_results(dirname, stim_unit_results, debug=debug,
+                                       old_code=start if per_unit_start else None)
 
                 centered_around, found_crossing = _next_DAC_center(results, stim_unit_results,
                                                                     used_delta, centered_around)
@@ -407,20 +409,15 @@ def char_stim_units(dirname, stim_mode, n_amplifiers=2, stim_units=list(range(32
                 if set_id >= max_iterations:
                     print(f"Reached maximum iterations ({max_iterations}), stopping here.\n\n\n")
                     break
-    if per_unit_start:
-        _plot_recalibration(dirname, stim_units, pd.Series(start_centered_around))
+        stitch_characterizations(dirname)
 
-def _plot_recalibration(dirname, stim_units, old_codes):
-    """All DAC sweeps with the old (start) and new zero-current DAC codes per stim unit."""
-    new_codes = pd.read_csv(os.path.join(dirname, "processed", "StimUnits_characterization.csv"),
-                            index_col=0).zero_current_DAC_code
-    results = pd.concat([pd.read_csv(f) for f in glob.glob(os.path.join(dirname, "results_StimUnit*.csv"))
-                         if os.path.getsize(f) > 1])   # sets without any valid transient are empty
-    fig = plots.all_dac_sweeps(results, stim_units, old_codes=old_codes, new_codes=new_codes)
-    fig.suptitle(os.path.basename(dirname), fontsize=16, fontweight="bold")
-    plot_fullfname = os.path.join(dirname, "processed", "all_StimUnit_DAC_sweeps.png")
-    fig.savefig(plot_fullfname, dpi=300)
-    plt.close(fig)
+def stitch_characterizations(dirname):
+    """All processed/StimUnit*_characterization.png in one grid, 8 stim units per row."""
+    fnames = sorted(glob.glob(os.path.join(dirname, "processed", "StimUnit*_characterization.png")))
+    if not fnames:
+        return
+    plot_fullfname = os.path.join(dirname, "processed", "all_StimUnit_characterizations.png")
+    plots.stitch_pngs(fnames).save(plot_fullfname)
     print(plot_fullfname)
 
 
@@ -617,10 +614,7 @@ def char_current_lsb(dirname, R, stim_units, n_amplifiers, stim_mode, conditions
     if len(results):
         result_fullfname = _save_lsb_results(rec_dir, results, stim_mode)
         aggr = pd.read_csv(result_fullfname)
-        if aggr.groupby(['gain', 'freq']).ngroups > 1:
-            fig = plots.lsb_sweep_summary(aggr, R, stim_mode)
-        else:
-            fig = plots.lsb_summary(aggr, R, sorted(aggr.stimunit_id.unique()), stim_mode)
+        fig = plots.lsb_summary(aggr, R, sorted(aggr.stimunit_id.unique()), stim_mode)
         fig.savefig(result_fullfname.replace(".csv", ".png"), dpi=300)
         plt.close(fig)
     return results
@@ -790,17 +784,31 @@ def _save_lsb_results(dirname, results, stim_mode, sweep=None):
 # Copy results to the headstage's stim unit characterization csv.
 # ============================================================================================
 
-def transfer_stimunit_characterization(dirname, stim_mode, headstage_name, incl_LSB=False):
-    # read in final characterization CSV (falls back to drift-check output, no LSB there)
-    result_fullfname = os.path.join(dirname, "processed", f"{stim_mode}_lsb_characterization.csv")
-    if not os.path.exists(result_fullfname):
-        result_fullfname = os.path.join(dirname, "processed", "StimUnits_characterization.csv")
-    if not os.path.exists(result_fullfname):
-        print(f"Final characterization CSV not found: {result_fullfname}")
+def transfer_stimunit_characterization(dirname, stim_mode, headstage_name, lsb_gain=7, lsb_freq=1000):
+    """Zero-current DAC codes (processed/StimUnits_characterization.csv) and, if measured, the
+    median LSB to the headstage's csv. LSB from processed/{stim_mode}_lsb_characterization.csv,
+    or from the LSB_sweep, there only the lsb_gain/lsb_freq condition (= the standard LSB)."""
+    codes_fullfname = os.path.join(dirname, "processed", "StimUnits_characterization.csv")
+    if not os.path.exists(codes_fullfname):
+        print(f"Zero-current DAC codes not found: {codes_fullfname}")
         return
-    df_final = pd.read_csv(result_fullfname).rename(columns={'zero_current_DAC_code': f"{stim_mode}_zero_current_DAC"})
-    df_final = df_final[['stimunit_id', f"{stim_mode}_zero_current_DAC"] + ([f"{stim_mode}_median_LSB_nA"] if incl_LSB else [])].drop_duplicates('stimunit_id').sort_values('stimunit_id').reset_index(drop=True)
-    df_final = df_final.set_index('stimunit_id')
+    df_final = pd.read_csv(codes_fullfname, index_col='stimunit_id').sort_index()
+    df_final = df_final.rename(columns={'zero_current_DAC_code': f"{stim_mode}_zero_current_DAC"})
+
+    lsb_col = f"{stim_mode}_median_LSB_nA"
+    lsb_fullfname = os.path.join(dirname, "processed", f"{stim_mode}_lsb_characterization.csv")
+    sweep_fullfname = os.path.join(dirname, "LSB_sweep", "processed", f"{stim_mode}_lsb_sweep.csv")
+    if os.path.exists(lsb_fullfname):
+        lsb = pd.read_csv(lsb_fullfname)
+    elif os.path.exists(sweep_fullfname):
+        lsb = pd.read_csv(sweep_fullfname)
+        lsb = lsb[(lsb.gain == lsb_gain) & (lsb.freq == lsb_freq)]
+        print(f"LSB from the sweep, condition gain {lsb_gain}, {lsb_freq} Hz: {len(lsb)} recordings")
+    else:
+        lsb = None
+        print("No LSB measured, only transferring the zero-current DAC codes")
+    if lsb is not None and len(lsb):
+        df_final[lsb_col] = lsb.groupby('stimunit_id')[lsb_col].first()
 
     csv_fullfname = os.path.join(device_paths()[0], "devices/headstage_devices", headstage_name,
                                  f"{headstage_name}_stimunit_characterization.csv")
@@ -827,8 +835,8 @@ def main():
     L = Logger()
     L.init_logger(None, None, "WARNING")
     
-    STIM_MODE = 'large_current'  # 'small_current' or 'large_current'
-    # STIM_MODE = 'small_current'  # 'small_current' or 'large_current'
+    # STIM_MODE = 'large_current'  # 'small_current' or 'large_current'
+    STIM_MODE = 'small_current'  # 'small_current' or 'large_current'
     headstage_name = "MEA1K27"
     nas_dir = device_paths()[0]
     # nas_dir = '/home/houmanjava/nas_imitation/'
@@ -849,20 +857,20 @@ def main():
     t = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M")
     rec_dir = f"{t}_{R=}_CharStim_{STIM_MODE}"
     
-    rec_dir = f"2026-11-02_15.07_R=1000000_CharStim_ShowCase2_gain1_large_current"
+    # rec_dir = f"2026-11-02_15.39_R=1000000_CharStim_small_current"
 
     full_path = os.path.join(nas_dir, device_dir, rec_dir)
     
     # ======== 1) zero current DAC code per stim unit ========
     # full search: sweep the DAC values, writes the best DAC fit to processed/StimUnits_characterization.csv
-    # n_amplifiers = 2
-    # char_stim_units(full_path, stim_mode=STIM_MODE, n_amplifiers=n_amplifiers, gain=gain,
-    #                 # start_centered_around=512, delta=256, set_size=16, max_iterations=4, 
-    #                 start_centered_around=512, delta=32, set_size=16, max_iterations=4, 
-    #                 stim_units=stim_units, debug=debug, rec_current_externally=rec_current_externally)
+    n_amplifiers = 2
+    char_stim_units(full_path, stim_mode=STIM_MODE, n_amplifiers=n_amplifiers, gain=gain,
+                    start_centered_around=512, delta=256, set_size=16, max_iterations=4, 
+                    # start_centered_around=512, delta=32, set_size=16, max_iterations=3, 
+                    stim_units=stim_units, debug=debug, rec_current_externally=rec_current_externally)
     
     # recalibration (was check_zero_current_DAC_drift): start at the headstage's current codes,
-    # small windows; processed/all_StimUnit_DAC_sweeps.png compares old and new codes
+    # small windows; old codes are drawn in processed/all_StimUnit_characterizations.png
     # rec_dir = f"{t}_{STIM_MODE}_check_zero_current_DAC_drift"
     # prior_codes = get_headstage_stim_settings(headstage_name)[f"{STIM_MODE}_zero_current_DAC"]
     # char_stim_units(full_path, stim_mode=STIM_MODE, n_amplifiers=3, gain=7,
@@ -880,7 +888,7 @@ def main():
     
     # LSB sweep at several recording gains and frequencies, goes to full_path/LSB_sweep.
     # Sine amplitude is scaled down with gain, as the recording full scale shrinks.
-    conditions = make_lsb_conditions(gains=[7, 112, 512], freqs=[1000, 100, 10],
+    conditions = make_lsb_conditions(gains=[7, ], freqs=[1000, 100, 10],
                                      sine_ampl_DAC_units=sine_ampl_DAC_units,
                                      ncycles_by_freq={1000: 400,  10: 10, 100: 40})
     char_current_lsb(full_path, R=R, stim_units=stim_units, n_amplifiers=3, stim_mode=STIM_MODE,
@@ -889,8 +897,8 @@ def main():
                      skip_stimulation=skip_stimulation, reprocess=reprocess, debug=debug)
 
     # # copy over the new values to final csv
-    # transfer_stimunit_characterization(full_path, stim_mode=STIM_MODE, 
-    #                                    headstage_name=headstage_name)
+    transfer_stimunit_characterization(full_path, stim_mode=STIM_MODE, 
+                                       headstage_name=headstage_name)
 
 if __name__ == "__main__":
     main()

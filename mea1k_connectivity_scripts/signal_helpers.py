@@ -366,6 +366,30 @@ def _lock_in_over(signal, start, end, ref_freq, sampling_rate, lp_cutoff):
     return float(np.mean(amp[settle_n:])), amp, phase, settle_n
 
 
+def detect_sine_window(signal, sampling_rate, freq, expected_n_samples, trim_cycles=5,
+                       rel_threshold=0.5):
+    """Sample interval of a sine burst at `freq` in a signal that is not synchronized to the
+    DAC (e.g. the picoscope trace). Band-passes around freq, smooths the envelope over ~10
+    cycles and takes where it exceeds rel_threshold * max, trimmed by trim_cycles on each
+    side. Returns (start, end), or None if no burst of at least half the expected length
+    (expected_n_samples) is found, e.g. when there is no current at all."""
+    sig = np.asarray(signal, dtype=float)
+    bw = max(freq * 0.1, 2.0)
+    sos = butter(4, [max(freq - bw, 0.5), freq + bw], btype='bandpass', fs=sampling_rate,
+                 output='sos')
+    env = np.abs(sosfiltfilt(sos, sig - sig.mean()))
+    k = max(1, int(10 * sampling_rate / freq))
+    env = np.convolve(env, np.ones(k) / k, mode='same')
+    above = np.where(env > rel_threshold * env.max())[0]
+    if above.size == 0:
+        return None
+    trim = int(trim_cycles * sampling_rate / freq)
+    start, end = above[0] + trim, above[-1] - trim
+    if end - start < expected_n_samples / 2:
+        return None
+    return int(start), int(end)
+
+
 def extract_amplitude(signal, sampling_rate, min_band, max_band,
                       estimate_amplitude_from=None, estimate_amplitude_to=None,
                       dac=None, use_dac_interval=False,

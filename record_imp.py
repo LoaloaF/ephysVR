@@ -30,7 +30,7 @@ from mea1k_modules.mea1k_config_utils import get_maxlab_saving, get_maxlab_array
 
 from mea1k_modules.mea1k_raw_preproc import read_raw_data, read_stim_DAC
 from mea1k_modules.live_postproc import LivePostproc, save_live_fig
-from mea1k_connectivity_scripts.signal_helpers import extract_amplitude
+from mea1k_connectivity_scripts.signal_helpers import extract_amplitude, detect_sine_window
 import mea1k_modules.mea1k_visualizations as vis
 
 from PicoRecorder import PicoRecorder, mv_to_current_uA, DEFAULT_SENSE_GAIN
@@ -108,7 +108,7 @@ def select_targets(targets, config_index, connectivity_threshold=None, stim_unit
         print(f"Randomly sampled {len(targets):,} electrodes ({sample_fraction:.0%})")
     targets = targets.assign(negative_ctrl=False)
     if negative_ctrl:
-        neg = candidates.sort_values("connectivity").groupby("stim_unit").head(1)
+        neg = candidates.sort_values("connectivity").groupby("stim_unit").head(2)
         neg = neg[~neg.electrode.isin(targets.electrode)].assign(negative_ctrl=True)
         targets = pd.concat([targets, neg])
     targets = targets.sort_values(["stim_unit", "electrode"]).reset_index(drop=True)
@@ -212,8 +212,15 @@ def _extract_sine_amplitude(dir_name, fname, min_band, max_band, gain, debug=Tru
     )
     return mean_ampl, phase_shift
 
-def _extract_pico_current(dir_name, fname, min_band, max_band, name, log, debug=False):
-    """Current amplitude [uA] from the picoscope recording, NaNs if there is none."""
+# fallback analysis window [samples] of the pico trace when no sine burst is detected
+PICO_FALLBACK_WINDOW = (3600, 11000)
+
+def _extract_pico_current(dir_name, fname, min_band, max_band, name, log, n_sine_samples,
+                          debug=False):
+    """Current amplitude [uA] from the picoscope recording, NaNs if there is none.
+    The pico is not sample-synchronized to the MaxWell recording: the sine starts anywhere
+    between ~3500 and ~10000 samples, so the analysis window is detected on the pico trace
+    itself (a fixed window cut off up to ~80% of the sine and underestimated the current)."""
     pico_fullfname = os.path.join(dir_name, fname.replace('.raw.h5', '.npz'))
     if not os.path.exists(pico_fullfname):
         return np.nan, np.nan, np.nan
@@ -222,12 +229,16 @@ def _extract_pico_current(dir_name, fname, min_band, max_band, name, log, debug=
         log(f"{fname}: picoscope data too short")
         return np.nan, np.nan, np.nan
     pico_current_uA = mv_to_current_uA(pico_data['mv'], DEFAULT_SENSE_GAIN)
+    window = detect_sine_window(pico_current_uA, 20_000, (min_band + max_band) / 2,
+                                n_sine_samples)
+    if window is None:  # no current visible, e.g. open/clipped electrode
+        window = PICO_FALLBACK_WINDOW
     pico_ampl, _, baseline_dc, sine_dc = extract_amplitude(
         pico_current_uA,
         sampling_rate=20_000,
         min_band=min_band, max_band=max_band,
-        estimate_amplitude_from=3600,
-        estimate_amplitude_to=11000,
+        estimate_amplitude_from=window[0],
+        estimate_amplitude_to=window[1],
         lowpass=3000.0,
         name=name,
         ylim=(-0.28, 0.28),
@@ -265,8 +276,9 @@ def process_impedance_recording(rec_dir, fname, log, fallback_gain=None, fallbac
                                                 debug=debug)
     pico_name = (f"StimUnit={stim_info.stim_unit}, DAC={stim_info.get('dac_code', '?')}"
                  f"+{stim_info.get('dac_offset', '?')}, el={int(stim_info.electrode):05d}")
+    n_sine_samples = int(stim_info.stim_sequence_ncycles / freq * 20_000)
     ext_current_uA, baseline_dc, sine_dc = _extract_pico_current(
-        rec_dir, fname, freq-rng, freq+rng, pico_name, log, debug=debug)
+        rec_dir, fname, freq-rng, freq+rng, pico_name, log, n_sine_samples, debug=debug)
 
     amplitude_uA = stim_info.stim_sequence_DAC_amplitude * stim_info.LSB_nA / 1000  # in uA
     stim_res = pd.Series({
@@ -376,7 +388,7 @@ def main():
     # implant_name = "260611_MEA1K24_S1688pad14shankB5"
     # headstage_name = "MEA1K23"
     # implant_name = "260602_MEA1K23_S844pad8shankB5"
-    headstage_name = "MEA1K27"
+    headstage_name = "MEA1K24"
     # implant_name = "260625_MEA1K23_S1688pad14shankB6"
     # implant_name = "260715_MEA1K23_J1688pad2shankB1"
     # implant_name = "260703_MEA1K23_S844pad8shankB1"
@@ -396,7 +408,7 @@ def main():
     stim_mode = 'large_current'
     stim_sequence_frequency_Hz = 1000
     stim_sequence_ncycles = 400
-    dac_sine_amplitude = 3 if stim_mode == 'large_current' else 30
+    dac_sine_amplitude = 30 if stim_mode == 'large_current' else 300
 
     
     t = datetime.now().strftime("%Y-%m-%d_%H.%M")
@@ -474,9 +486,10 @@ def main():
     # rec_name = f'2026-10-25_17.03_test11_100k_36umP_PT7_10mVFPGA' # 
     
     
-    
-    
-    
+    # rec_name = f'2026-11-10_14.56_test16_100k_36umP_PT3_10mVFPGA' 
+    # rec_name = f'2026-11-10_13.54_test14_100k_36umP_PT3_10mVFPGA'
+    rec_name = f'2026-11-11_15.06_test17_100_36umP_PT5_10mVFPGA'
+
     # ======== TARGETS ========
     # headstage-only test, no implant mapping: electrodes of a 10mVFPGA connectivity recording
     targets = targets_from_connectivity_rec(os.path.join(nas_dir, subdir, rec_name))
@@ -491,10 +504,11 @@ def main():
     # targets = targets[targets.electrode // 220 > 60]
 
     rec_current_externally = False
-    skip_stimulation = True  # if True, only (re)process the recordings in postproc_rec_dir
-    reprocess = True         # if True, also redo recordings that already have a processed/ output
-    postproc_rec_dir = "2026-11-02_12.33_test12_100k_36umP_56umPE_PT2_ImpNew"
-
+    skip_stimulation = False  # if True, only (re)process the recordings in postproc_rec_dir
+    reprocess = False         # if True, also redo recordings that already have a processed/ output
+    # postproc_rec_dir = "2026-11-02_12.33_test12_100k_36umP_56umPE_PT2_ImpNew"
+    # postproc_rec_dir = "2026-11-05_22.21_test12_100k_36umP_56umPE_PT3_ImpNew"
+    # postproc_rec_dir = "2026-11-05_23.17_test12_100k_36umP_56umPE_PT3_ImpNew"
 
 
 
@@ -525,20 +539,21 @@ def main():
     name = "test11_100k_36umP"
     tightening_str = "PT7"
     
-    name = "test12_100k_36umP_56umPE"
-    tightening_str = "PT2"
+    # mea1k24
+    name = "test17_100_36umP"
+    tightening_str = "PT5"
 
-    rec_dir = f'{t}_{name}_{tightening_str}_ImpNew'
+    rec_dir = f'{t}_{name}_{tightening_str}_Imp'
     if skip_stimulation:
         rec_dir = postproc_rec_dir
     else:
         config_index = index_stimulation_configs(os.path.join(nas_dir, configs_basepath))
         targets = select_targets(targets, config_index,
                                  connectivity_threshold=.4,
-                                 # stim_units=list(range(32)),
-                                 stim_units=list(range(16,32)),
+                                 stim_units=list(range(32)),
+                                #  stim_units=list(range(16,32)),
                                  sample_fraction=1,
-                                 negative_ctrl=False)
+                                 negative_ctrl=True)
 
     measure_impedance(os.path.join(nas_dir, subdir, rec_dir), targets,
                       stim_settings, stim_mode, gain=gain, dac_id=dac_id,

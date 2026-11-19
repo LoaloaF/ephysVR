@@ -121,7 +121,7 @@ for rec_name in rec_names:
     vis.plot_impedance_analysis(rec_name, aggr_df, log_scale=True, ylims=(1_000, 2_000_000), 
                                 skip_bottom=True, color_by_metal=True )
     data.append(aggr_df)
-    # vis.plot_ext_current_comparison(aggr_df, diff_max=2_000_000, title="")
+    # vis.plot_ext_current_comparison(aggr_df, title="")
     plt.show()
     
 

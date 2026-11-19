@@ -268,3 +268,42 @@ BTW here i figured out the calibration of DAC units for good, publ. ready figure
 New devices done fabricated that Friday. ALso electrodes a few days before that. Did a bonding test that evening called test12. i used an old recessedPad, J2 wafer device with 36umP on top, and bottom a new eelevated gold  device with large 56um pads (10um gap). Had issues measureing them bc the flexPCB cable wasn't properly attached... Fixed this only on Sunday (1.11.26). But already ran short analysis showing that elevted gold pads connect well and before recessed pads on top. But there can be shorts on x axis see below. But biggest issue was that there where only 3 islands that had connection with external signal and impedance. One island was shorted. It's not clear whaat happened. Perhaps via etching connecting metal1 to metal2 was not good enough. This enables better interpretation of shorts though: since they are really not connected (shorted to each other by distal wire) if they show up in sequential tile stim, they are really conencted on via chip surface (gold bumps). Therefore island 3 is likely also shorted, and only one via is good there. Top impedance was mediocre too, right pressure tild didn't help. My impression of MEA1K27 is that not only left and right side are lower in gold, but top side also bonds less well then bottom side. ToDo try to check if you can spot issues on the devices by eye. I will likely bond another device from this wafer and see. Maybe in the center its' better? 
 
 ![alt text](image-24.png)
+
+I think i did it again for teset13, and same results, i think this was from the 2nd wafer Alexei made, but same issue. 
+
+
+New stuff after some pause its 8th of Nov.
+
+After test 12 with one new and one old interconnect device, wnated to reassure that bonding is stable at elast weith older devices. so bonded 3 devies today. But issues wieth stupid cables... should use beter ones... This tiome for all chips, started with a small tip of screw looking out, relatively consistent. then tightend again for PT2 to about one revolement of screws
+
+
+Chip23 bonded after first retightening (PT2) not sure if before for PT1 the cables wasn't good though... 
+
+on chip24, looks like left isn't soldered: but also remember now that top bonds much less well then bottom, should check analyis! ![alt text](image.png)
+
+Chip27 bonded already with PT1, highest gold, right? Still tightend one more time to PT2, felt actually quite tight already hm. Should measure torque... ![alt text](image-1.png)
+
+
+On nnext day: screws feel looser, ecoflex relaxed back
+Actualy mea24 looks a bit better, mea23 only slightly worse, retightened both. mea27 very very good still, but screws also felt tight, as if there was little flex back. still retightened very sightly.
+
+
+Also did more continual reocrdings with MEAe24 and MEA23 (epseically this one is a wekk old at this point i think) MEA24 is interesting bc i started this analysis about pillar hieght here, want to know if decay also realted to pilllar hieght
+
+Results:
+All three bonded well, but 24 only 74, lower half is ok, higher half with low not soo good, a bit of decay over a weak:
+![alt text](image-4.png)
+
+MEA23 didn't decay, stayed very good.
+![alt text](image-5.png)
+
+MEA27 best, kept only for 3 days though, some improvements?
+![alt text](image-6.png)
+
+ALso, what is intersteing is this quantization i often see as if there is are categories of bonds? or measuremnet artifacts? It turns out it's realted to bonded pads position, on mea24 its lower on the edges hm, prob related to fabrication. Also all those 3 were processed without the phase shift correct of 33 degrees it think, would nned to reprocess. 
+
+
+
+Have been slacking a lot again with notes taking,
+
+But did the PDMS bond with elevated pads, two 12x devices, that picked up 50Hz well, and short tiles look great too, and no signs of decay ![alt text](image-2.png) ![alt text](image-3.png)

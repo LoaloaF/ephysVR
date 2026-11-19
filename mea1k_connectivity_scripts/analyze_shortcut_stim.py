@@ -335,6 +335,16 @@ def connected_islands(subdir, output_dir=None, output_fname=None, conn_thr=.8, d
     data, reciprocal = _load_shorted_reciprocal_edges(subdir, output_dir, conn_thr=conn_thr)
     if reciprocal.empty:
         return
+    
+    out_fullfname = os.path.join(output_dir, output_fname)
+    if os.path.exists(out_fullfname):
+        print("Island plot exists: ", out_fullfname)
+        plt.figure(figsize=(3.85*8, 2.1*8))
+        img = plt.imread(out_fullfname)
+        plt.imshow(img)
+        plt.axis('off')
+        plt.show()
+        return
 
     # Electrode id -> chip coordinates for plotting.
     pos = (data[['electrode', 'x', 'y']]

@@ -14,6 +14,7 @@ from matplotlib.collections import LineCollection
 
 from matplotlib.colors import LogNorm, ListedColormap
 from matplotlib.ticker import MultipleLocator, FuncFormatter
+import matplotlib.ticker as mticker
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 
 CHIP_W, CHIP_H = 220, 120
@@ -915,34 +916,163 @@ def compare_impedance(aggr_dfs, title_list, show_scatter=True, color_metal=False
         ax.legend(fontsize=10, loc='upper right')
     return fig, ax
     
-def plot_ext_current_comparison(ext_cur_data, diff_max=2_000_000, title=None):
-    alt_imp = ext_cur_data.amplitude_uV / ext_cur_data.external_current_uA  # Ohm
-    imp_diff = ext_cur_data.impedance_Ohm - alt_imp
-    cbar_label = "Chip - External Imp (Ohm)\nBlue: Chip imp too low\nRed: Chip imp too high"
-    fig, axes = plt.subplots(1, 3, figsize=(14, 4), constrained_layout=True)
-    sc0 = axes[0].scatter(ext_cur_data.impedance_Ohm, alt_imp, c=imp_diff, cmap='coolwarm', vmin=-diff_max, vmax=diff_max, alpha=0.7)
-    axes[0].plot([0, 2_000_000], [0, 2_000_000], 'k--', label='y=x')
-    axes[0].set_xlabel('StimUnit (chip) impedance (Ohm)')
-    axes[0].set_ylabel('External current sense impedance (Ohm)')
-    axes[0].set_xscale('log')
-    axes[0].set_yscale('log')
-    axes[0].legend()
-    fig.colorbar(sc0, ax=axes[0]).set_label(cbar_label, fontweight='bold')
+def _tight_lims(vals, log=False, pad=0.05, q=(2, 98)):
+    """Axis limits around the bulk of the data (percentile-clipped, padded)."""
+    vals = np.asarray(vals, dtype=float)
+    vals = vals[np.isfinite(vals) & ((vals > 0) if log else True)]
+    if vals.size == 0:
+        return None
+    lo, hi = np.percentile(vals, q)
+    if log:
+        lo, hi = np.log10(lo), np.log10(hi)
+    span = (hi - lo) or abs(hi) or 1.0
+    lo, hi = lo - pad * span, hi + pad * span
+    return (10**lo, 10**hi) if log else (lo, hi)
 
-    sc1 = axes[1].scatter(ext_cur_data.current_uA, ext_cur_data.external_current_uA, c=imp_diff, cmap='coolwarm', vmin=-diff_max, vmax=diff_max)
-    axes[1].plot([0, .2], [0, .2], 'k--')
-    axes[1].set_xlabel('Current set via chip (uA)')
-    axes[1].set_ylabel('True Current through GND (uA)')
-    fig.colorbar(sc1, ax=axes[1]).set_label(cbar_label, fontweight='bold')
+def plot_ext_current_comparison(ext_cur_data, err_max_pct=None, clip_imp_Ohm=1e6,
+                                bands_pct=(5, 15), title=None):
+    """Compare chip-reported impedance/current with the external GND current sense.
 
-    sc2 = axes[2].scatter(ext_cur_data.current_uA, ext_cur_data.external_current_uA, c=alt_imp, vmin=10_000, vmax=5_000_000)
-    axes[2].plot([0, .2], [0, .2], 'k--')
-    axes[2].set_xlabel('Current set via chip (uA)')
-    axes[2].set_ylabel('True Current through GND (uA)')
-    fig.colorbar(sc2, ax=axes[2], label='Impedance (Ohm)')
+    Electrodes with chip impedance > `clip_imp_Ohm` are treated as saturated (amplifier
+    clips, external current too small to measure): drawn grey on the left panel, left
+    out of everything else.
+
+    1: chip vs external impedance, colored by relative mismatch (chip - ext) / ext [%].
+       Symmetric colour range; `err_max_pct=None` -> 95th pct of |mismatch|.
+    2: set vs measured current per stim unit (mean +- SD), points colored by stim unit.
+    3: same, points colored by external impedance.
+    4: histogram of the mismatch with counts per band (`bands_pct`).
+    """
+    d = ext_cur_data
+    alt_imp = (d.amplitude_uV / d.external_current_uA).to_numpy()  # Ohm
+    chip_imp = d.impedance_Ohm.to_numpy()
+    rel_err = 100 * (chip_imp - alt_imp) / alt_imp  # %
+    valid = np.isfinite(rel_err) & (chip_imp <= clip_imp_Ohm)
+    clipped = np.isfinite(rel_err) & (chip_imp > clip_imp_Ohm)
+    err_v = rel_err[valid]
+    if err_max_pct is None:
+        err_max_pct = np.percentile(np.abs(err_v), 95) if err_v.size else 50
+    err_norm = mcolors.TwoSlopeNorm(vcenter=0, vmin=-err_max_pct, vmax=err_max_pct)
+    dv = d[valid]
+
+    fig, axes = plt.subplots(1, 4, figsize=(21, 4.6), constrained_layout=True,
+                             gridspec_kw=dict(width_ratios=[1.15, 1.15, 1.15, .9]))
+    band_ls = [':', '-.', '--', (0, (1, 3))]
+
+    # --- 1: impedance agreement, colored by relative mismatch ---
+    ax = axes[0]
+    ax.scatter(chip_imp[clipped], alt_imp[clipped], c='lightgray', s=10,
+               edgecolors='none', label=f'clipped, >{clip_imp_Ohm/1e6:g} MOhm '
+                                        f'(n={clipped.sum()})')
+    sc0 = ax.scatter(chip_imp[valid], alt_imp[valid], c=err_v, cmap='coolwarm',
+                     norm=err_norm, s=14, alpha=0.8, edgecolors='none')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    xlims = _tight_lims(chip_imp[valid], log=True)
+    ylims = _tight_lims(alt_imp[valid], log=True)
+    if xlims is not None and ylims is not None:
+        lims = np.array([min(xlims[0], ylims[0]), max(xlims[1], ylims[1])])
+        ax.plot(lims, lims, 'k--', lw=1, label='y=x')
+        for b, ls in zip(bands_pct, band_ls[1:]):
+            f = 1 + b / 100
+            ax.plot(lims, lims * f, color='gray', ls=ls, lw=.8, label=f'±{b:g}%')
+            ax.plot(lims, lims / f, color='gray', ls=ls, lw=.8)
+        ax.set_xlim(xlims)
+        ax.set_ylim(ylims)
+    # narrow log ranges: readable kOhm labels instead of crowded 1.2x10^5 minor labels
+    kohm_fmt = FuncFormatter(lambda v, _: f'{v/1e3:g}k')
+    for axis in (ax.xaxis, ax.yaxis):
+        axis.set_major_formatter(kohm_fmt)
+        axis.set_minor_locator(mticker.LogLocator(subs=(1, 1.5, 2, 3, 5, 7)))
+        axis.set_minor_formatter(kohm_fmt)
+    ax.set_xlabel('StimUnit (chip) impedance (Ohm)')
+    ax.set_ylabel('External current sense impedance (Ohm)')
+    ax.legend(fontsize=7, loc='upper left')
+    fig.colorbar(sc0, ax=ax, extend='both').set_label(
+        '(Chip - Ext) / Ext  [%]\nblue: chip too low, red: chip too high',
+        fontweight='bold')
+
+    # --- 2 + 3: currents, per-stim-unit mean +- SD on top of the points ---
+    stim_units = np.sort(dv.stim_unit.dropna().unique()).astype(int)
+    n_su = max(len(stim_units), 1)
+    su_cmap = plt.get_cmap('turbo', n_su)
+    su_idx = dv.stim_unit.map({su: i for i, su in enumerate(stim_units)})
+    su_stats = dv.groupby('stim_unit').agg(
+        x=('current_uA', 'mean'), xsd=('current_uA', 'std'),
+        y=('external_current_uA', 'mean'), ysd=('external_current_uA', 'std'))
+
+    ax = axes[1]
+    sc1 = ax.scatter(dv.current_uA, dv.external_current_uA, c=su_idx, cmap=su_cmap,
+                     vmin=-.5, vmax=n_su - .5, s=10, alpha=0.35, edgecolors='none')
+    for i, su in enumerate(stim_units):
+        r = su_stats.loc[su]
+        ax.errorbar(r.x, r.y, xerr=r.xsd, yerr=r.ysd, fmt='o', ms=5, capsize=3,
+                    color=su_cmap(i), mec='k', mew=.6, elinewidth=1.2, zorder=5)
+    cb1 = fig.colorbar(sc1, ax=ax)
+    cb1.solids.set_alpha(1)
+    step = max(1, int(np.ceil(n_su / 16)))
+    cb1.set_ticks(np.arange(0, n_su, step))
+    cb1.set_ticklabels(stim_units[::step])
+    cb1.set_label('Stim unit  (marker: mean ± SD)', fontweight='bold')
+
+    ax = axes[2]
+    alt_v = alt_imp[valid]
+    imp_lims = _tight_lims(alt_v, log=True, pad=0, q=(5, 95)) or (1e4, 5e6)
+    sc2 = ax.scatter(dv.current_uA, dv.external_current_uA, c=alt_v,
+                     norm=LogNorm(*imp_lims), s=10, alpha=0.6, edgecolors='none')
+    ax.errorbar(su_stats.x, su_stats.y, xerr=su_stats.xsd, yerr=su_stats.ysd,
+                fmt='o', ms=4, capsize=3, color='k', mfc='w', elinewidth=1.2,
+                zorder=5, label='stim unit mean ± SD')
+    ax.legend(fontsize=7, loc='upper left')
+    fig.colorbar(sc2, ax=ax, extend='both').set_label('External impedance (Ohm)',
+                                                      fontweight='bold')
+
+    cur_xlims = _tight_lims(dv.current_uA)
+    cur_ylims = _tight_lims(dv.external_current_uA)
+    for ax in axes[1:3]:
+        if cur_xlims is not None and cur_ylims is not None:
+            lims = [min(cur_xlims[0], cur_ylims[0]), max(cur_xlims[1], cur_ylims[1])]
+            ax.plot(lims, lims, 'k--', lw=1)
+            ax.set_xlim(cur_xlims)
+            ax.set_ylim(cur_ylims)
+        ax.set_xlabel('Current set via chip (uA)')
+        ax.set_ylabel('True Current through GND (uA)')
+
+    # --- 4: mismatch distribution with per-band counts ---
+    ax = axes[3]
+    if err_v.size:
+        lo, hi = np.percentile(err_v, [1, 99])
+        lim = max(abs(lo), abs(hi), max(bands_pct) * 1.3)
+        bins = np.linspace(-lim, lim, 61)
+        _, edges, patches = ax.hist(np.clip(err_v, -lim, lim), bins=bins,
+                                    edgecolor='none')
+        centers = (edges[:-1] + edges[1:]) / 2
+        for c, p in zip(centers, patches):
+            p.set_facecolor(plt.get_cmap('coolwarm')(err_norm(c)))
+        ax.axvline(0, color='k', ls='--', lw=1)
+        for b, ls in zip(bands_pct, band_ls[1:]):
+            ax.axvline(b, color='gray', ls=ls, lw=.8)
+            ax.axvline(-b, color='gray', ls=ls, lw=.8)
+        # counts per band, as text
+        abs_e, n = np.abs(err_v), err_v.size
+        edges_b = [0, *sorted(bands_pct), np.inf]
+        lines = []
+        for a, b in zip(edges_b[:-1], edges_b[1:]):
+            k = ((abs_e >= a) & (abs_e < b)).sum()
+            rng_s = f'<{b:g}%' if a == 0 else (f'>{a:g}%' if np.isinf(b) else f'{a:g}-{b:g}%')
+            lines.append(f'|err| {rng_s:>7}: {k:4d} ({100*k/n:4.1f}%)')
+        lines.append(f'median {np.median(err_v):+.1f}%  n={n}')
+        if clipped.any():
+            lines.append(f'clipped (excluded): {clipped.sum()}')
+        ax.text(.02, .98, '\n'.join(lines), transform=ax.transAxes, va='top',
+                ha='left', fontsize=7.5, family='monospace',
+                bbox=dict(fc='w', ec='0.7', alpha=.85))
+        ax.set_xlim(-lim, lim)
+    ax.set_xlabel('(Chip - Ext) / Ext  [%]')
+    ax.set_ylabel('# electrodes')
+
     if title:
         fig.suptitle(title, fontweight='bold')
-    # plt.show()
     return fig
 
 def vis_mea1k_config(dirname, config_fname, implant_mapping=None):

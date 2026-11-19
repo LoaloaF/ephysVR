@@ -41,7 +41,7 @@ def _save_output(subdir, data, fname):
     data.to_csv(os.path.join(fullpath, fname))
 
 def extract_connectivity_file(subdir, fname, config_id, input_ampl_mV, n_samples, gain,
-                              debug=False, min_band=960, max_band=1040):
+                              debug=False, min_band=960, max_band=1040, notch=True):
     """Connectivity of all electrodes in one recording. `gain` is the gain set on the
     chip, used for the uV conversion instead of the gain stored in the file."""
     data = read_raw_data(subdir, fname, convert2uV=True, to_df=True,
@@ -54,7 +54,7 @@ def extract_connectivity_file(subdir, fname, config_id, input_ampl_mV, n_samples
         m_ampl, _, _, _ = extract_amplitude(row, sampling_rate=EC.SAMPLING_RATE,
                                             min_band=min_band, max_band=max_band,
                                             estimate_amplitude_from=0,
-                                            estimate_amplitude_to=len(row)-1,
+                                            estimate_amplitude_to=len(row)-1, notch=notch,
                                             name=f"{fname.replace('.raw.h5', '')} El{el}",
                                             plot_fname='debug_amplifier',
                                             debug=debug and j < 10)
@@ -87,7 +87,8 @@ def extract_connectivity(subdir, input_ampl_mV, n_samples, gain, debug=False,
     _save_output(subdir, pd.concat(all_data), f"extr_connectivity.csv")
 
 def process_connectivity_recording(subdir, fname, log, n_samples, fallback_input_ampl_mV=None,
-                                   fallback_gain=None, debug=False, min_band=960, max_band=1040):
+                                   fallback_gain=None, debug=False, min_band=960, max_band=1040,
+                                   notch=True):
     """process_fn for LivePostproc: one recording -> connectivity per electrode.
     Input amplitude and gain come from the sidecar csv. Recordings made before sidecars
     existed use fallback_input_ampl_mV and fallback_gain instead."""
@@ -104,7 +105,7 @@ def process_connectivity_recording(subdir, fname, log, n_samples, fallback_input
         return None
     data = extract_connectivity_file(subdir, fname, _fname2config_id(fname), input_ampl_mV,
                                      n_samples, gain, debug=debug, min_band=min_band,
-                                     max_band=max_band)
+                                     max_band=max_band, notch=notch)
     return data.reset_index()
         
 def vis_connectivity(subdir, input_ampl_mV, cmap_scaler=2.5):

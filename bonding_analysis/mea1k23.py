@@ -171,7 +171,7 @@ for rec_name in rec_names:
     vis.plot_impedance_analysis(rec_name, aggr_df, log_scale=True, ylims=(1_000, 2_000_000), 
                                 skip_bottom=True, color_by_metal=True )
     data.append(aggr_df)
-    # vis.plot_ext_current_comparison(aggr_df, diff_max=2_000_000, title="")
+    # vis.plot_ext_current_comparison(aggr_df, title="")
     plt.show()
 
 # %%
@@ -269,7 +269,7 @@ for rec_name in rec_names:
     vis.plot_impedance_analysis(rec_name, aggr_df, log_scale=True, #ylims=(100, 50_000), 
                                 skip_bottom=True, color_by_metal=True, use_imp_connectivity=True )
     data.append(aggr_df)
-    # vis.plot_ext_current_comparison(aggr_df, diff_max=2_000_000, title="")
+    # vis.plot_ext_current_comparison(aggr_df, title="")
     plt.show()
 
 # %%
@@ -323,7 +323,7 @@ aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, im
 # aggr_df = aggr_df[aggr_df['stim_unit'].isin([0, 5, 11, 16,29])]
 vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=log_scale, #ylims=(1_000, 2_000_000), 
                             skip_bottom=False, color_by_metal=False, use_imp_connectivity=False, )
-# vis.plot_ext_current_comparison(aggr_df, diff_max=2_000_000, title="")
+# vis.plot_ext_current_comparison(aggr_df, title="")
 plt.show()
 
 # plt.scatter(aggr_df.connectivity, aggr_df.mea1k_connectivity, s=1)
@@ -365,7 +365,7 @@ aggr_df_1dlater, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas
 # aggr_df = aggr_df[aggr_df['stim_unit'].isin([0, 5, 11, 16,29])]
 vis.plot_impedance_analysis("One day later", aggr_df_1dlater, log_scale=log_scale, ylims=(1_000, 2_000_000), 
                             skip_bottom=False, color_by_metal=True, use_imp_connectivity=True, )
-vis.plot_ext_current_comparison(aggr_df_1dlater, diff_max=2_000_000, title="")
+vis.plot_ext_current_comparison(aggr_df_1dlater, title="")
 plt.show()
 
 # plt.scatter(aggr_df.connectivity, aggr_df.mea1k_connectivity, s=1)
@@ -413,7 +413,7 @@ aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, su
 # aggr_df = aggr_df[aggr_df['shank_id']<5]  # only real shanks
 vis.plot_impedance_analysis("", 
                             aggr_df, log_scale=log_scale, ylims=(1_000, 2_000_000), skip_bottom=False, color_by_metal=True)
-vis.plot_ext_current_comparison(aggr_df, diff_max=2_000_000, title="Small current mode")
+vis.plot_ext_current_comparison(aggr_df, title="Small current mode")
  
 
 # %%

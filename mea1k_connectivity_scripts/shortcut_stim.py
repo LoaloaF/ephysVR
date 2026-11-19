@@ -58,7 +58,24 @@ def find_sequential_windows(data, stimulated, f=1000, trim=0.2):
     I = uniform_filter1d(x * np.cos(2*np.pi*f*t), size, axis=1)
     Q = uniform_filter1d(x * np.sin(2*np.pi*f*t), size, axis=1)
     env_rows = np.hypot(I, Q)
-    env = env_rows.sum(axis=0)
+    # Mains pickup can be huge (amplifier clipping on the 50 Hz -> harmonics, the 20th sits
+    # at ~1 kHz) and gates the 1 kHz envelope on/off every 20 ms on EVERY row. Average it
+    # out over one mains period, take each row relative to its own (parked) baseline, and
+    # combine by max, not sum: a burst lights up one row, the mains is on all of them.
+    env_rows = uniform_filter1d(env_rows, int(fs / 50), axis=1)
+    env_rows -= np.median(env_rows, axis=1, keepdims=True)
+    env = env_rows.max(axis=0)
+    # Before the units are parked on DAC 1 and after they are turned off, the stim
+    # electrodes float and pick up more mains -> long flat plateaus that look like bursts.
+    # The bursts sit between the first and the last quiet (all parked) stretch >= 30 ms.
+    quiet = env < 0.1 * np.percentile(env, 75)
+    q_edges = np.diff(quiet.astype(int), prepend=0, append=0)
+    q_starts, q_ends = np.flatnonzero(q_edges == 1), np.flatnonzero(q_edges == -1)
+    long_q = (q_ends - q_starts) >= 0.03 * fs
+    if long_q.sum() >= 2:
+        env = env.copy()
+        env[:q_starts[long_q][0]] = 0
+        env[q_ends[long_q][-1]:] = 0
 
     # plateau level of a burst; the transients (spikes, 10-50x the plateau) are too few
     # samples to move the median. Threshold at 40%: the baseline after a transient rings
@@ -482,8 +499,8 @@ def main():
     amplitude = 10
     # mode = "large_current"          # or "small_current"
     mode = "voltage"          # or "small_current"
-    skip_stimulation = True  # if True, only postprocess existing recordings (no stimulation, no MEA1K access)
-    reprocess = True         # if True, also redo recordings that already have a processed/ output
+    skip_stimulation = False  # if True, only postprocess existing recordings (no stimulation, no MEA1K access)
+    reprocess = False         # if True, also redo recordings that already have a processed/ output
     common = dict(debug=debug, reprocess=reprocess, post_download_wait_time=post_download_wait_time,
                   rec_time=rec_time, gain=gain, amplitude=amplitude, mode=mode)
 
@@ -498,7 +515,7 @@ def main():
     name = "PDMS_J2_2x61umP,35umP"
     name = "2x8x56umP_16of16"
     name = "2x8x56umP"
-    name = "test12_100k_36umP_56umPE"
+    name = "test18_W4.3_12x_12x_PDMS"
 
     tightening_str = "PT2"
 
@@ -548,7 +565,7 @@ def main():
 
     # ======== TILE-STIM CHIP / DIRS ========
     tile_which_configs = "3x3_stim_seed42"
-    tile_sequential = True   # True: one stim unit at a time (by unit number), single file per config
+    tile_sequential = False   # True: one stim unit at a time (by unit number), single file per config
     tile_step_cycles = 200    # sequential only: 1 kHz cycles per burst
     tile_step_gap_s = 0.1     # sequential only: pause between bursts (can jitter to none, postproc splits those)
     # tile_which_configs = "3x3_islandsubset_stim_seed42"
@@ -562,8 +579,6 @@ def main():
     # tile_rec_dir      = f"{t}_5thTry_ACF_J2_36Pads_TileShorts_PT4_2mm"
     tile_rec_dir      = f"{t}_{name}_{tightening_str}_TileShorts"
 
-    
-    tile_rec_dir  = "2026-11-02_12.15.47_test12_100k_36umP_56umPE_PT2_TileShorts"
     # ===================================================
 
     if which == "single":

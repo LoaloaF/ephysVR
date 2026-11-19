@@ -57,8 +57,8 @@ connected_islands(full_recdir, output_dir=os.path.join(full_recdir, "processed")
                   conn_thr=.5, output_fname=f"connected_islands.png",)
                 #   draw_mea_args={"mapping":conn, "el_color":"#595959", 'cmap_scaler':2})
 
-plot_amplitude_ridges(full_recdir, bins=60, n_groups=8, shorted_thresh=0.8,
-                      min_stim_uV=None, dpi=100, rebuilt_graph=False)
+# plot_amplitude_ridges(full_recdir, bins=60, n_groups=8, shorted_thresh=0.8,
+#                       min_stim_uV=None, dpi=100, rebuilt_graph=False)
 
 # %%
 
@@ -140,11 +140,18 @@ rec_dirs = [
     
     # "2026-10-28_14.57_test11_100k_36umP_PT7_Imp",
     
+    #test12
+    # one normal device (old pads) one with elevated pads (bottom)
     # "2026-10-31_17.04_test12_100k_36umP_56umPE_PT1_Imp_oneCorner",   # without GND cable connected, but not connected to ring GND apparnetly, all max Imp
     # "2026-11-01_08.50_test12_100k_36umP_56umPE_PT1_Imp_oneCorner",    # with cable still not connected
     # "2026-11-02_07.11_test12_100k_36umP_56umPE_PT2_Imp",
-    "2026-11-02_07.22_test12_100k_36umP_56umPE_PT2_Imp",
+    # "2026-11-02_07.22_test12_100k_36umP_56umPE_PT2_Imp",
     # "2026-11-02_08.18_test12_100k_36umP_56umPE_PT2_Imp_bottomCorner"
+    # "2026-11-04_15.34_test12_100k_36umP_56umPE_PT3_ImpNew",
+    "2026-11-05_22.21_test12_100k_36umP_56umPE_PT3_ImpNew", # SC 
+    "2026-11-05_23.17_test12_100k_36umP_56umPE_PT3_ImpNew", # LC
+    
+    
 ]
 
 labels = [
@@ -162,17 +169,22 @@ labels = [
     # 'test12 PT1 one corner',
     # 'test12 PT1 one corner',
     # 'test12 PT2',
-    'test12 PT2',
+    # 'test12 PT2',
     # 'test12 PT2 one corner',
+    # 'PT3, extCur'
+    'PT3, extCur4',
+    'PT3, extCur5',
+    
 ]
 
 data = []
 for rec_dir in rec_dirs:
     aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
-    # aggr_df = aggr_df[aggr_df['stim_unit'] == 0]
+    # aggr_df = aggr_df[aggr_df['stim_unit'] < 16]
     vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
                                 ylims=(1_000, 1_800_000), skip_bottom=False,
                                 color_by_metal=False, use_imp_connectivity=True)
+    vis.plot_ext_current_comparison(aggr_df)
     plt.show()
     data.append(aggr_df)
 
@@ -188,16 +200,167 @@ nas_dir = device_paths()[0]
 rec_dir = f'2026-10-30_18.24.30_test12_100k_36umP_56umPE_PT1_TileShorts'
 rec_dir = f'2026-10-31_21.47.17_test12_100k_36umP_56umPE_PT1_TileShorts' # using ssequential stim 
 rec_dir = f'2026-11-01_20.22.38_test12_100k_36umP_56umPE_PT2_TileShorts' # using ssequential stim 
+# rec_dir = f'2026-11-02_07.22.38_test12_100k_36umP_56umPE_PT2_TileShorts' # using ssequential stim 
+# rec_dir = f'2026-11-03_07.34.04_test12_100k_36umP_56umPE_PT2_TileShorts' # using ssequential stim 
 
 
 conn = get_connectivity_data(os.path.join(nas_dir, subdir, f'2026-11-01_20.17_test12_100k_36umP_56umPE_PT2_10mVFPGA' ))
 full_recdir = os.path.join(nas_dir, subdir, rec_dir)
 connected_islands(full_recdir, output_dir=os.path.join(full_recdir, "processed"), 
                   conn_thr=.5, output_fname=f"connected_islands.png",
-                  draw_mea_args={"mapping":conn, "el_color":"#595959", 'cmap_scaler':1})
-# )
+                #   draw_mea_args={"mapping":conn, "el_color":"#595959", 'cmap_scaler':1})
+)
 # plot_amplitude_ridges(full_recdir, bins=60, n_groups=8, shorted_thresh=0.5,
 #                       min_stim_uV=None, dpi=100, rebuilt_graph=False)
 
+
+# %%
+
+
+
+headstage_name = "MEA1K24"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_name = f'2026-11-04_16.38_test13_100k_36umP_36umPE_PT1_10mVFPGA' # bottom device only 4-5 electrodes? til check again
+rec_name = f'2026-11-04_16.46_test13_100k_36umP_36umPE_PT2_10mVFPGA'
+full_path = os.path.join(nas_dir, subdir, rec_name)
+
+# extract_connectivity(full_path, input_ampl_mV=10, n_samples=8000, gain=7, debug=False, )
+# vis_connectivity(full_path, input_ampl_mV=10, cmap_scaler=1)
+
+conn = get_connectivity_data(full_path)
+vis.draw_mea1k(mapping=conn, fast=True,  )
+plt.show()
+plt.hist(conn['mea1k_connectivity'], bins=50)
+plt.yscale('log')
+plt.show()
+
+print(rec_name)
+# %%
+
+
+
+rec_dir = "2026-11-04_16.58.32_test13_100k_36umP_36umPE_PT3_TileShorts"
+
+full_recdir = os.path.join(nas_dir, subdir, rec_dir)
+connected_islands(full_recdir, output_dir=os.path.join(full_recdir, "processed"), 
+                  conn_thr=.8, output_fname=f"connected_islands.png",
+                #   draw_mea_args={"mapping":conn, "el_color":"#595959", 'cmap_scaler':1})
+)
+
+# %%
+
+# 3 parallel bondings to test, 27 was disassembled right after
+headstage_name = "MEA1K27"
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+rec_dirs = [
+    "2026-11-10_15.26_test16_100k_36umP_PT3_Imp", # mea27
+    "2026-11-13_14.48_test16_100k_36umP_PT3_Imp",
+]
+
+labels = [
+    'PT3. MEA27 D0',
+    'PT3. MEA27 D3',
+]
+
+data = []
+for rec_dir in rec_dirs:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+    vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                                ylims=(1_000, 1_00_000), skip_bottom=False,
+                                color_by_metal=False, use_imp_connectivity=True)
+    plt.show()
+    data.append(aggr_df)
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+
+
+# %%
+
+    
+headstage_name = "MEA1K24"
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+# started with test15, but device was not well soldered, and top is also less good for bdning then bottom, but generally bad goldplating
+rec_dirs = [
+     "2026-11-11_15.10_test17_100_36umP_PT5_Imp", # mea24
+     "2026-11-17_10.12_test17_100_36umP_PT5_Imp", # mea24
+     "2026-11-18_16.22_test17_100_36umP_PT5_Imp", # mea24
+]
+
+labels = [
+    'PT5 MEA24, D0',
+    'PT5 MEA24, D6',
+    'PT5 MEA24, D7',
+]
+
+data = []
+for rec_dir in rec_dirs:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+    vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                                ylims=(1_000, 1_00_000), skip_bottom=False,
+                                color_by_metal=False, use_imp_connectivity=True)
+    plt.show()
+    data.append(aggr_df)
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+    
+    
+# %%
+headstage_name = "MEA1K23"
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+# started with test15, but device was not well soldered, and top is also less good for bdning then bottom, but generally bad goldplating
+rec_dirs = [
+    "2026-11-10_17.12_test14_100k_36umP_PT3_Imp",
+    "2026-11-11_16.28_test14_100k_36umP_PT3_Imp",
+    "2026-11-12_15.00_test14_100k_36umP_PT3_Imp",
+    "2026-11-17_11.31_test14_100k_36umP_PT3_Imp",
+]
+
+labels = [
+    'PT3 MEA23, D0',
+    'PT3 MEA23, D2',
+    'PT3 MEA23, D3',
+    'PT3 MEA23, D7',
+]
+
+data = []
+for rec_dir in rec_dirs:
+    aggr_df, implant_mapping, full_recdir = load_impedance_data(rec_dir, nas_dir, subdir, )
+    vis.plot_impedance_analysis(rec_dir, aggr_df, log_scale=True,
+                                ylims=(1_000, 1_00_000), skip_bottom=False,
+                                color_by_metal=False, use_imp_connectivity=True)
+    plt.show()
+    data.append(aggr_df)
+vis.compare_impedance(data, labels, show_scatter=True, log_scale=True)
+    
+
+
+# %%
+
+
+
+headstage_name = "MEA1K27"
+
+subdir = f"devices/headstage_devices/{headstage_name}/recordings"
+nas_dir = device_paths()[0]
+
+rec_dir = f'2026-11-13_17.22.33_test18_W4.3_12x_12x_PT1_TileShorts' # using non ssequential stim 
+rec_dir = f'2026-11-16_08.20.47_test18_W4.3_12x_12x_PT1_TileShorts'
+rec_dir = f'2026-11-16_08.20.47_test18_W4.3_12x_12x_PT1_TileShorts'
+rec_dir = f'2026-11-17_13.44.45_test18_W4.3_12x_12x_PDMS_PT1_TileShorts' # switch to PDMS press
+rec_dir = f'2026-11-17_15.49.15_test18_W4.3_12x_12x_PDMS_PT2_TileShorts' # retighten slightly
+rec_dir = f'2026-11-17_19.47.56_test18_W4.3_12x_12x_PDMS_PT2_TileShorts'
+rec_dir = f'2026-11-18_07.41.53_test18_W4.3_12x_12x_PDMS_PT2_TileShorts' # day2
+
+
+full_recdir = os.path.join(nas_dir, subdir, rec_dir)
+connected_islands(full_recdir, output_dir=os.path.join(full_recdir, "processed"), 
+                  conn_thr=.5, output_fname=f"connected_islands.png",
+)
+# plot_amplitude_ridges(full_recdir, bins=60, n_groups=8, shorted_thresh=0.5,
+#                       min_stim_uV=None, dpi=100, rebuilt_graph=False)
 
 # %%
