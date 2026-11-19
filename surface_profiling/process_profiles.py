@@ -1,4 +1,5 @@
 import sys
+import time
 sys.path.insert(0, '.')
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ from pathlib import Path
 from export_vk_to_xyz import read_vk, export_xyz, relevel_plane, relevel_plane_points, read_optical_from_cag
 from export_obj import export_obj
 from export_stl import export_stl
+from mea_grid import run_mea_grid, cell_outlines
 
 # ── root for all scan sessions (subdir per file below) ───────────────────────
 SCAN_ROOT = Path('/Volumes/large/BMI/VirtualReality/SpatialSequenceLearning/devices/surface_profiles/')
@@ -22,12 +24,16 @@ DO_EXPORT_XYZ = False
 DO_EXPORT_OBJ = True
 DO_EXPORT_STL = False
 
+DO_MEA_GRID   = False   # per-electrode crops + features for files with mea_grid=True
+
 # ── per-file config ───────────────────────────────────────────────────────────
 # subdir   : folder name under SCAN_ROOT (required per file)
 # relevel  : False | 'plane' (fit all pixels) | 'points' (use relevel_points)
 # vmin     : subtracted from z; sets colorscale floor to 0.  None = 1st percentile
 # vmax     : colorscale ceiling in µm (after vmin shift).    None = 99th percentile
 # subarea  : (x, y, w, h) µm — second histogram overlay + rectangle on heatmap
+# mea_grid : True | dict(kwargs for run_mea_grid) — fit 220×120 electrode lattice
+#            (needs el 0 top-left after rotate_180, and ~0.7 µm/px resolution)
 FILES = {
     # # 26-07-17
     # 'B7reEtched_spring_interconnect_full_1821.vk6': dict(
@@ -41,7 +47,10 @@ FILES = {
     #     vmax           = 3.5,
     #     subarea        = None,
     # ),
-    # # 26-07-17 mea1k 24
+    
+    
+    
+    # # # 26-07-17 mea1k 24
     # 'MEA1K24.vk4': dict(
     #     name           = 'MEA1K24_half_half_goldplating',
     #     subdir         = '2026-07-17_Profilometer',
@@ -52,8 +61,10 @@ FILES = {
     #     vmin           = 3.7,
     #     vmax           = None,
     #     # subarea        = [1000, 1000, 2000, 1000],
+    #     mea_grid       = True,
+        
     # ),
-    # 26-07-28 mea1k 24
+    # # 26-07-28 mea1k 23
     # 'MEA1K23.vk6': dict(
     #     name           = 'MEA1K23_best_bonding_results',
     #     subdir         = '2026-07-28_Profilometer',
@@ -64,7 +75,11 @@ FILES = {
     #     vmin           = 10.5,
     #     vmax           = 3.5,
     #     subarea        = [1000, 1000, 2000, 1000],
+    #     mea_grid       = True,
+        
     # ),
+    
+    
     # # 26-08-24 — J1 device, new, metal down
     # 'J1_device_metaldown.vk4': dict(
     #     subdir         = '2026-08-24_profilometer',
@@ -92,30 +107,97 @@ FILES = {
     #     vmax           = 3.5,
     #     zero_min       = True,
     #     rotate_180     = True, # put points like this, now have to use it, but not "real"
-    #     subarea        = [50, 50, 1000, 1000]
+    #     subarea        = [50, 50, 1000, 1000],
+    #     mea_grid       = True,
     # ),
     # 26-08-24
-    'MEA1K_24_after_bond_6x.vk4': dict(
-        name           = 'MEA1K_24_after_bond_bottomBadResults',
-        subdir         = '2026-08-24_profilometer',
-        relevel_points = [[417, 250], [4032, 166], [295,979], [3628,875]],
+    # 'MEA1K_24_after_bond_6x.vk4': dict(
+    #     name           = 'MEA1K_24_after_bond_bottomBadResults',
+    #     subdir         = '2026-08-24_profilometer',
+    #     relevel_points = [[417, 250], [4032, 166], [295,979], [3628,875]],
+    #     relevel        = 'points',
+    #     vmin           = 6.5,
+    #     vmax           = 3.5,
+    #     zero_min       = True,
+    #     subarea        = [1800, 50, 600, 600]
+    # ),
+    # 'MEA1K_24_after_bond_8x.vk4': dict(
+    #     name           = 'MEA1K_24_after_bond_TopGoodResults',
+    #     subdir         = '2026-08-24_profilometer',
+    #     relevel_points = [[566, 481], [4077, 488], [578,1320], [4278,1218]],
+    #     relevel        = 'points',
+    #     vmin           = 4.9,
+    #     vmax           = 3.5,
+    #     zero_min       = True,
+    #     subarea        = [1800, 350, 600, 600]
+    # ),
+    
+    # # # 26-10-30
+    # 'MEA1K_23.vk4': dict(
+    #     subdir         = '2026-10-30_profilometer',
+    #     relevel_points = [(369, 362), (4164, 174), (408,2210), (4184,2218)],
+    #     relevel        = 'points',
+    #     vmin           = 15.5,
+    #     vmax           = 3.5,
+    #     zero_min       = True,
+    #     # rotate_180     = True, # put points like this, now have to use it, but not "real"
+    #     # subarea        = [50, 50, 1000, 1000],
+    #     mea_grid       = True,
+    # ),
+    # # # 26-10-30
+    # 'MEA1K_24.vk4': dict(
+    #     subdir         = '2026-10-30_profilometer',
+    #     relevel_points = [(250, 154), (4060, 167), (286,2220), (4062,2219)],
+    #     relevel        = 'points',
+    #     vmin           = 3.75,
+    #     vmax           = 3.5,
+    #     zero_min       = True,
+    #     # rotate_180     = True, # put points like this, now have to use it, but not "real"
+    #     # subarea        = [50, 50, 1000, 1000],
+    #     mea_grid       = True,
+    # ),
+    # # # 26-10-30
+    'MEA1K_27.vk4': dict(
+        subdir         = '2026-10-30_profilometer',
+        relevel_points = [(294, 166), (4105, 165), (292,2229), (4103,2232)],
         relevel        = 'points',
-        vmin           = 6.5,
+        vmin           = 14,
         vmax           = 3.5,
         zero_min       = True,
-        subarea        = [1800, 50, 600, 600]
+        # rotate_180     = True, # put points like this, now have to use it, but not "real"
+        subarea        = [150, 2100, 2000, 250],
+        mea_grid       = True,
     ),
-    'MEA1K_24_after_bond_8x.vk4': dict(
-        name           = 'MEA1K_24_after_bond_TopGoodResults',
-        subdir         = '2026-08-24_profilometer',
-        relevel_points = [[566, 481], [4077, 488], [578,1320], [4278,1218]],
-        relevel        = 'points',
-        vmin           = 4.9,
-        vmax           = 3.5,
-        zero_min       = True,
-        subarea        = [1800, 350, 600, 600]
-    ),
+    
+    # # # 26-10-30
+    # 'Interconnect_edge.vk6': dict(
+    #     subdir         = '2026-10-30_profilometer',
+    # ),
+    
+    
+    
+    
+    
+    
+    
+    
 }
+
+# ── progress log ──────────────────────────────────────────────────────────────
+_T0 = time.time()
+
+def log(msg):
+    """Timestamped progress line (seconds since start), flushed immediately."""
+    print(f"[{time.time() - _T0:7.1f}s] {msg}", flush=True)
+
+
+def show(what):
+    """plt.show() blocks until the window is closed — say so, and time it."""
+    log(f"showing {what} — close the window to continue")
+    t = time.time()
+    plt.show()
+    log(f"{what} window closed after {time.time() - t:.0f}s")
+
 
 # ── main loop ─────────────────────────────────────────────────────────────────
 for fname, cfg in FILES.items():
@@ -135,8 +217,10 @@ for fname, cfg in FILES.items():
     subarea        = cfg.get('subarea',        None)
 
     # ── read ──────────────────────────────────────────────────────────────────
-    print(f"\nReading {p.name} ...")
+    print()
+    log(f"Reading {p.name} ...")
     data = read_vk(p)
+    log("read done")
     m    = data['meta']
     print(f"  Grid        : {m['nx']} × {m['ny']} pixels")
     print(f"  Pixel size  : dx={m['dx_um']:.4f} µm  dy={m['dy_um']:.4f} µm")
@@ -144,7 +228,7 @@ for fname, cfg in FILES.items():
     print(f"  z range     : {m['z_min_um']:.4f} … {m['z_max_um']:.4f} µm  (span {m['z_range_um']:.4f} µm)")
     print(f"  z=0 pixels  : {(data['z'] == 0).sum():,} / {data['z'].size:,}")
 
-    print("  Checking for companion .cag ...")
+    log("checking for companion .cag ...")
     optical = read_optical_from_cag(p, m['nx'], m['ny'])
     if optical is not None:
         print(f"  Optical reflectance loaded  (shape {optical.shape})")
@@ -157,7 +241,8 @@ for fname, cfg in FILES.items():
         print("\nRotated 180°")
 
     if relevel:
-        print("\nReleveling ...")
+        print()
+        log("releveling ...")
         if relevel == 'points':
             if not relevel_points:
                 raise ValueError(f"{fname}: relevel='points' requires relevel_points")
@@ -167,9 +252,11 @@ for fname, cfg in FILES.items():
         m = data['meta']
         print(f"  z range after relevel: {m['z_min_um']:.4f} … {m['z_max_um']:.4f} µm  (span {m['z_range_um']:.4f} µm)")
 
+    z_shift = 0.0                     # total offset subtracted after releveling (for mea_grid)
     if zero_min:
         z_off = float(np.nanmin(data['z']))
         data['z'] -= z_off
+        z_shift += z_off
         data['meta'].update(z_min_um=0.0,
                             z_max_um=float(np.nanmax(data['z'])),
                             z_range_um=float(np.nanmax(data['z'])))
@@ -178,6 +265,7 @@ for fname, cfg in FILES.items():
 
     if vmin is not None:
         data['z'] -= vmin
+        z_shift += vmin
         data['meta'].update(z_min_um=float(np.nanmin(data['z'])),
                             z_max_um=float(np.nanmax(data['z'])),
                             z_range_um=float(np.nanmax(data['z']) - np.nanmin(data['z'])))
@@ -192,6 +280,7 @@ for fname, cfg in FILES.items():
 
     # ── histogram ─────────────────────────────────────────────────────────────
     if SHOW_HISTOGRAM:
+        log("histogram ...")
         bins = np.linspace(z_valid.min(), z_valid.max(), 201)
         fig, ax = plt.subplots(figsize=(7, 3))
         ax.hist(z_valid, bins=bins, color='steelblue', edgecolor='none', alpha=0.7, label='full scan')
@@ -215,10 +304,22 @@ for fname, cfg in FILES.items():
         ax.set_title(f'{cfg.get("name", p.stem)}  —  height histogram{"  [releveled]" if relevel else ""}')
         ax.legend(fontsize=9)
         plt.tight_layout()
-        plt.show()
+        show("histogram")
+
+    # ── MEA electrode grid ────────────────────────────────────────────────────
+    mea_grid  = cfg.get('mea_grid', False)
+    mea_cells = None
+    if DO_MEA_GRID and mea_grid:
+        print()
+        log("MEA electrode grid ...")
+        mea_table, _, mea_lat = run_mea_grid(data, out, p.stem, z_ref_offset_um=z_shift,
+                                             **(mea_grid if isinstance(mea_grid, dict) else {}))
+        mea_cells = cell_outlines(mea_table, mea_lat)
+        log("MEA electrode grid done")
 
     # ── heatmap ───────────────────────────────────────────────────────────────
     if SHOW_HEATMAP:
+        log("heatmap ...")
         steps = []
         if relevel:           steps.append(f'releveled ({relevel})')
         if zero_min:          steps.append('zero-min')
@@ -254,10 +355,51 @@ for fname, cfg in FILES.items():
         plt.tight_layout()
 
         heatmap_path = out / f"{p.stem}_heatmap.png"
+        log(f"saving {heatmap_path.name} (300 dpi) ...")
         fig.savefig(heatmap_path, dpi=300, bbox_inches='tight')
         print(f"\nHeatmap colorscale: {_vmin:.4f} … {_vmax:.4f} µm")
         print(f"  → {heatmap_path.name}  (300 dpi)")
-        plt.show()
+        show("heatmap")
+
+    # ── MEA grid check: full heatmap with cell outlines + zooms on the array corners ──
+    if mea_cells is not None:
+        log("grid check figure ...")
+        from matplotlib.collections import LineCollection
+        cells = mea_cells + (m['dx_um'] / 2, m['dy_um'] / 2)   # grid coords are pixel centres
+        flag  = mea_table['flag'].to_numpy()
+        ext   = [0, m['x_range_um'], m['y_range_um'], 0]
+        fig   = plt.figure(figsize=(20, 15))
+        gs    = fig.add_gridspec(2, 5, height_ratios=[2.2, 1])
+        ax    = fig.add_subplot(gs[0, :])
+        ax.imshow(data['z'].T, origin='upper', cmap=HEATMAP_CMAP, vmin=_vmin, vmax=_vmax, extent=ext)
+        ax.add_collection(LineCollection(cells[~flag], colors='white', linewidths=0.1))
+        ax.add_collection(LineCollection(cells[flag],  colors='red',   linewidths=0.2))
+        ax.set_title(f"{cfg.get('name', p.stem)} — fitted electrode grid (red = flagged); zoom in, "
+                     f"corners below", fontsize=11, fontweight='bold')
+        W = 120                                                  # zoom window (µm)
+        last = len(cells) - 1
+        for k, (lbl, el, sx, sy) in enumerate([('el 0 (top-left)', 0, -1, -1),
+                                                ('el 219 (top-right)', 219, 1, -1),
+                                                ('centre', 120 // 2 * 220 + 110, 0, 0),
+                                                (f'el {last - 219} (bottom-left)', last - 219, -1, 1),
+                                                (f'el {last} (bottom-right)', last, 1, 1)]):
+            axz = fig.add_subplot(gs[1, k])
+            axz.imshow(data['z'].T, origin='upper', cmap=HEATMAP_CMAP, vmin=_vmin, vmax=_vmax, extent=ext,
+                       interpolation='nearest')
+            axz.add_collection(LineCollection(cells[~flag], colors='white', linewidths=0.7))
+            axz.add_collection(LineCollection(cells[flag],  colors='red',   linewidths=0.9))
+            axz.add_collection(LineCollection(cells[[el]], colors='magenta', linewidths=2))
+            cx_, cy_ = cells[el, :4].mean(0)
+            x0_ = cx_ - W / 2 + sx * W / 4; y0_ = cy_ - W / 2 + sy * W / 4   # corner cell offset inwards
+            axz.set_xlim(x0_, x0_ + W); axz.set_ylim(y0_ + W, y0_)
+            axz.set_title(f'{lbl}  (magenta)', fontsize=9)
+            axz.tick_params(labelsize=7)
+        plt.tight_layout()
+        grid_path = out / f"{p.stem}_grid_check.png"
+        log(f"saving {grid_path.name} (300 dpi) ...")
+        fig.savefig(grid_path, dpi=300, bbox_inches='tight')
+        print(f"  → {grid_path.name}")
+        show("grid check")
 
     # ── export ────────────────────────────────────────────────────────────────
     def _do_exports(d, stem, opt=None):
@@ -272,14 +414,18 @@ for fname, cfg in FILES.items():
             plt.close(fig)
             print(f"    → {opt_path.name}  (optical reflectance)")
         if DO_EXPORT_XYZ:
+            log("XYZ export ...")
             export_xyz(d, stem, out)
         if DO_EXPORT_OBJ:
+            log(f"OBJ export ({d['z'].size:,} vertices) ...")
             export_obj(d, stem, out, sigma=SIGMA, z_scale=Z_SCALE,
                        cmap=HEATMAP_CMAP, vmin=_vmin, vmax=_vmax)
         if DO_EXPORT_STL:
+            log("STL export ...")
             export_stl(d, stem, out, sigma=SIGMA, z_scale=Z_SCALE)
 
-    print(f"\nExporting to {out}/  (σ={SIGMA} px, Z×{Z_SCALE})")
+    print()
+    log(f"Exporting to {out}/  (σ={SIGMA} px, Z×{Z_SCALE})")
     if subarea is not None:
         sx, sy, sw, sh = subarea
         ix0 = int(np.clip(round(sx / m['dx_um']),        0, m['nx']))
@@ -297,4 +443,4 @@ for fname, cfg in FILES.items():
     else:
         _do_exports(data, p.stem, opt=optical)
 
-    print("Done.")
+    log(f"{p.name} done.")

@@ -82,6 +82,56 @@ def detect_interconnect_pads(path, precomputed=False, save=False):
         print(circles.shape)
     return circles
 
+
+def generate_unique_colors(n: int, seed: int = 42, cmap: str = "hsv",
+                        cmap_lims: tuple = (0.0, 0.95)) -> np.ndarray:
+    np.random.seed(seed)
+
+    colormap = plt.get_cmap(cmap, n)
+    raw = colormap(np.linspace(*cmap_lims, n))
+    colors = (raw[:, :3] * 255).round().astype(np.uint8)
+
+    def _make_unique(arr: np.ndarray, max_val: int = 255) -> np.ndarray:
+        arr = arr.copy().astype(np.int16)   # int16 to avoid overflow arithmetic
+
+        # Pre-build offsets sorted by L1 distance (nearest first).
+        # ±1 on each channel = 6 neighbours at dist 1, then dist 2, etc.
+        MAX_SEARCH = 12
+        offsets = sorted(
+            (o for o in iproduct(range(-MAX_SEARCH, MAX_SEARCH + 1), repeat=3)
+            if o != (0, 0, 0)),
+            key=lambda o: abs(o[0]) + abs(o[1]) + abs(o[2])
+        )
+
+        # "taken" maps color tuple -> index of owner; keepers own their slot.
+        taken: dict[tuple, int] = {}
+        _, unique_idx = np.unique(arr, axis=0, return_index=True)
+        for i in unique_idx:
+            taken[tuple(arr[i])] = i
+
+        dup_idx = np.setdiff1d(np.arange(len(arr)), unique_idx)
+        print(f"  Duplicates to resolve: {len(dup_idx)}")
+
+        for idx in dup_idx:
+            orig = tuple(arr[idx])
+            for (dr, dg, db) in offsets:
+                candidate = (
+                    int(orig[0]) + dr,
+                    int(orig[1]) + dg,
+                    int(orig[2]) + db,
+                )
+                if all(0 <= c <= max_val for c in candidate) and candidate not in taken:
+                    taken[candidate] = idx
+                    arr[idx] = candidate
+                    break
+            else:
+                raise RuntimeError(f"Could not place color at index {idx} "
+                                f"within search radius {MAX_SEARCH}.")
+
+        return arr.astype(np.uint8)
+
+    return _make_unique(colors)
+
 ## 2. shank_ordered_interconnect_pads_fromtrace: BFS flood fill along the snake-trace, 
 # capturing wafer pads in order they are routed to polyimide elctrodes
 def shank_ordered_interconnect_pads_fromtrace(path, device_name, interconnect_pads, start_point, step_size=10, visualize=True):
@@ -114,55 +164,6 @@ def shank_ordered_interconnect_pads_fromtrace(path, device_name, interconnect_pa
         image = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
         metal_mask = ~image.astype(bool)  # True = layer 1, False = layer 2
         return metal_mask
-    
-    def generate_unique_colors(n: int, seed: int = 42, cmap: str = "hsv",
-                           cmap_lims: tuple = (0.0, 0.95)) -> np.ndarray:
-        np.random.seed(seed)
-
-        colormap = plt.get_cmap(cmap, n)
-        raw = colormap(np.linspace(*cmap_lims, n))
-        colors = (raw[:, :3] * 255).round().astype(np.uint8)
-
-        def _make_unique(arr: np.ndarray, max_val: int = 255) -> np.ndarray:
-            arr = arr.copy().astype(np.int16)   # int16 to avoid overflow arithmetic
-
-            # Pre-build offsets sorted by L1 distance (nearest first).
-            # ±1 on each channel = 6 neighbours at dist 1, then dist 2, etc.
-            MAX_SEARCH = 12
-            offsets = sorted(
-                (o for o in iproduct(range(-MAX_SEARCH, MAX_SEARCH + 1), repeat=3)
-                if o != (0, 0, 0)),
-                key=lambda o: abs(o[0]) + abs(o[1]) + abs(o[2])
-            )
-
-            # "taken" maps color tuple -> index of owner; keepers own their slot.
-            taken: dict[tuple, int] = {}
-            _, unique_idx = np.unique(arr, axis=0, return_index=True)
-            for i in unique_idx:
-                taken[tuple(arr[i])] = i
-
-            dup_idx = np.setdiff1d(np.arange(len(arr)), unique_idx)
-            print(f"  Duplicates to resolve: {len(dup_idx)}")
-
-            for idx in dup_idx:
-                orig = tuple(arr[idx])
-                for (dr, dg, db) in offsets:
-                    candidate = (
-                        int(orig[0]) + dr,
-                        int(orig[1]) + dg,
-                        int(orig[2]) + db,
-                    )
-                    if all(0 <= c <= max_val for c in candidate) and candidate not in taken:
-                        taken[candidate] = idx
-                        arr[idx] = candidate
-                        break
-                else:
-                    raise RuntimeError(f"Could not place color at index {idx} "
-                                    f"within search radius {MAX_SEARCH}.")
-
-            return arr.astype(np.uint8)
-
-        return _make_unique(colors)
 
     # ── helper: check pads newly covered ──────────────────────────────────────
     def collect_new_pads():
@@ -598,9 +599,76 @@ def finalize_and_save_pad2el(path, wafer_pad2el, device_info, visualize=True):
     cv2.imwrite(f"{path}/device_mapping_{fname_base}.png", canvas_bgr)
     wafer_pad2el.sort_index().to_csv(f"{path}/device_mapping_{fname_base}.csv")
     print(f"{path}/device_mapping_{fname_base}.csv")
+
+def wafer_pad2el_programmatic(pad_size, pad_gap, n_rows, n_cols, reduced_nrows_at=None,
+                             mirror_leftright=False):
     
+    x, y, pad_id = 0, 0, 0
+    aggr = []
+    # for pad_id in range(n_pads):
+    for col_i in range(n_cols):
+        center_x = x+pad_size//2
+        for row_i in range(n_rows):
+            if reduced_nrows_at is not None and col_i > reduced_nrows_at and row_i == 0:
+                y += pad_size+pad_gap
+                continue
+            center_y = y+pad_size//2
+            aggr.append({"pad_id": pad_id,'pad_x':center_x, 'pad_y':center_y})
+            
+            pad_id += 1
+            y += pad_size+pad_gap
+        x += pad_size+pad_gap
+        y = 0
+        
+    aggr = pd.DataFrame(aggr)
+
+    # final left-right mirroring can be applied once the full layout is generated
+    if mirror_leftright and not aggr.empty:
+        x_min = aggr['pad_x'].min()
+        x_max = aggr['pad_x'].max()
+        aggr['pad_x'] = x_min + x_max - aggr['pad_x']
+    
+    
+    # get colors unique over both devices, may be bonded toegther
+    colors = generate_unique_colors(n=aggr.shape[0]*2, seed=42, cmap='hsv', cmap_lims=(0.0, 0.95))
+    print(colors.shape)
+    colors = colors[len(aggr):]
+    # if device_name == 'S0844pad8shank':
+    #     colors = colors[:n]
+    #     ids = np.arange(n)
+    # elif device_name == 'S0844pad6shank':
+    #     colors = colors[n:]
+    #     ids = np.arange(n, 2*n)
+    
+    aggr['pad_metal'] = 2
+    aggr['pad_r'] = pd.Series(colors[:, 0],  name='r')
+    aggr['pad_g'] = pd.Series(colors[:, 1],  name='g')
+    aggr['pad_b'] = pd.Series(colors[:, 2],  name='b')
+    aggr['pad_a'] = pd.Series(np.ones(len(aggr), dtype=int)*255,  name='a')
+    aggr['el_id'] = None
+    aggr.loc[:,'el_id'].iloc[0:192] = 0
+    aggr.loc[:,'el_id'].iloc[192:192*2] = 1
+    aggr.loc[:,'el_id'].iloc[192*2:192*3] = 2
+    aggr.loc[:,'el_id'].iloc[192*3:192*4] = 3
+    print(aggr)
+
+    return aggr
+    
+    # plt.scatter(aggr['pad_x'], aggr['pad_y'], c=aggr['pad_b'])
+    # plt.gca().invert_yaxis()
+    # plt.show()
+    return aggr
+        
 
 if __name__ == "__main__":
+    
+    df = wafer_pad2el_programmatic(35, 36, 15, 53, reduced_nrows_at=25, mirror_leftright=True)
+    df.to_csv('/Users/loaloa/Documents/sqaure_interconnects/35_36_768pads/device_mapping_35_36_768pads.csv')
+    df = wafer_pad2el_programmatic(61, 10, 15, 53, reduced_nrows_at=25)
+    # df.to_csv('/Users/loaloa/Documents/sqaure_interconnects/61_10_768pads/device_mapping_61_10_768pads.csv')
+    # df.to_csv('/Users/loaloa/Documents/sqaure_interconnects/35_36_768pads')
+    exit()
+    
     nas_dir = device_paths()[0]
     # device_name = "S0844pad8shank" 
     device_name = "S0844pad6shank" 
