@@ -54,10 +54,11 @@ def export_obj(data: dict, stem: str, out_dir: Path,
     print(f"    Grid {nx}×{ny} | Z {z_color.min():.2f}…{z_color.max():.2f} µm (×{z_scale} in mesh)")
 
     # ── texture PNG ───────────────────────────────────────────────────────────
-    import matplotlib
-    matplotlib.use("Agg")
+    # no matplotlib.use("Agg") here: it switches the backend for the whole session and
+    # silences every later plt.show() (figures below are saved and closed anyway)
     import matplotlib.pyplot as plt
 
+    print("    rendering texture PNG ...", flush=True)
     texture_name = f"{stem}_texture.png"
     tex_path = out_dir / texture_name
     # Landscape texture: nx cols (x-axis) × ny rows (y-axis), matching physical aspect ratio
@@ -89,6 +90,7 @@ def export_obj(data: dict, stem: str, out_dir: Path,
         cb = fig.colorbar(sm, ax=ax, fraction=1.0, pad=0)
         cb.set_label("Height (µm)", fontsize=11)
         ax.remove()
+        plt.close(fig)
         # fig.savefig(cbar_path, dpi=100, bbox_inches="tight")
         # plt.close(fig)
         # print(f"    → {cbar_path.name}  (colorbar, z {z_min:.3f}…{z_max:.3f} µm)")
@@ -128,21 +130,24 @@ def export_obj(data: dict, stem: str, out_dir: Path,
     # ── write OBJ ─────────────────────────────────────────────────────────────
     obj_path = out_dir / f"{stem}.obj"
     t0 = time.time()
+
+    def _write(f, rows, fmt, what, chunk=1_000_000):
+        # chunked, with a progress line every chunk (large scans take minutes)
+        n = len(rows)
+        for a in range(0, n, chunk):
+            f.write("\n".join(fmt % tuple(r) for r in rows[a:a + chunk]))
+            f.write("\n")
+            print(f"    {what}: {min(a + chunk, n) / n * 100:5.1f}%  ({time.time() - t0:.0f}s)", flush=True)
+        f.write("\n")
+
+    print(f"    writing {obj_path.name}: {len(vx):,} vertices, {len(faces):,} triangles ...", flush=True)
     with open(obj_path, "w") as f:
         f.write(f"# Height map mesh — {stem}\n")
         f.write(f"mtllib {stem}.mtl\n")
         f.write("usemtl height_material\n\n")
-
-        verts = np.column_stack([vx, vy, vz])
-        f.write("\n".join("v %.4f %.4f %.4f" % (r[0], r[1], r[2]) for r in verts))
-        f.write("\n\n")
-
-        uvs = np.column_stack([vu, vv])
-        f.write("\n".join("vt %.6f %.6f" % (r[0], r[1]) for r in uvs))
-        f.write("\n\n")
-
-        f.write("\n".join("f %d/%d %d/%d %d/%d" % (a, a, b, b, c, c) for a, b, c in faces))
-        f.write("\n")
+        _write(f, np.column_stack([vx, vy, vz]), "v %.4f %.4f %.4f", "vertices")
+        _write(f, np.column_stack([vu, vv]), "vt %.6f %.6f", "uv")
+        _write(f, np.repeat(faces, 2, axis=1), "f %d/%d %d/%d %d/%d", "faces")
 
     print(f"    → {obj_path.name}  ({len(faces):,} triangles, {time.time()-t0:.1f}s)")
     print(f"    → {mtl_path.name}")

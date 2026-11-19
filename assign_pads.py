@@ -191,12 +191,14 @@ def _align(mapping, mea1k_connectivity, alignment, mea1k_connectivity_png=None):
     return pd.concat(pad_alignment, axis=0).reset_index(drop=True)
 
 
-def _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping, layer_name='Pads'):
+def _add_pads_to_napari(viewer, mea1k_connectivity_png, mapping, layer_name='Pads', 
+                        square_size=36):
     pad_colors = {-1: (0, 0, 0, 0)}
     pads_canvas = np.ones_like(mea1k_connectivity_png, dtype=np.int16) * -1
     for pad_id, row in mapping.iterrows():
         x, y = row[['pad_x', 'pad_y']] +10 # slightly offset to fit on canvas
-        cv2.circle(pads_canvas, (x, y), PAD_R, pad_id, -1)
+        # cv2.circle(pads_canvas, (x, y), PAD_R, pad_id, -1)
+        cv2.rectangle(pads_canvas, (x, y, square_size,square_size), pad_id, -1)
         pad_colors[pad_id] = (row[['pad_r', 'pad_g', 'pad_b']].values.astype(float) / 255.)
     pad_colors = DirectLabelColormap(color_dict=pad_colors)
     return viewer.add_labels(pads_canvas, colormap=pad_colors, name=layer_name)
